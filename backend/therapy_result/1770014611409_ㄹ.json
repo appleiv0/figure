@@ -1,0 +1,46 @@
+{
+    "date": "20260202154331",
+    "receiptNo": "1770014611409",
+    "counselor": {
+        "name": "퓨",
+        "organization": "ㅗㅗ"
+    },
+    "kid": {
+        "birth": "2026-02-03T15:00:00.000Z",
+        "name": "ㄹ",
+        "sex": "Female",
+        "eunVSneun": "는",
+        "liVSka": "가",
+        "eulVSleul": "를",
+        "kwaVSwa": "와",
+        "raVSir": "이라",
+        "rangVSirang": "랑",
+        "kaVSika": "이가",
+        "yeoutVSiyeout": "이었",
+        "koVSrako": "이라고",
+        "roVSeuro": "으로"
+    },
+    "agree": true,
+    "figures": {
+        "1": [],
+        "2": [],
+        "3": [],
+        "5": [],
+        "6": []
+    },
+    "positions": {},
+    "friendly_message": "",
+    "llmCompletion": {},
+    "abuser": {},
+    "score": 0,
+    "abuse": {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "6": 0
+    },
+    "report": "",
+    "scripts": {},
+    "chatHistory": [],
+    "createdAt": 

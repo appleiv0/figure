@@ -1,0 +1,27 @@
+.figure-list {
+  &.figure-4 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    max-width: 59.4375rem;
+    height: 21.875rem;
+    margin: 0 auto;
+    z-index: 0;
+    .figure-animal {
+      position: absolute;
+      &.figure-1 {
+        top: 0;
+        left: 0;
+      }
+      &.figure-2 {
+        top: 10.625rem;
+        left: 6.25rem;
+      }
+      &.figure-3 {
+        top: 1.25rem;
+        right: 1.875rem;
+      }
+    }
+  }
+}

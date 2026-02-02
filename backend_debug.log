@@ -1,0 +1,19 @@
+2026-02-02 17:47:42,166 - MainProcess - app_logger - DEBUG - run 0.0.0.0:3302:True
+INFO:     Will watch for changes in these directories: ['/home/sypark/1.Developement/1-mind/abuse/backend']
+INFO:     Uvicorn running on http://0.0.0.0:3302 (Press CTRL+C to quit)
+INFO:     Started reloader process [958690] using WatchFiles
+set Logger file path: logs/app_logger, when D, interval 1, backup_count: 30, level: 10
+set Logger file path: logs/app_logger, when D, interval 1, backup_count: 30, level: 40
+set Logger file path: logs/app_logger, when D, interval 1, backup_count: 30, level: 20
+INFO:     Started server process [958756]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+2026-02-02 17:47:55,397 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:49358 - "OPTIONS /createReceiptNo" 200 OK 0.33ms
+set Logger file path: logs/app_logger, when D, interval 1, backup_count: 30, level: 20
+set Logger file path: logs/app_logger, when D, interval 1, backup_count: 30, level: 10
+set Logger file path: logs/app_logger, when D, interval 1, backup_count: 30, level: 40
+INFO:     192.168.0.195:49358 - "OPTIONS /createReceiptNo HTTP/1.1" 200 OK
+2026-02-02 17:47:55,411 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:49358 - "POST /createReceiptNo" 200 OK 6.34ms
+INFO:     192.168.0.195:49358 - "POST /createReceiptNo HTTP/1.1" 200 OK
+2026-02-02 17:51:44,860 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:42552 - "POST /createReceiptNo" 200 OK 1.65ms
+INFO:     192.168.0.195:42552 - "POST /createReceiptNo HTTP/1.1" 200 OK

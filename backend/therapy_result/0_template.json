@@ -1,0 +1,42 @@
+{
+    "date": "",
+    "receiptNo": 0,
+    "counselor": {
+        "organization": "",
+        "name": ""
+    },
+    "kid": {
+        "name":"",
+        "sex":"",
+        "birth":"",
+        "은/는":"",
+        "이/가":"",
+        "을/를":"",
+        "과/와":"",
+        "라/이라":"",
+        "랑/이랑":"",
+        "가/이가":""
+    },
+    "agree": false,
+    "figures":{
+        "1":[],
+        "2":[],
+        "3":[],
+        "5":[],
+        "6":[]
+    },
+    "positions":{},
+    "friendly_message":"",
+    "llmCompletion":{},
+    "abuser":{},
+    "score": 0,
+    "abuse": {
+        "1":0,
+        "2":0,
+        "3":0,
+        "4":0,
+        "6":0
+    },
+    "report":"",
+    "scripts":{}
+}

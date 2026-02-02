@@ -1,0 +1,17 @@
+# fast api
+fastapi
+uvicorn
+# mongodb connector
+pymongo
+# mariadb connector
+mysql-connector-python
+# authentication
+pyjwt
+bcrypt
+redis
+python-multipart
+# env
+python-dotenv
+# app
+numpy
+openai

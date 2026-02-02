@@ -1,0 +1,98 @@
+{
+    "date": "20260202141049",
+    "receiptNo": 1770009049326,
+    "counselor": {
+        "name": "최광현",
+        "organization": "아이"
+    },
+    "kid": {
+        "birth": "2026-01-31T15:00:00.000Z",
+        "name": "박민재",
+        "sex": "Male",
+        "eunVSneun": "는",
+        "liVSka": "가",
+        "eulVSleul": "를",
+        "kwaVSwa": "와",
+        "raVSir": "라",
+        "rangVSirang": "랑",
+        "kaVSika": "가",
+        "yeoutVSiyeout": "였",
+        "koVSrako": "라고",
+        "roVSeuro": "로"
+    },
+    "agree": true,
+    "figures": {
+        "1": [
+            {
+                "figure": "조개",
+                "message": "ㅗㅓ",
+                "relation": "나"
+            },
+            {
+                "figure": "새끼팬더",
+                "message": "ㅗㅓ",
+                "relation": "나"
+            },
+            {
+                "figure": "불곰",
+                "message": "ㅗㅓ",
+                "relation": "나"
+            },
+            {
+                "figure": "돌",
+                "message": "ㅗㅓ",
+                "relation": "나"
+            }
+        ],
+        "2": [
+            {
+                "figure": "흑표범",
+                "message": "ㅗㅗ",
+                "relation": "나"
+            },
+            {
+                "figure": "말",
+                "message": "ㅗㅗ",
+                "relation": "나"
+            },
+            {
+                "figure": "돌",
+                "message": "ㅗㅗ",
+                "relation": "나"
+            },
+            {
+                "figure": "젖소",
+                "message": "ㅗㅗ",
+                "relation": "나"
+            }
+        ],
+        "3": [
+            {
+                "figure": "알에서-나오는-병아리",
+                "message": "ㅕㅕ",
+                "relation": "엄마"
+            },
+            {
+                "figure": "흑표범",
+                "message": "호",
+                "relation": "박민재"
+            }
+        ],
+        "5": [],
+        "6": []
+    },
+    "positions": {},
+    "friendly_message": "",
+    "llmCompletion": {},
+    "abuser": {},
+    "score": 7,
+    "abuse": {
+        "1": 1,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "6": 0
+    },
+    "report": "",
+    "scripts": {}
+}

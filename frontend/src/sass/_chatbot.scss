@@ -1,0 +1,153 @@
+.react-chatbot-kit-chat-container {
+  width: 100% !important;
+
+  .react-chatbot-kit-chat-header,
+  .react-chatbot-kit-user-chat-message-arrow,
+  .react-chatbot-kit-chat-bot-message-arrow,
+  .react-chatbot-kit-user-avatar {
+    display: none;
+  }
+
+  .react-chatbot-kit-chat-message-container {
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 80vh;
+    height: 80dvh;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .react-chatbot-kit-user-chat-message,
+  .react-chatbot-kit-chat-bot-message {
+    font-size: 1.5rem;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 2.25rem;
+  }
+
+  .react-chatbot-kit-user-chat-message {
+    background-color: #2eb500;
+    color: #fff;
+    max-width: 70%;
+    margin-right: 0;
+  }
+
+  .react-chatbot-kit-chat-bot-message {
+    background-color: #fff;
+    color: #333333;
+  }
+  .react-chatbot-kit-chat-inner-container {
+    background-color: #f5f4f2;
+    height: 88vh;
+    height: 88dvh;
+  }
+
+  .react-chatbot-kit-chat-bot-message {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 42.8rem;
+  }
+  .react-chatbot-kit-chat-bot-message-container {
+    position: relative;
+    padding-left: 1rem;
+    margin: 1.5625rem 0;
+
+    @media (min-width: 640px) {
+      padding-left: 5rem;
+    }
+  }
+  .react-chatbot-kit-chat-bot-avatar-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: transparent;
+    background-image: url("../../assets/images/img_avt_bot.png");
+    width: 4.25rem;
+    height: 4.25rem;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .react-chatbot-kit-chat-bot-avatar-letter {
+    display: none;
+  }
+  .react-chatbot-kit-chat-input-form {
+    position: relative;
+  }
+  .react-chatbot-kit-chat-btn-send {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.625rem;
+    bottom: 0.625rem;
+    background-image: url("../../assets/images/icons/arrow-up-solid.svg");
+    background-repeat: no-repeat;
+    background-size: 1.125rem 1.5rem;
+    background-position: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.625rem;
+    background-color: #5ab63a;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+
+    &:hover,
+    &:focus,
+    &:active {
+      background-color: #4a9e2e;
+    }
+
+    svg {
+      display: none;
+    }
+  }
+
+  // When input is empty (placeholder shown), disable the button visually
+  .react-chatbot-kit-chat-input:placeholder-shown + .react-chatbot-kit-chat-btn-send {
+    background-color: #ccc;
+    pointer-events: none;
+    cursor: default;
+  }
+  .react-chatbot-kit-chat-btn-send-icon {
+    width: 0.9375rem;
+  }
+  .react-chatbot-kit-chat-input-container {
+    padding: 1.5rem 0;
+  }
+  .react-chatbot-kit-chat-input {
+    font-size: 1.5rem;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 2.25rem;
+    border-radius: 0.625rem;
+    border: 0.125rem solid #aaa;
+    padding: 0.75rem;
+    outline: 0;
+    &:focus {
+      border-color: #5ab63a;
+    }
+    &::-webkit-input-placeholder {
+      /* Chrome/Opera/Safari */
+      color: #999999;
+    }
+    &::-moz-placeholder {
+      /* Firefox 19+ */
+      color: #999999;
+    }
+    &:-ms-input-placeholder {
+      /* IE 10+ */
+      color: #999999;
+    }
+    &:-moz-placeholder {
+      /* Firefox 18- */
+      color: #999999;
+    }
+  }
+}
+
+.chatbot-loader-container #chatbot-loader {
+  fill: #2c9608;
+}

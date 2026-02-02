@@ -1,0 +1,15 @@
+.canvas-container {
+  height: 80vh;
+  height: 80dvh;
+}
+
+.canvas-drag-flip {
+  .konvajs-content {
+    border-radius: 0.625rem;
+    border: 0.1875rem solid #ccc;
+    background: #f3f3f3;
+    overflow: hidden;
+    margin: 0 auto;
+    touch-action: none;
+  }
+}

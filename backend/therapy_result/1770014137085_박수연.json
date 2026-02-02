@@ -1,0 +1,46 @@
+{
+    "date": "20260202153537",
+    "receiptNo": "1770014137085",
+    "counselor": {
+        "name": "선우현",
+        "organization": "아이패밀리"
+    },
+    "kid": {
+        "birth": "2026-02-19T15:00:00.000Z",
+        "name": "박수연",
+        "sex": "Female",
+        "eunVSneun": "은",
+        "liVSka": "이",
+        "eulVSleul": "을",
+        "kwaVSwa": "과",
+        "raVSir": "이라",
+        "rangVSirang": "이랑",
+        "kaVSika": "이가",
+        "yeoutVSiyeout": "이었",
+        "koVSrako": "이라고",
+        "roVSeuro": "으로"
+    },
+    "agree": true,
+    "figures": {
+        "1": [],
+        "2": [],
+        "3": [],
+        "5": [],
+        "6": []
+    },
+    "positions": {},
+    "friendly_message": "",
+    "llmCompletion": {},
+    "abuser": {},
+    "score": 0,
+    "abuse": {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "6": 0
+    },
+    "report": "",
+    "scripts": {},
+    "chatHistory": [],
+    "createdAt": 

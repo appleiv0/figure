@@ -1,0 +1,225 @@
+:root {
+  font-family: Noto Sans, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: normal;
+  font-weight: 400;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  background-color: #f5f4f2;
+}
+
+/* ===== 모바일 우선 접근 ===== */
+html {
+  font-size: 14px;
+  /* 모바일 기본 */
+}
+
+body {
+  font-size: 1rem;
+  line-height: 1.4;
+  color: #4a4a4a;
+  display: block;
+  /* 모바일에서도 표시 */
+}
+
+/* 태블릿 */
+@media screen and (min-width: 768px) {
+  html {
+    font-size: calc(100vw / 1280 * 16);
+  }
+}
+
+/* 데스크탑 */
+@media screen and (min-width: 1024px) {
+  html {
+    font-size: calc(100vw / 1440 * 14);
+  }
+}
+
+@media screen and (min-width: 1280px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+/* ===== 컨테이너 - 모바일 우선 ===== */
+.container {
+  padding: 0 1rem;
+  width: 100%;
+  max-width: 100%;
+
+  @media screen and (min-width: 768px) {
+    max-width: 95%;
+  }
+
+  @media screen and (min-width: 1024px) {
+    max-width: 56.75rem;
+    padding: 0 1.25rem;
+  }
+}
+
+.container-xs {
+  padding: 0 1rem;
+  width: 100%;
+  max-width: 100%;
+
+  @media screen and (min-width: 768px) {
+    max-width: 85%;
+  }
+
+  @media screen and (min-width: 1024px) {
+    max-width: 720px;
+    padding: 0 1.25rem;
+  }
+}
+
+.container-md {
+  padding: 0 1rem;
+  width: 100%;
+  max-width: 100%;
+
+  @media screen and (min-width: 768px) {
+    max-width: 90%;
+  }
+
+  @media screen and (min-width: 1024px) {
+    max-width: 1040px;
+    padding: 0 1.25rem;
+  }
+}
+
+.container-lg {
+  padding: 0 1rem;
+  width: 100%;
+  max-width: 100%;
+
+  @media screen and (min-width: 768px) {
+    max-width: 100%;
+  }
+
+  @media screen and (min-width: 1024px) {
+    max-width: 1100px;
+    padding: 0 1.25rem;
+  }
+}
+
+.container-xl {
+  padding: 0 1rem;
+  width: 100%;
+  max-width: 100%;
+
+  @media screen and (min-width: 768px) {
+    max-width: 100%;
+  }
+
+  @media screen and (min-width: 1024px) {
+    max-width: 1174px;
+    padding: 0 1.25rem;
+  }
+}
+
+$brand-color: #2eb500;
+$body-color: #dddddd;
+
+.progress-container {
+  width: 10%;
+  margin: 2em auto;
+  position: fixed;
+}
+
+.progress-steps {
+  counter-reset: step;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+
+  li {
+    list-style-type: none;
+    width: 100%;
+    position: relative;
+    text-align: center;
+    text-transform: uppercase;
+    color: #999;
+    font-weight: 700;
+
+    &:before {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 2.25rem;
+      height: 2.25rem;
+      content: counter(step);
+      counter-increment: step;
+      border: 2px solid $body-color;
+      border-radius: 50%;
+      background-color: $body-color;
+    }
+
+    &:after {
+      width: 4px;
+      height: 100%;
+      content: "";
+      position: absolute;
+      background-color: $body-color;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: -1;
+    }
+
+    &:first-child:after,
+    &:last-child:after {
+      width: 4px;
+      height: 100%;
+      content: "";
+      position: absolute;
+      background-color: $body-color;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: -1;
+    }
+
+    &.active {
+      color: #ffffff;
+
+      &:before {
+        border-color: $brand-color;
+        background-color: $brand-color;
+      }
+
+      &:first-child:after {
+        background-color: $brand-color;
+        border-color: $brand-color;
+      }
+
+      &:after {
+        background-color: $brand-color;
+        border-color: $brand-color;
+      }
+    }
+
+    &.current {
+      color: $brand-color;
+
+      &:before {
+        border-color: $brand-color;
+        background-color: #ffffff;
+      }
+
+      &:first-child:after,
+      &:after {
+        background-color: $body-color;
+        border-color: $brand-color;
+      }
+    }
+
+    &:last-child:after {
+      content: none;
+    }
+  }
+}

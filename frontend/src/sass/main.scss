@@ -1,0 +1,26 @@
+@charset 'utf-8';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "_global";
+@import "_loading";
+@import "_modal";
+@import "_chatbot";
+@import "_canvas";
+@import "_form";
+@import "_figure-list";
+
+/* Mobile touch fixes */
+button, a, [role="button"], .clickable {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Prevent 300ms delay on mobile */
+html {
+  touch-action: manipulation;
+}

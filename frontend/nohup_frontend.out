@@ -1,0 +1,7 @@
+nohup: 입력 무시
+
+> vite-dnp@1.0.0 preview
+> vite preview --host 0.0.0.0 --port 3000
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://192.168.0.188:3000/

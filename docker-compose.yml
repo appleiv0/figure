@@ -1,0 +1,33 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: abuse-backend
+    restart: always
+    ports:
+      - "3301:3301"
+    # Mount the local .env file to the container
+    env_file:
+      - ./backend/.env
+    environment:
+      - PRODUCTION=True
+      # PORT is usually 3301, make sure it matches the mapped port if needed
+      # but .env usually wins or this overrides if defined.
+    volumes:
+      - ./backend/logs:/app/logs
+      - ./backend/downloads:/app/downloads
+      - ./backend/therapy_result:/app/therapy_result
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # ⚠️ 중요: 이 주소를 시놀로지 NAS의 IP 주소로 변경하세요! (예: http://192.168.0.10:3301)
+        # localhost로 설정하면 다른 PC에서 접속 시 백엔드와 통신할 수 없습니다.
+        - VITE_ENV_API_BACKEND_DOMAIN=http://YOUR_NAS_IP:3301
+    container_name: abuse-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend

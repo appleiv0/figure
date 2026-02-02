@@ -1,0 +1,145 @@
+{
+    "date": "20260126191616",
+    "receiptNo": 1769422576434,
+    "counselor": {
+        "name": "ㄴ",
+        "organization": "ㅂ"
+    },
+    "kid": {
+        "birth": "2025-12-31T15:00:00.000Z",
+        "name": "박수연",
+        "sex": "Female",
+        "eunVSneun": "은",
+        "liVSka": "이",
+        "eulVSleul": "을",
+        "kwaVSwa": "과",
+        "raVSir": "이라",
+        "rangVSirang": "이랑",
+        "kaVSika": "이가",
+        "yeoutVSiyeout": "이었",
+        "koVSrako": "이라고",
+        "roVSeuro": "으로"
+    },
+    "agree": true,
+    "figures": {
+        "1": [
+            {
+                "figure": "고슴도치",
+                "message": "ㅁ",
+                "relation": "나"
+            },
+            {
+                "figure": "상어",
+                "message": "ㅁ",
+                "relation": "나"
+            },
+            {
+                "figure": "조개",
+                "message": "ㅁ",
+                "relation": "나"
+            },
+            {
+                "figure": "젖소",
+                "message": "ㅁ",
+                "relation": "나"
+            }
+        ],
+        "2": [
+            {
+                "figure": "사자",
+                "message": "ㄸ",
+                "relation": "나"
+            },
+            {
+                "figure": "돼지",
+                "message": "ㄸ",
+                "relation": "나"
+            },
+            {
+                "figure": "캥거루",
+                "message": "ㄸ",
+                "relation": "나"
+            },
+            {
+                "figure": "악어",
+                "message": "ㄸ",
+                "relation": "나"
+            }
+        ],
+        "3": [
+            {
+                "figure": "토끼",
+                "message": "ㅌ",
+                "relation": "엄마"
+            },
+            {
+                "figure": "새끼팬더",
+                "message": "ㅇ",
+                "relation": "박수연"
+            }
+        ],
+        "5": [
+            {
+                "figure": "호랑이",
+                "message": "ㅌ",
+                "relation": "엄마"
+            }
+        ],
+        "6": []
+    },
+    "positions": {
+        "centerH": 252,
+        "centerV": 1025,
+        "figures": [
+            {
+                "figure": "토끼",
+                "index": 19,
+                "img": "assets/images/Animal/28-토끼_생성.png",
+                "josa": 0,
+                "relation": "엄마",
+                "direction": "left",
+                "position": {
+                    "p1": [
+                        851,
+                        125
+                    ],
+                    "p2": [
+                        1009,
+                        311
+                    ]
+                }
+            },
+            {
+                "figure": "새끼팬더",
+                "index": 22,
+                "img": "assets/images/Animal/32_새끼팬더.png",
+                "josa": 0,
+                "relation": "박수연",
+                "direction": "left",
+                "position": {
+                    "p1": [
+                        1043,
+                        141
+                    ],
+                    "p2": [
+                        1201,
+                        327
+                    ]
+                }
+            }
+        ]
+    },
+    "friendly_message": "그렇구나. 새끼팬더와 토끼가 서로 친하구나.",
+    "llmCompletion": {},
+    "abuser": {},
+    "score": 5,
+    "abuse": {
+        "1": 1,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "6": 0
+    },
+    "report": "",
+    "scripts": {}
+}
