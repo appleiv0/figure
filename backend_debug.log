@@ -17,3 +17,31 @@ INFO:     192.168.0.195:49358 - "OPTIONS /createReceiptNo HTTP/1.1" 200 OK
 INFO:     192.168.0.195:49358 - "POST /createReceiptNo HTTP/1.1" 200 OK
 2026-02-02 17:51:44,860 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:42552 - "POST /createReceiptNo" 200 OK 1.65ms
 INFO:     192.168.0.195:42552 - "POST /createReceiptNo HTTP/1.1" 200 OK
+2026-02-02 17:56:41,699 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:34228 - "OPTIONS /setFigure" 200 OK 0.30ms
+INFO:     192.168.0.195:34228 - "OPTIONS /setFigure HTTP/1.1" 200 OK
+2026-02-02 17:56:41,906 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:34228 - "POST /setFigure" 200 OK 3.06ms
+INFO:     192.168.0.195:34228 - "POST /setFigure HTTP/1.1" 200 OK
+2026-02-02 17:56:59,416 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:34234 - "POST /setFigure" 200 OK 2.76ms
+INFO:     192.168.0.195:34234 - "POST /setFigure HTTP/1.1" 200 OK
+2026-02-02 17:57:23,171 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:56232 - "POST /setFigure" 200 OK 3.07ms
+INFO:     192.168.0.195:56232 - "POST /setFigure HTTP/1.1" 200 OK
+2026-02-02 17:57:30,944 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:53900 - "OPTIONS /setPosition" 200 OK 0.30ms
+INFO:     192.168.0.195:53900 - "OPTIONS /setPosition HTTP/1.1" 200 OK
+2026-02-02 17:57:30,966 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:53900 - "POST /setPosition" 200 OK 16.67ms
+INFO:     192.168.0.195:53900 - "POST /setPosition HTTP/1.1" 200 OK
+2026-02-02 17:57:42,217 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:53906 - "POST /setFigure" 200 OK 3.72ms
+INFO:     192.168.0.195:53906 - "POST /setFigure HTTP/1.1" 200 OK
+2026-02-02 17:57:49,590 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:49540 - "POST /setFigure" 200 OK 4.18ms
+INFO:     192.168.0.195:49540 - "POST /setFigure HTTP/1.1" 200 OK
+2026-02-02 17:57:49,790 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:49540 - "OPTIONS /llmCompletion" 200 OK 0.25ms
+INFO:     192.168.0.195:49540 - "OPTIONS /llmCompletion HTTP/1.1" 200 OK
+2026-02-02 17:57:51,185 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:49540 - "POST /llmCompletion" 200 OK 1189.61ms
+INFO:     192.168.0.195:49540 - "POST /llmCompletion HTTP/1.1" 200 OK
+2026-02-02 17:57:56,347 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:49540 - "POST /llmCompletion" 200 OK 1436.44ms
+INFO:     192.168.0.195:49540 - "POST /llmCompletion HTTP/1.1" 200 OK
+2026-02-02 17:57:59,726 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:49540 - "POST /llmCompletion" 200 OK 3.96ms
+INFO:     192.168.0.195:49540 - "POST /llmCompletion HTTP/1.1" 200 OK
+2026-02-02 17:58:03,716 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:49540 - "OPTIONS /getReport" 200 OK 0.27ms
+INFO:     192.168.0.195:49540 - "OPTIONS /getReport HTTP/1.1" 200 OK
+2026-02-02 17:58:03,730 - SpawnProcess-1 - app_logger - INFO - 192.168.0.195:49556 - "POST /getReport" 200 OK 4.44ms
+INFO:     192.168.0.195:49556 - "POST /getReport HTTP/1.1" 200 OK

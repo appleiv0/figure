@@ -14,3 +14,4 @@ Browserslist: caniuse-lite is outdated. Please run:
 오후 5:50:49 [vite] hmr update /src/components/organisms/ChooseAnimal/index.tsx, /src/sass/main.scss
 오후 5:52:37 [vite] hmr update /src/components/organisms/ChooseAnimal/index.tsx, /src/sass/main.scss
 오후 5:52:58 [vite] hmr update /src/components/organisms/ChooseAnimal/index.tsx, /src/sass/main.scss
+오후 5:56:16 [vite] hmr update /src/sass/main.scss
