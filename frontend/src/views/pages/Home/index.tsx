@@ -36,11 +36,10 @@ const Home = () => {
         />
         <h1 className="text-3xl mt-8 font-extrabold">{userInfo.kidname}</h1>
         <h2 className="text-2xl mt-3">{formattedDate}</h2>
-        <h3 className="text-2xl font-bold border border-[#FFFFFF] bg-[#FFFFFF] rounded-md px-5 py-5 text-center mt-10 inline-flex">
-          오늘은
-          <span className="text-greenDark">{currentDateString}</span>
-          입니다. {userInfo?.kidname}
-          {userInfo?.endWord.kwaVSwa}의 면담을 시작하겠습니다.
+        <h3 className="text-xl md:text-2xl font-bold border border-[#FFFFFF] bg-[#FFFFFF] rounded-md px-5 py-5 text-center mt-10 inline-block">
+          오늘은 <span className="text-greenDark">{currentDateString}</span> 입니다.
+          <br />
+          {userInfo?.kidname}{userInfo?.endWord.kwaVSwa}의 면담을 시작하겠습니다.
         </h3>
         <SubmitButton
           className="text-2xl font-extrabold mx-auto mt-10 flex gap-2 items-center border border-primary bg-primary text-white px-7 py-5 rounded-md"

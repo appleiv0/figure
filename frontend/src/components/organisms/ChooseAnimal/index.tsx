@@ -122,8 +122,8 @@ const ChooseAnimal = () => {
   return (
     <>
       {!selectChatbot && (
-        <div className="container-lg mx-auto">
-          <div className="flex justify-center items-center mb-14 mr-10 ">
+        <div className="container-lg mx-auto pb-20 md:pb-0">
+          <div className="flex justify-center items-center mb-6 md:mb-14 mr-0 md:mr-10">
             <img
               className="w-[3rem] justify-start items-start mr-2 mt-[2rem]"
               src="/assets/images/01.png"
@@ -182,8 +182,9 @@ const ChooseAnimal = () => {
             )}
           </div>
           <div className="background-container flex flex-col mb-4 md:mb-20">
-            <div className="grid grid-cols-12 gap-1 md:gap-8">
-              <div className="grid grid-cols-6 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 col-span-11 gap-1 md:gap-8">
+            {/* Desktop: grid with side progress | Mobile: full-width grid */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-1 md:gap-8">
+              <div className="grid grid-cols-6 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 md:col-span-11 gap-1 md:gap-8">
                 {Animal.map((animal) => {
                   return (
                     <div key={animal.index} className={`animal-card`}>
@@ -214,7 +215,8 @@ const ChooseAnimal = () => {
                   );
                 })}
               </div>
-              <div className="col-span-1 z-20 text-center font-bold relative">
+              {/* Desktop only: side progress column */}
+              <div className="hidden md:block col-span-1 z-20 text-center font-bold relative">
                 <ul className="progress-steps absolute top-0 left-1/2 -translate-x-1/2">
                   <li
                     className={
@@ -267,6 +269,47 @@ const ChooseAnimal = () => {
                     />
                     선택 완료
                   </button>
+                )}
+              </div>
+            </div>
+
+            {/* Mobile only: fixed bottom bar with progress + button */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t border-gray-200 shadow-lg px-4 py-3">
+              <div className="flex items-center justify-between max-w-lg mx-auto">
+                <ul className="progress-steps-horizontal flex items-center gap-3">
+                  {[1, 2, 3, 4].map((step) => (
+                    <li
+                      key={step}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors ${
+                        currentStepChoose >= step
+                          ? "bg-[#2EB500] border-[#2EB500] text-white"
+                          : currentStepChoose === step - 1
+                            ? "bg-white border-[#2EB500] text-[#2EB500]"
+                            : "bg-white border-gray-300 text-gray-300"
+                      }`}
+                    >
+                      {step}
+                    </li>
+                  ))}
+                </ul>
+                {selectedCards.length === 4 ? (
+                  <button
+                    type="button"
+                    className="text-base font-extrabold flex items-center gap-2 border border-primary bg-primary hover:bg-grey-100 hover:text-greenDark text-white px-5 py-3 rounded-full cursor-pointer select-none"
+                    onClick={handleStartChat}
+                  >
+                    <Icon
+                      icon="check"
+                      width={16}
+                      height={18}
+                      className="max-w-4"
+                    />
+                    선택 완료
+                  </button>
+                ) : (
+                  <span className="text-sm font-bold text-gray-400">
+                    {selectedCards.length}/4 선택
+                  </span>
                 )}
               </div>
             </div>

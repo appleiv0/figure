@@ -43,12 +43,16 @@ const FigurePosition = () => {
     <div>
       {!activeChat ? (
         <>
-          <div className="max-w-[55rem] mx-auto mb-8">
+          <div className="max-w-[55rem] mx-auto mb-4 md:mb-8 px-3 md:px-0">
             <div className="flex gap-2 items-start">
-              <img src="./assets/images/img_avt_bot.png" alt="img-avt" />
-              <div className="px-5 py-3 text-2xl font-bold rounded-[0.625rem] bg-yellow-200 max-w-[35rem]">
-                이번에는 동물 중에서 누구 누구가 서로 친한지
-                <br /> 친한 동물들끼리 가까이 옮겨보자.
+              <img src="./assets/images/img_avt_bot.png" alt="img-avt" className="w-10 md:w-auto" />
+              <div className="px-4 py-2 md:px-5 md:py-3 text-base md:text-2xl font-bold rounded-[0.625rem] bg-yellow-200 max-w-[35rem]">
+                동물 중에서 누구 누구가 서로 친한지
+                친한 동물들끼리 가까이 옮겨보자.
+                <br />
+                <span className="text-sm md:text-lg text-gray-600 font-semibold">
+                  동물을 더블클릭하면 방향이 바뀌어요.
+                </span>
               </div>
             </div>
           </div>

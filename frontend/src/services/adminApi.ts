@@ -96,6 +96,12 @@ export const adminApi = {
     return response.data;
   },
 
+  // Regenerate report
+  regenerateReport: async (receiptNo: string): Promise<{ success: boolean; message: string; report: string; score: number }> => {
+    const response = await api.post(`/admin/sessions/${receiptNo}/regenerate-report`);
+    return response.data;
+  },
+
   // Health check
   healthCheck: async (): Promise<{ status: string; database: string; sessions_count: number }> => {
     const response = await api.get("/admin/health");

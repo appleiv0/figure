@@ -1,9 +1,8 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { USER } from "../../../constants/common.constant";
 import { useGetReport } from "../../../services/hooks/hookChatbot";
 import { getItemLocalStorage } from "../../../utils/helper";
-import { generatePDF, formatLLMConversation } from "../../../utils/pdfReport";
+import { formatLLMConversation } from "../../../utils/pdfReport";
 import Icon from "../../atoms/Icon";
 import useStore from "../../../store";
 
@@ -13,7 +12,6 @@ const ButtonEnd = () => {
   const navigator = useNavigate();
   const setResponse = useStore((state: any) => state.setResponse);
   const response = useStore((state: any) => state.response);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const handleReport = async () => {
     try {
@@ -38,54 +36,40 @@ const ButtonEnd = () => {
     navigator("/ending");
   };
 
-  const handleDownload = () => {
-    const jsonData = response.result;
-
-    const jsonStr = JSON.stringify(jsonData, null, 2);
-
-    const blob = new Blob([jsonStr], { type: "application/json" });
-
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "data.json";
-
-    document.body.appendChild(a);
-    a.click();
-
-    URL.revokeObjectURL(url);
-  };
-
-  const handlePDFDownload = async () => {
+  const handleOpenReport = () => {
     if (!response?.result) {
       alert("보고서 데이터가 없습니다.");
       return;
     }
 
-    setIsGeneratingPDF(true);
+    const html = generateReportHTML(response.result);
+    const kidName = response.result?.kid?.name || "아동";
 
-    // PDF 보고서 요소를 동적으로 생성
-    const reportElement = document.createElement("div");
-    reportElement.id = "pdf-report";
-    reportElement.innerHTML = generateReportHTML(response.result);
-    reportElement.style.position = "absolute";
-    reportElement.style.left = "-9999px";
-    reportElement.style.top = "0";
-    document.body.appendChild(reportElement);
-
-    try {
-      const kidName = response.result?.kid?.name || "아동";
-      const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-      const filename = `진단보고서_${kidName}_${date}.pdf`;
-
-      await generatePDF("pdf-report", filename);
-    } catch (error) {
-      console.error("PDF 생성 실패:", error);
-      alert("PDF 생성에 실패했습니다.");
-    } finally {
-      document.body.removeChild(reportElement);
-      setIsGeneratingPDF(false);
+    const newTab = window.open('', '_blank');
+    if (newTab) {
+      newTab.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>진단보고서 - ${kidName}</title>
+          <style>
+            @media print {
+              body { margin: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="no-print" style="padding: 10px; text-align: right; background: #f5f5f5; border-bottom: 1px solid #ddd;">
+            <button onclick="window.print()" style="padding: 8px 16px; background: #2EB500; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">인쇄 / PDF 저장</button>
+          </div>
+          ${html}
+        </body>
+        </html>
+      `);
+      newTab.document.close();
     }
   };
 
@@ -123,25 +107,14 @@ const ButtonEnd = () => {
           </button>
         )}
         {location.pathname === "/result" && (
-          <>
-            <button
-              type="button"
-              className="text-2xl font-bold flex items-center gap-2 border border-primary bg-primary hover:bg-grey-100 hover:text-[#2C9608] text-white px-3 py-4 rounded-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer select-none"
-              onClick={handlePDFDownload}
-              disabled={isGeneratingPDF}
-            >
-              {isGeneratingPDF ? "PDF 생성 중..." : "PDF로 저장"}
-              <Icon icon="download" width={24} height={24} className="max-w-6" />
-            </button>
-            <button
-              type="button"
-              className="text-2xl font-bold flex items-center gap-2 border border-primary bg-primary hover:bg-grey-100 hover:text-[#2C9608] text-white px-3 py-4 rounded-md cursor-pointer select-none"
-              onClick={handleDownload}
-            >
-              상담 결과 다운로드
-              <Icon icon="download" width={24} height={24} className="max-w-6" />
-            </button>
-          </>
+          <button
+            type="button"
+            className="text-2xl font-bold flex items-center gap-2 border border-primary bg-primary hover:bg-grey-100 hover:text-[#2C9608] text-white px-3 py-4 rounded-md cursor-pointer select-none"
+            onClick={handleOpenReport}
+          >
+            PDF로 보기
+            <Icon icon="download" width={24} height={24} className="max-w-6" />
+          </button>
         )}
       </div>
     </>
@@ -287,6 +260,14 @@ const generateReportHTML = (data: any): string => {
           <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold; width: 25%;">친한 가족끼리 동물 세우기</td>
           <td style="border: 1px solid #ccc; padding: 8px;">${data.friendly_message || "-"}</td>
         </tr>
+        ${data.canvasImage ? `
+        <tr>
+          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">동물 배치도</td>
+          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">
+            <img src="${data.canvasImage}" alt="동물 배치도" style="max-width: 100%; max-height: 250px; object-fit: contain;" />
+          </td>
+        </tr>
+        ` : ''}
       </table>
 
       <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 8px;">4. 심층 분석</h2>

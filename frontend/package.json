@@ -22,7 +22,8 @@
     "react-dom": "^18.2.0",
     "react-flatpickr": "^3.10.13",
     "react-konva": "^18.2.10",
-    "react-router-dom": "^6.19.0"
+    "react-router-dom": "^6.19.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/react": "^18.2.37",
@@ -30,6 +31,7 @@
     "@types/react-flatpickr": "^3.8.11",
     "@typescript-eslint/eslint-plugin": "^6.10.0",
     "@typescript-eslint/parser": "^6.10.0",
+    "@vitejs/plugin-basic-ssl": "^1.2.0",
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.53.0",

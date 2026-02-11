@@ -70,43 +70,47 @@ const ChooseAnimal4Family = (props: any) => {
         hide={openModal}
         children={
           <div className="background-container">
-            <div className="w-full mx-auto grid grid-cols-12 px-5 py-4">
-              <div className="grid grid-cols-8 col-span-12 gap-1">
-                {Animal.map((animal) => {
-                  return (
-                    <div key={animal.index} className={`animal-card`}>
-                      <button
-                        className={`animal-card-content h-[5rem] rounded-xl p-1 text-center ${
-                          checkedState[animal.index]
-                            ? "bg-primary text-white"
-                            : "bg-white text-black"
-                        }`}
-                        onClick={() =>
-                          handleCircleClick(
-                            animal.index,
-                            animal.name,
-                            animal.img,
-                            animal.josa
-                          )
-                        }
-                      >
-                        <img src={animal.img} alt={animal.name} className="h-[2.5rem] object-contain" />
-                        <span className="text-xs font-bold">{animal.name}</span>
-                      </button>
-                    </div>
-                  );
-                })}
+            <div className="w-full mx-auto px-3 py-4 md:px-5 flex flex-col max-h-[80vh]">
+              {/* Scrollable animal grid */}
+              <div className="overflow-y-auto flex-1">
+                <div className="grid grid-cols-6 sm:grid-cols-6 md:grid-cols-8 gap-1">
+                  {Animal.map((animal) => {
+                    return (
+                      <div key={animal.index} className={`animal-card`}>
+                        <button
+                          className={`animal-card-content h-[4.5rem] md:h-[5rem] w-full rounded-xl p-0.5 text-center flex flex-col items-center justify-center gap-0.5 ${
+                            checkedState[animal.index]
+                              ? "bg-primary text-white"
+                              : "bg-white text-black"
+                          }`}
+                          onClick={() =>
+                            handleCircleClick(
+                              animal.index,
+                              animal.name,
+                              animal.img,
+                              animal.josa
+                            )
+                          }
+                        >
+                          <img src={animal.img} alt={animal.name} className="h-[2rem] md:h-[2.5rem] object-contain" />
+                          <span className="text-[0.6rem] md:text-xs font-bold leading-tight">{animal.name}</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="col-span-1 z-20 text-center font-bold relative">
+              {/* Fixed bottom area with button */}
+              <div className="flex justify-end pt-3 border-t border-gray-200 mt-3">
                 <button
-                  className="fixed text-xs border border-primary bg-primary text-white h-[6rem] px-5 py-4 mt-4 rounded-full right-0 bottom-[-8rem]"
+                  className="text-base font-extrabold flex items-center gap-2 border border-primary bg-primary hover:bg-grey-100 hover:text-greenDark text-white px-6 py-3 rounded-full cursor-pointer select-none"
                   onClick={() => initialAction()}
                 >
                   <Icon
                     icon="check"
                     width={20}
                     height={20}
-                    className="max-w-5 mx-auto"
+                    className="max-w-5"
                   />
                   선택 완료
                 </button>

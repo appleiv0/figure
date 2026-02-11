@@ -36,6 +36,7 @@ interface ReportData {
   }>;
   report: string;
   score: number;
+  canvasImage?: string;
 }
 
 // 나이 계산
@@ -138,10 +139,12 @@ export const formatLLMConversation = (
     });
   }
 
-  return Object.entries(result).map(([relation, conversations]) => ({
-    relation,
-    conversations,
-  }));
+  return Object.entries(result)
+    .map(([relation, conversations]) => ({
+      relation,
+      conversations: conversations.filter(c => c.answer && c.answer.trim() !== ""),
+    }))
+    .filter(item => item.conversations.length > 0);
 };
 
 // PDF 생성

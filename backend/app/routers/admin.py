@@ -13,6 +13,7 @@ from app.models.admin_models import (
     StatisticsResponse,
     DeleteResponse
 )
+from app.controllers import controller_figure
 import libcommon.config.status_error as status_error
 from libcommon.routes import response, default_responses
 
@@ -228,6 +229,34 @@ def delete_session(receipt_no: str):
         success=success,
         message="Session deleted successfully" if success else "Failed to delete session"
     )
+
+
+@router.post(
+    "/sessions/{receipt_no}/regenerate-report",
+    description="Regenerate report for a session",
+    response_class=JSONResponse,
+)
+def regenerate_report(receipt_no: str):
+    """Regenerate the report for a specific session"""
+    session = session_repository.find_by_receipt_no(receipt_no)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    kid_name = session.get("kid", {}).get("name", "아동")
+    receipt_no_int = int(receipt_no)
+
+    try:
+        status_err, ret = controller_figure.get_Report(kid_name, receipt_no_int)
+        # Re-fetch updated session
+        updated_session = session_repository.find_by_receipt_no(receipt_no)
+        return {
+            "success": True,
+            "message": "보고서가 재생성되었습니다.",
+            "report": updated_session.get("report", ""),
+            "score": updated_session.get("score", 0)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"보고서 재생성 실패: {str(e)}")
 
 
 @router.get(

@@ -174,6 +174,22 @@ const PdfReport = forwardRef<HTMLDivElement, PdfReportProps>(({ data }, ref) => 
                 {data.friendly_message || "-"}
               </td>
             </tr>
+            {data.canvasImage && (
+              <tr>
+                <td style={styles.headerCell} colSpan={4}>동물 배치도</td>
+              </tr>
+            )}
+            {data.canvasImage && (
+              <tr>
+                <td colSpan={4} style={{ ...styles.dataCell, textAlign: 'center', padding: '10px' }}>
+                  <img
+                    src={data.canvasImage}
+                    alt="동물 배치도"
+                    style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }}
+                  />
+                </td>
+              </tr>
+            )}
 
             {/* RELATIONS Section */}
             <tr>

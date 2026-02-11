@@ -39,10 +39,16 @@ const CanvasDrag = ({ handleActiveChat }: CanvasDragProps) => {
     width: window.innerWidth,
     height: window.innerHeight,
   });
-  // Scale based on canvas width (base: 1162px)
-  const scale = Math.min(canvasDimensions.width / 1162, canvasDimensions.height / 576);
-  const rectBox = { width: 752 * scale, height: 388 * scale };
-  const rectItemBox = { width: 158 * scale, height: 186 * scale };
+  // Responsive: portrait on mobile, landscape on desktop
+  const isMobile = canvasDimensions.width < 768;
+  const baseWidth = isMobile ? 576 : 1162;
+  const baseHeight = isMobile ? 800 : 576;
+  const scale = Math.min(canvasDimensions.width / baseWidth, canvasDimensions.height / baseHeight);
+  const rectBox = {
+    width: (isMobile ? 480 : 752) * scale,
+    height: (isMobile ? 640 : 388) * scale,
+  };
+  const rectItemBox = { width: (isMobile ? 120 : 158) * scale, height: (isMobile ? 120 : 158) * scale };
   const centerPoint = {
     x: canvasDimensions.width / 2,
     y: canvasDimensions.height / 2,
@@ -59,13 +65,17 @@ const CanvasDrag = ({ handleActiveChat }: CanvasDragProps) => {
         const contentHeight = contentElement.clientHeight
           ? contentElement.clientHeight
           : window.innerHeight;
-        const aspectRatio = 1162 / 576;
+        const isMobileView = contentWidth < 768;
+        const aspectRatio = isMobileView ? 576 / 800 : 1162 / 576;
 
         const aspWindow = contentWidth / contentHeight;
         let canvasWidth, canvasHeight;
 
-        if (aspWindow > aspectRatio) {
-          canvasWidth = contentWidth * aspectRatio;
+        if (isMobileView) {
+          canvasWidth = contentWidth;
+          canvasHeight = Math.min(contentWidth / aspectRatio, contentHeight);
+        } else if (aspWindow > aspectRatio) {
+          canvasWidth = contentHeight * aspectRatio;
           canvasHeight = contentHeight;
         } else {
           canvasWidth = contentWidth;
@@ -171,7 +181,17 @@ const CanvasDrag = ({ handleActiveChat }: CanvasDragProps) => {
     );
   };
 
+  const handleFlipCard = (index: number) => {
+    setCheckedState(
+      checkedState.map((bool: boolean, j: number) => (j === index ? !bool : bool))
+    );
+  };
+
   const handleSubmitPosition = async () => {
+    // Clear selection border before capturing
+    setActiveIndex(-1);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     // Capture canvas as base64 image
     let canvasImage = "";
     if (stageRef.current) {
@@ -225,19 +245,25 @@ const CanvasDrag = ({ handleActiveChat }: CanvasDragProps) => {
             dash={[5, 5]}
           />
           <Text
-            text="손가락으로 동물 카드를 움직일 수 있어요!"
-            fontSize={Math.max(14, 24 * scale)}
+            text="손가락으로 동물카드를 움직일 수 있어요! 동물을 더블클릭하면 방향이 바뀌어요."
+            fontSize={Math.max(11, 18 * scale)}
             fontWeight="bold"
             align="center"
             fill="#2EB500"
             width={canvasDimensions.width}
             y={canvasDimensions.height - (50 * scale)}
           />
-          {selectedCards.map((animal: any, index: any) => (
+          {selectedCards.map((_animal: any, index: any) => (
             <Group
               draggable
-              x={(168 * scale) + index * rectItemBox.width + index * (10 * scale)}
-              y={(canvasDimensions.height - rectItemBox.height) / 2}
+              x={isMobile
+                ? (canvasDimensions.width / 2 - rectItemBox.width) + (index % 2) * (rectItemBox.width + 10 * scale) - (5 * scale)
+                : (168 * scale) + index * rectItemBox.width + index * (10 * scale)
+              }
+              y={isMobile
+                ? (canvasDimensions.height / 2 - rectItemBox.height) + Math.floor(index / 2) * (rectItemBox.height + 10 * scale) - (5 * scale)
+                : (canvasDimensions.height - rectItemBox.height) / 2
+              }
               key={index}
               ref={(node) => (groups.current[index] = node)}
               onDragEnd={() => handleDragMove()}
@@ -245,36 +271,24 @@ const CanvasDrag = ({ handleActiveChat }: CanvasDragProps) => {
               <Rect
                 width={rectItemBox.width}
                 height={rectItemBox.height}
-                stroke={index === activeIndex ? "#2EB500" : "#EDECE9"}
-                strokeWidth={2}
-                fill="white"
-                shadowColor="rgba(153, 153, 153, 0.10)"
-                shadowBlur={10}
-                shadowOffsetX={4}
-                shadowOffsetY={4}
+                stroke={index === activeIndex ? "#2EB500" : "transparent"}
+                strokeWidth={index === activeIndex ? 2 : 0}
+                fill="transparent"
                 cornerRadius={10}
                 onClick={() => setActiveIndex(index)}
                 onTap={() => setActiveIndex(index)}
+                onDblClick={() => handleFlipCard(index)}
+                onDblTap={() => handleFlipCard(index)}
               />
               <Image
                 image={images[index]}
                 width={rectItemBox.width - (20 * scale)}
-                height={rectItemBox.height - (50 * scale)}
+                height={rectItemBox.height - (20 * scale)}
                 scaleX={checkedState[index] ? -1 : 1}
                 offsetX={checkedState[index] ? (rectItemBox.width - (20 * scale)) : 0}
                 x={10 * scale}
                 y={5 * scale}
                 listening={false}
-              />
-              <Text
-                text={animal.figure}
-                fontVariant="bold"
-                fontFamily="Noto Sans"
-                fontSize={Math.max(12, 20 * scale)}
-                listening={false}
-                align="center"
-                width={rectItemBox.width}
-                y={152 * scale}
               />
             </Group>
           ))}
