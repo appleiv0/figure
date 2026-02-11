@@ -17,6 +17,7 @@ from app.models.request_figure import (
     SetPostionReq,
     LLMCompletionReq,
     GetReportReq,
+    SaveChatReq,
 )
 from app.models.response_figure import (
     ReceiptNoRes,
@@ -24,6 +25,7 @@ from app.models.response_figure import (
     SetPostionRes,
     LLMCompletionRes,
     GetReportRes,
+    SaveChatRes,
 )
 
 import app.controllers.controller_figure as controller_figure
@@ -193,3 +195,21 @@ def llm_completion(res: JSONResponse, req: LLMCompletionReq):
 def get_Report(res: JSONResponse, req: GetReportReq):
     status_error, ret = controller_figure.get_Report(req.kidName, req.receiptNo)
     return response(res, status_error, ret)
+
+
+@router.post(
+    "/saveChat",
+    tags=TAGS,
+    description="대화 내용 저장",
+    responses={
+        200: make_doc_resp_json("success", {"success": True})
+    },
+    response_class=JSONResponse,
+    response_model=SaveChatRes,
+)
+def save_chat(res: JSONResponse, req: SaveChatReq):
+    status_error, ret = controller_figure.save_chat(
+        req.kidName, req.receiptNo, req.role, req.content, req.relation
+    )
+    return response(res, status_error, ret)
+

@@ -9,3 +9,7 @@ export const LlmCompletion = async (body: any) => {
 export const getReport = async (body: any) => {
   return await post("/getReport", body);
 };
+
+export const saveChat = async (body: any) => {
+  return await post("/saveChat", body);
+};

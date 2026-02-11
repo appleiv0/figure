@@ -28,6 +28,12 @@ interface ReportData {
       user: string[];
     };
   };
+  chatHistory?: Array<{
+    role: "user" | "bot";
+    relation: string;
+    content: string;
+    timestamp: string;
+  }>;
   report: string;
   score: number;
 }
@@ -84,16 +90,57 @@ export const getFamilyMembers = (
 
 // LLM 대화 정리
 export const formatLLMConversation = (
-  llmCompletion: ReportData["llmCompletion"]
+  llmCompletion: ReportData["llmCompletion"],
+  chatHistory: ReportData["chatHistory"] = []
 ): Array<{ relation: string; conversations: Array<{ question: string; answer: string }> }> => {
-  if (!llmCompletion) return [];
+  const result: Record<string, Array<{ question: string; answer: string }>> = {};
 
-  return Object.entries(llmCompletion).map(([relation, data]) => ({
+  // 1. Try to use structured llmCompletion first
+  if (llmCompletion) {
+    Object.entries(llmCompletion).forEach(([relation, data]) => {
+      result[relation] = data.bot.map((question, idx) => ({
+        question,
+        answer: data.user[idx] || "",
+      }));
+    });
+  }
+
+  // 2. If chatHistory exists, use it to fill in missing gaps or override if needed
+  if (chatHistory && chatHistory.length > 0) {
+    // Group by relation
+    const historyByRelation: Record<string, Array<{ role: string; content: string }>> = {};
+    chatHistory.forEach((item) => {
+      if (!historyByRelation[item.relation]) historyByRelation[item.relation] = [];
+      historyByRelation[item.relation].push(item);
+    });
+
+    Object.entries(historyByRelation).forEach(([relation, messages]) => {
+      const userMsgs = messages.filter(m => m.role === 'user').map(m => m.content);
+      const botMsgs = messages.filter(m => m.role === 'bot').map(m => m.content);
+
+      // Merge into pairs
+      const len = Math.max(userMsgs.length, botMsgs.length);
+      const pairsForRel = [];
+      for (let i = 0; i < len; i++) {
+        pairsForRel.push({
+          question: botMsgs[i] || "",
+          answer: userMsgs[i] || ""
+        });
+      }
+
+      // Update result if currently empty or has missing questions
+      const current = result[relation] || [];
+      const currentHasEmptyBot = current.some(c => !c.question);
+
+      if (current.length === 0 || currentHasEmptyBot) {
+        result[relation] = pairsForRel;
+      }
+    });
+  }
+
+  return Object.entries(result).map(([relation, conversations]) => ({
     relation,
-    conversations: data.bot.map((question, idx) => ({
-      question,
-      answer: data.user[idx] || "",
-    })),
+    conversations,
   }));
 };
 

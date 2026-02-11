@@ -38,6 +38,12 @@ const MessageParser = ({ children, actions }: any) => {
     if (checker === "stage6_3") {
       actions.afterInitMessage6_3(message);
     }
+    if (checker === "stage1") {
+      actions.afterStage1Message(message);
+    }
+    if (checker === "stage2_wish") {
+      actions.afterStage2Message(message);
+    }
     if (children.props.state.messages[1]?.widget === "SelectedCard") {
       actions.handleConfirmSelectCard(message);
     }

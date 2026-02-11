@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: true,
       strictPort: true,
-      port: 3001,
+      port: parseInt(env.PORT) || 3001,
     },
     build: {
       target: "es2015",

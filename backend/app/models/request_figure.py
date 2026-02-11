@@ -79,3 +79,10 @@ class LLMCompletionReq(BaseModel):
 class GetReportReq(BaseModel):
     kidName: str = Field(default=None, examples=["victor"])
     receiptNo: int = Field(default=None, examples=[1])
+
+class SaveChatReq(BaseModel):
+    kidName: str = Field(default=None, examples=["victor"])
+    receiptNo: int = Field(default=None, examples=[1])
+    role: str = Field(default="user", examples=["user", "bot"])
+    content: str = Field(default="", examples=["안녕하세요"])
+    relation: Optional[str] = Field(default=None, examples=["아빠"])

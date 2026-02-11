@@ -1,18 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { adminApi, Statistics, Session, SessionListResponse } from "../../../services/adminApi";
 
 const AdminDashboard = () => {
+  // Auth State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+
+  // Statistics State
   const [stats, setStats] = useState<Statistics | null>(null);
+
+  // Sessions State
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pagination State
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+
+  // Search State
   const [searchName, setSearchName] = useState("");
   const [searchOrg, setSearchOrg] = useState("");
+
+  // Sort State
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Session | "kid.name" | "counselor.name"; direction: "asc" | "desc" } | null>(null);
 
   // Get active tab from URL hash, default to "dashboard"
   const getTabFromHash = () => {
@@ -27,6 +41,14 @@ const AdminDashboard = () => {
     setActiveTabState(tab);
   };
 
+  // Auth Check on Mount
+  useEffect(() => {
+    const auth = sessionStorage.getItem("adminAuth");
+    if (auth === "true") {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
   // Listen for hash changes
   useEffect(() => {
     const handleHashChange = () => {
@@ -37,6 +59,8 @@ const AdminDashboard = () => {
   }, []);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     const fetchStats = async () => {
       try {
         const data = await adminApi.getStatistics();
@@ -49,7 +73,7 @@ const AdminDashboard = () => {
       }
     };
     fetchStats();
-  }, []);
+  }, [isAuthenticated]);
 
   const fetchSessions = async (pageNum: number) => {
     setSessionsLoading(true);
@@ -76,11 +100,22 @@ const AdminDashboard = () => {
 
   // Fetch sessions when switching to sessions tab or when page changes
   useEffect(() => {
-    if (activeTab === "sessions") {
+    if (isAuthenticated && activeTab === "sessions") {
       fetchSessions(page);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, activeTab, page]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const envPassword = import.meta.env.VITE_ADMIN_PASSWORD || "1234";
+    if (passwordInput === envPassword) {
+      sessionStorage.setItem("adminAuth", "true");
+      setIsAuthenticated(true);
+    } else {
+      alert("비밀번호가 일치하지 않습니다.");
+    }
+  };
 
   const handleSearch = () => {
     setPage(1);
@@ -112,6 +147,69 @@ const AdminDashboard = () => {
     });
   };
 
+  // Sorting Logic
+  const handleSort = (key: keyof Session | "kid.name" | "counselor.name") => {
+    let direction: "asc" | "desc" = "asc";
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedSessions = useMemo(() => {
+    if (!sortConfig) return sessions;
+
+    return [...sessions].sort((a, b) => {
+      let aValue: any = a[sortConfig.key as keyof Session];
+      let bValue: any = b[sortConfig.key as keyof Session];
+
+      // Handle nested properties
+      if (sortConfig.key === "kid.name") {
+        aValue = a.kid?.name || "";
+        bValue = b.kid?.name || "";
+      } else if (sortConfig.key === "counselor.name") {
+        aValue = a.counselor?.organization || ""; // Sorting by Org/Counselor string
+        bValue = b.counselor?.organization || "";
+      }
+
+      if (aValue < bValue) {
+        return sortConfig.direction === "asc" ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [sessions, sortConfig]);
+
+  const getSortIcon = (key: string) => {
+    if (sortConfig?.key !== key) return "↕";
+    return sortConfig.direction === "asc" ? "↑" : "↓";
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <form onSubmit={handleLogin} className="bg-white p-8 rounded shadow-md w-96">
+          <h2 className="text-2xl font-bold mb-6 text-center">관리자 로그인</h2>
+          <input
+            type="password"
+            placeholder="비밀번호를 입력하세요"
+            value={passwordInput}
+            onChange={(e) => setPasswordInput(e.target.value)}
+            className="w-full border p-2 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition"
+          >
+            로그인
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar */}
@@ -125,11 +223,10 @@ const AdminDashboard = () => {
             <li>
               <button
                 onClick={() => setActiveTab("dashboard")}
-                className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                  activeTab === "dashboard"
+                className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${activeTab === "dashboard"
                     ? "bg-blue-50 text-blue-700 font-medium"
                     : "text-gray-600 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -140,11 +237,10 @@ const AdminDashboard = () => {
             <li>
               <button
                 onClick={() => setActiveTab("sessions")}
-                className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                  activeTab === "sessions"
+                className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${activeTab === "sessions"
                     ? "bg-blue-50 text-blue-700 font-medium"
                     : "text-gray-600 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -280,23 +376,41 @@ const AdminDashboard = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      접수번호
+                    <th
+                      onClick={() => handleSort("receiptNo")}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    >
+                      접수번호 <span className="ml-1">{getSortIcon("receiptNo")}</span>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      아동명
+                    <th
+                      onClick={() => handleSort("kid.name")}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    >
+                      아동명 <span className="ml-1">{getSortIcon("kid.name")}</span>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      기관/상담사
+                    <th
+                      onClick={() => handleSort("counselor.name")}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    >
+                      기관/상담사 <span className="ml-1">{getSortIcon("counselor.name")}</span>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      상태
+                    <th
+                      onClick={() => handleSort("status")}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    >
+                      상태 <span className="ml-1">{getSortIcon("status")}</span>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      점수
+                    <th
+                      onClick={() => handleSort("score")}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    >
+                      점수 <span className="ml-1">{getSortIcon("score")}</span>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      생성일
+                    <th
+                      onClick={() => handleSort("createdAt")}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    >
+                      생성일 <span className="ml-1">{getSortIcon("createdAt")}</span>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       관리
@@ -310,14 +424,14 @@ const AdminDashboard = () => {
                         로딩 중...
                       </td>
                     </tr>
-                  ) : sessions.length === 0 ? (
+                  ) : sortedSessions.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                         데이터가 없습니다.
                       </td>
                     </tr>
                   ) : (
-                    sessions.map((session) => (
+                    sortedSessions.map((session) => (
                       <tr key={session.receiptNo} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           {session.receiptNo}
@@ -330,11 +444,10 @@ const AdminDashboard = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
-                            className={`px-2 py-1 text-xs rounded-full ${
-                              session.status === "completed"
+                            className={`px-2 py-1 text-xs rounded-full ${session.status === "completed"
                                 ? "bg-green-100 text-green-800"
                                 : "bg-yellow-100 text-yellow-800"
-                            }`}
+                              }`}
                           >
                             {session.status === "completed" ? "완료" : "진행중"}
                           </span>

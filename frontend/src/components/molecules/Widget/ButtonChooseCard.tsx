@@ -12,11 +12,8 @@ const ButtonStart = () => {
   const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
   const setCurrentStep = useStore((state: any) => state.setCurrentStep);
   const currentStep = useStore((state: any) => state.currentStep);
-  const selectedCards = useStore((state: any) => state.selectedCards);
   const selectedFamily = useStore((state: any) => state.selectedFamily);
   const selectedFamilyJosa = useStore((state: any) => state.selectedFamilyJosa);
-
-  const message = useStore((state: any) => state.message);
 
   const figure = useStore((state: any) => state.figure);
   const setFigure = useStore((state: any) => state.setFigure);
@@ -55,11 +52,7 @@ const ButtonStart = () => {
           kidName: userInfo.kidname,
           receiptNo: `${userInfo.receiptNo}`,
           stage: `${currentStep}`,
-          figures: selectedCards.map((card: { name: string }) => ({
-            figure: card.name.toLowerCase(),
-            message: `${message}`,
-            relation: "나",
-          })),
+          figures: figure,
         });
 
         if (!response) {
@@ -69,6 +62,7 @@ const ButtonStart = () => {
           if (location.pathname === "/stage1") {
             navigator("/stage2");
             setSelectedCards([]);
+            setFigure([]);
           } else if (location.pathname === "/stage2") {
             navigator("/stage3");
           }

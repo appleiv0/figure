@@ -60,11 +60,10 @@ const AdminSessionDetail = () => {
             <div>
               <span className="text-gray-500">상태:</span>
               <span
-                className={`ml-2 px-2 py-1 text-xs rounded-full ${
-                  session.status === "completed"
+                className={`ml-2 px-2 py-1 text-xs rounded-full ${session.status === "completed"
                     ? "bg-green-100 text-green-800"
                     : "bg-yellow-100 text-yellow-800"
-                }`}
+                  }`}
               >
                 {session.status === "completed" ? "완료" : "진행중"}
               </span>
@@ -132,43 +131,33 @@ const AdminSessionDetail = () => {
           ))}
         </div>
 
-        {/* Conversation Scripts */}
-        {(session as any).scripts && (session as any).scripts.length > 0 && (
+        {/* Chat History */}
+        {(session as any).chatHistory && (session as any).chatHistory.length > 0 && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-xl font-bold mb-4">대화 기록</h2>
+            <h2 className="text-xl font-bold mb-4">대화 기록 (Chat History)</h2>
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
-              {(session as any).scripts.map((script: any, idx: number) => {
-                if (script.bot) {
+              {(session as any).chatHistory.map((chat: any, idx: number) => {
+                const relationTag = chat.relation ? <span className="text-xs font-bold text-gray-400 mr-2">[{chat.relation}]</span> : null;
+
+                if (chat.role === "bot") {
                   return (
                     <div key={idx} className="p-3 rounded-lg bg-gray-50 mr-12">
-                      <div className="text-xs text-gray-500 mb-1">🤖 푸름이</div>
-                      <div className="text-sm whitespace-pre-wrap">{script.bot}</div>
+                      <div className="text-xs text-gray-500 mb-1 flex items-center">
+                        {relationTag}
+                        <span>🤖 푸름이 (상담사)</span>
+                      </div>
+                      <div className="text-sm whitespace-pre-wrap">{chat.content}</div>
                     </div>
                   );
                 }
-                if (script.user) {
+                if (chat.role === "user") {
                   return (
                     <div key={idx} className="p-3 rounded-lg bg-blue-50 ml-12">
-                      <div className="text-xs text-gray-500 mb-1">👤 사용자</div>
-                      <div className="text-sm">{script.user}</div>
-                    </div>
-                  );
-                }
-                if (script.button) {
-                  return (
-                    <div key={idx} className="p-2 text-center">
-                      <span className="inline-block px-3 py-1 bg-gray-200 rounded-full text-xs text-gray-600">
-                        [버튼: {script.button}]
-                      </span>
-                    </div>
-                  );
-                }
-                if (script.image) {
-                  return (
-                    <div key={idx} className="p-2 text-center">
-                      <span className="inline-block px-3 py-1 bg-green-100 rounded-full text-xs text-green-700">
-                        [선택된 동물: {script.image}]
-                      </span>
+                      <div className="text-xs text-gray-500 mb-1 flex items-center justify-end">
+                        {relationTag}
+                        <span>👤 사용자 (아동)</span>
+                      </div>
+                      <div className="text-sm text-right">{chat.content}</div>
                     </div>
                   );
                 }

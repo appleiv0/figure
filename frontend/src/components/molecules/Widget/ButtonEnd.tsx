@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { USER } from "../../../constants/common.constant";
 import { useGetReport } from "../../../services/hooks/hookChatbot";
 import { getItemLocalStorage } from "../../../utils/helper";
-import { generatePDF } from "../../../utils/pdfReport";
+import { generatePDF, formatLLMConversation } from "../../../utils/pdfReport";
 import Icon from "../../atoms/Icon";
 import useStore from "../../../store";
 
@@ -171,14 +171,16 @@ const generateReportHTML = (data: any): string => {
     return figures.map((f) => `${f.figure}(${f.message || "이유 없음"})`).join(", ");
   };
 
-  const llmHTML = Object.entries(data.llmCompletion || {})
-    .map(([relation, convData]: [string, any]) => {
-      const conversations = convData.bot
+  const llmConversations = formatLLMConversation(data.llmCompletion, data.chatHistory);
+
+  const llmHTML = llmConversations
+    .map(({ relation, conversations }) => {
+      const rows = conversations
         .map(
-          (question: string, idx: number) => `
+          (conv) => `
           <tr>
-            <td style="border: 1px solid #ccc; padding: 8px;">${question}</td>
-            <td style="border: 1px solid #ccc; padding: 8px;">${convData.user[idx] || "-"}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${conv.question}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${conv.answer || "-"}</td>
           </tr>
         `
         )
@@ -193,7 +195,7 @@ const generateReportHTML = (data: any): string => {
               <th style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; width: 40%;">아동 응답</th>
             </tr>
           </thead>
-          <tbody>${conversations}</tbody>
+          <tbody>${rows}</tbody>
         </table>
       `;
     })
@@ -252,32 +254,30 @@ const generateReportHTML = (data: any): string => {
           </tr>
         </thead>
         <tbody>
-          ${
-            familyFigures.length > 0
-              ? familyFigures
-                  .map(
-                    (f: any) => `
+          ${familyFigures.length > 0
+      ? familyFigures
+        .map(
+          (f: any) => `
                 <tr>
                   <td style="border: 1px solid #ccc; padding: 8px;">${f.relation}</td>
                   <td style="border: 1px solid #ccc; padding: 8px;">${f.figure}</td>
                   <td style="border: 1px solid #ccc; padding: 8px;">${f.message || "-"}</td>
                 </tr>
               `
-                  )
-                  .join("")
-              : '<tr><td style="border: 1px solid #ccc; padding: 8px;" colspan="3">-</td></tr>'
-          }
-          ${
-            myFamilyFigure
-              ? `
+        )
+        .join("")
+      : '<tr><td style="border: 1px solid #ccc; padding: 8px;" colspan="3">-</td></tr>'
+    }
+          ${myFamilyFigure
+      ? `
             <tr>
               <td style="border: 1px solid #ccc; padding: 8px;">${myFamilyFigure.relation} (나)</td>
               <td style="border: 1px solid #ccc; padding: 8px;">${myFamilyFigure.figure}</td>
               <td style="border: 1px solid #ccc; padding: 8px;">${myFamilyFigure.message || "-"}</td>
             </tr>
           `
-              : ""
-          }
+      : ""
+    }
         </tbody>
       </table>
 
@@ -293,19 +293,17 @@ const generateReportHTML = (data: any): string => {
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
         <tr>
           <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold; width: 25%;">내가 바라는 가족의 동물상징</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${
-            wishedFamilyFigures.length > 0
-              ? wishedFamilyFigures.map((f: any) => `${f.relation}: ${f.figure}(${f.message})`).join(", ")
-              : "-"
-          }</td>
+          <td style="border: 1px solid #ccc; padding: 8px;">${wishedFamilyFigures.length > 0
+      ? wishedFamilyFigures.map((f: any) => `${f.relation}: ${f.figure}(${f.message})`).join(", ")
+      : "-"
+    }</td>
         </tr>
         <tr>
           <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">가족이 생각하는 나</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${
-            familyThinkOfMe.length > 0
-              ? familyThinkOfMe.map((f: any) => `${f.relation}이 생각하는 나: ${f.figure}(${f.message})`).join(", ")
-              : "-"
-          }</td>
+          <td style="border: 1px solid #ccc; padding: 8px;">${familyThinkOfMe.length > 0
+      ? familyThinkOfMe.map((f: any) => `${f.relation}이 생각하는 나: ${f.figure}(${f.message})`).join(", ")
+      : "-"
+    }</td>
         </tr>
       </table>
 

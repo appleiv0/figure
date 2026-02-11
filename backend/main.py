@@ -26,14 +26,15 @@ else:
     app = FastAPI(title=config.DOC_TITLE, docs_url=None, redoc_url=None)
 
 # 허용할 오리진 설정 필요
-ALLOWED_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:3001").split(",")
+ALLOWED_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:3001,http://localhost:18500,http://192.168.0.188:18500,http://192.168.0.188:3001").split(",")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "X-Admin-Key"],
+
 )
 
 app.include_router(index_router)

@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import Chatbot from "react-chatbot-kit";
+import { createChatBotMessage } from "react-chatbot-kit";
 import { Animal } from "../../../data";
 import useStore from "../../../store";
 import Icon from "../../atoms/Icon";
 import ActionProvider from "../../molecules/Chatbot/ActionProvider";
-import config1 from "../../molecules/Chatbot/Config/config1";
-import config2 from "../../molecules/Chatbot/Config/config2";
 import MessageParser from "../../molecules/Chatbot/MessageParser";
+import SelectedCard4Family from "../../molecules/Widget/SelectedCard4Family";
+import ButtonChooseCard from "../../molecules/Widget/ButtonChooseCard";
+import ChooseFamily from "../../molecules/Widget/ChooseFamily";
 
 const ChooseAnimal = () => {
   const selectedCards = useStore((state: any) => state.selectedCards);
@@ -44,6 +46,73 @@ const ChooseAnimal = () => {
 
   const handleStartChat = () => {
     setSelectChatbot(true);
+  };
+
+  const getStageConfig = () => {
+    const card = selectedCards[0];
+
+    if (location.pathname === "/stage1") {
+      return {
+        initialMessages: [
+          createChatBotMessage(
+            `${card.name}${card.josa === 1 ? "을" : "를"} 골랐구나.`,
+            { widget: "SelectedCardStage1_0" }
+          ),
+          createChatBotMessage(
+            `${card.name}의 어떤 부분이 나랑 닮았다고 생각했어?`,
+            {}
+          ),
+        ],
+        state: {
+          checker: "stage1",
+        },
+        widgets: [
+          ...selectedCards.map((c: any, idx: number) => ({
+            widgetName: `SelectedCardStage1_${idx}`,
+            widgetFunc: (props: any) => (
+              <SelectedCard4Family {...props} selected={{ ...c, figure: c.name }} />
+            ),
+          })),
+          {
+            widgetName: "ButtonChooseCard",
+            widgetFunc: (props: any) => <ButtonChooseCard {...props} />,
+          },
+        ],
+      };
+    } else {
+      // stage2
+      return {
+        initialMessages: [
+          createChatBotMessage(
+            `${card.name}${card.josa === 1 ? "을" : "를"} 골랐구나.`,
+            { widget: "SelectedCardStage2_0" }
+          ),
+          createChatBotMessage(
+            `왜 ${card.name}${card.josa === 1 ? "이" : "가"} 되고 싶어?`,
+            {}
+          ),
+        ],
+        state: {
+          checker: "stage2_wish",
+        },
+        widgets: [
+          ...selectedCards.map((c: any, idx: number) => ({
+            widgetName: `SelectedCardStage2_${idx}`,
+            widgetFunc: (props: any) => (
+              <SelectedCard4Family {...props} selected={{ ...c, figure: c.name }} />
+            ),
+          })),
+          {
+            widgetName: "ButtonChooseCard",
+            widgetFunc: (props: any) => <ButtonChooseCard {...props} />,
+          },
+          {
+            widgetName: "ChooseFamily",
+            widgetFunc: (props: any) => <ChooseFamily {...props} />,
+          },
+        ],
+      };
+    }
   };
 
   useEffect(() => {
@@ -207,22 +276,12 @@ const ChooseAnimal = () => {
 
       {selectChatbot && (
         <div className="container mx-auto">
-          {location.pathname === "/stage1" && (
-            <Chatbot
-              config={config1 as any}
-              actionProvider={ActionProvider}
-              messageParser={MessageParser}
-              placeholderText="여기를 클릭해 입력하세요."
-            />
-          )}
-          {location.pathname === "/stage2" && (
-            <Chatbot
-              config={config2 as any}
-              actionProvider={ActionProvider}
-              messageParser={MessageParser}
-              placeholderText="여기를 클릭해 입력하세요."
-            />
-          )}
+          <Chatbot
+            config={getStageConfig() as any}
+            actionProvider={ActionProvider}
+            messageParser={MessageParser}
+            placeholderText="여기를 클릭해 입력하세요."
+          />
         </div>
       )}
     </>

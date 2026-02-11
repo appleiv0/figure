@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, HTTPException, Depends, Header
+from fastapi import APIRouter, Query, HTTPException, Depends, Header, Request
 from fastapi.responses import JSONResponse
 from datetime import datetime
 from typing import Optional
@@ -20,8 +20,11 @@ from libcommon.routes import response, default_responses
 ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY", "change-this-in-production")
 
 
-async def verify_admin_key(x_admin_key: str = Header(..., alias="X-Admin-Key")):
+async def verify_admin_key(request: Request, x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key")):
     """Verify admin API key from header."""
+    if request.method == "OPTIONS":
+        return None
+    
     if x_admin_key != ADMIN_API_KEY:
         raise HTTPException(status_code=401, detail="Invalid admin key")
     return x_admin_key

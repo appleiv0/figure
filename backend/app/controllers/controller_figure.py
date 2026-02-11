@@ -9,6 +9,7 @@ from app.models.response_figure import (
     SetPostionRes,
     LLMCompletionRes,
     GetReportRes,
+    SaveChatRes,
 )
 from libcommon.utils.chatUtils import get_josa, get_josa_en
 from libcommon.utils.jsonUtils import make_json, read_json
@@ -233,7 +234,16 @@ def llm_completion(kidName: str, receiptNo: int, count: int, relation: str, mess
     # Get LLM completion
     completion = chatbot.get_llm_completion(kidName, receiptNo, count, relation)
 
-    # Add bot response to chat history
+    # Update bot message in llmCompletion structure
+    bot_messages = session["llmCompletion"][relation]["bot"]
+    while len(bot_messages) < count:
+        bot_messages.append("")
+    bot_messages[count - 1] = completion
+    
+    # Update MongoDB with bot message
+    session_repository.update_llm_completion(receipt_no_str, relation, session["llmCompletion"][relation])
+
+    # Convert chat history entry
     bot_entry = {
         "role": "bot",
         "relation": relation,
@@ -241,8 +251,12 @@ def llm_completion(kidName: str, receiptNo: int, count: int, relation: str, mess
         "timestamp": datetime.utcnow()
     }
     session_repository.update_chat_history(receipt_no_str, bot_entry)
+    
+    # Update JSON
+    make_json(data_json_path, session)
 
     return status_error.OK, LLMCompletionRes(message=completion)
+
 
 
 def get_Report(kidName: str, receiptNo: int):
@@ -257,3 +271,37 @@ def get_Report(kidName: str, receiptNo: int):
     session_repository.update_scoring(receipt_no_str, score, data_json.get("abuse", {}), data_json.get("abuser", {}))
 
     return status_error.OK, GetReportRes(score=score, message=message, result=data_json)
+
+
+
+def save_chat(kidName: str, receiptNo: int, role: str, content: str, relation: str = None):
+    """Save a chat message to history"""
+    receipt_no_str = str(receiptNo)
+    sanitized_name = sanitize_filename(kidName)
+    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{sanitized_name}.json")
+
+    # Get session from MongoDB
+    session = session_repository.find_by_receipt_no(receipt_no_str)
+
+    if not session:
+        # Fallback to JSON file
+        session = read_json(data_json_path)
+
+    chat_entry = {
+        "role": role,
+        "content": content,
+        "timestamp": datetime.utcnow()
+    }
+    if relation:
+        chat_entry["relation"] = relation
+
+    # Update MongoDB
+    session_repository.update_chat_history(receipt_no_str, chat_entry)
+
+    # Update JSON
+    if "chatHistory" not in session:
+        session["chatHistory"] = []
+    session["chatHistory"].append(chat_entry)
+    make_json(data_json_path, session)
+
+    return status_error.OK, SaveChatRes(success=True)

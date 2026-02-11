@@ -14,12 +14,12 @@ const ChooseFamily = () => {
   const setSelectedFamily = useStore((state: any) => state.setSelectedFamily);
   const setCurrentStep = useStore((state: any) => state.setCurrentStep);
   const currentStep = useStore((state: any) => state.currentStep);
+  const figure = useStore((state: any) => state.figure);
+  const setFigure = useStore((state: any) => state.setFigure);
 
   const hidden = useStore((state: any) => state.hidden);
   const navigator = useNavigate();
   const userInfo = getItemLocalStorage(USER);
-  const selectedCards = useStore((state: any) => state.selectedCards);
-  const message = useStore((state: any) => state.message);
 
   const { fetchFigure } = useSetFigure();
 
@@ -93,11 +93,7 @@ const ChooseFamily = () => {
           kidName: userInfo.kidname,
           receiptNo: `${userInfo.receiptNo}`,
           stage: `${currentStep}`,
-          figures: selectedCards.map((card: { name: string }) => ({
-            figure: card.name.toLowerCase(),
-            message: `${message}`,
-            relation: "나",
-          })),
+          figures: figure,
         });
 
         if (!response) {
@@ -107,6 +103,7 @@ const ChooseFamily = () => {
           if (location.pathname === "/stage2") {
             navigator("/stage3");
             setSelectedCards([]);
+            setFigure([]);
           }
         }
       } catch (error: any) {

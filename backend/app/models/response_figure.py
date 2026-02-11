@@ -32,3 +32,6 @@ class GetReportRes(BaseModel):
     score: int
     message: str
     result: dict
+
+class SaveChatRes(BaseModel):
+    success: bool

@@ -6,6 +6,7 @@ const api = axios.create({
   baseURL: API_BASE,
   headers: {
     "Content-Type": "application/json",
+    "X-Admin-Key": import.meta.env.VITE_ADMIN_API_KEY || "change-this-in-production",
   },
 });
 
@@ -29,7 +30,7 @@ export interface Session {
   positions: any;
   llmCompletion: Record<string, any>;
   chatHistory?: any[];
-  scripts?: Array<{bot?: string; user?: string; button?: string; image?: string}>;
+  scripts?: Array<{ bot?: string; user?: string; button?: string; image?: string }>;
   report?: string;
   canvasImage?: string;
 }
