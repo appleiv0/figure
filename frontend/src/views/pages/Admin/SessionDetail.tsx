@@ -10,6 +10,9 @@ const AdminSessionDetail = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [aiEvaluation, setAiEvaluation] = useState("");
+  const [evalSaving, setEvalSaving] = useState(false);
+  const [evalSaved, setEvalSaved] = useState(false);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -17,6 +20,7 @@ const AdminSessionDetail = () => {
       try {
         const data = await adminApi.getSession(receiptNo);
         setSession(data.session);
+        setAiEvaluation((data.session as any)?.aiEvaluation || "");
       } catch (err) {
         setError("세션을 불러오는데 실패했습니다.");
       } finally {
@@ -230,27 +234,58 @@ const AdminSessionDetail = () => {
           </div>
         </div>
 
-        {/* Canvas Image */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4">동물 배치 이미지</h2>
-          {session.canvasImage ? (
-            <div className="flex justify-center">
-              <img
-                src={session.canvasImage}
-                alt="동물 배치"
-                className="max-w-full h-auto rounded-lg border border-gray-200"
-                style={{ maxHeight: "400px" }}
-              />
+        {/* Canvas Image + AI 평가 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-bold mb-4">인형 배치 이미지</h2>
+            {session.canvasImage ? (
+              <div className="flex justify-center">
+                <img
+                  src={session.canvasImage}
+                  alt="인형 배치"
+                  className="max-w-full h-auto rounded-lg border border-gray-200"
+                  style={{ maxHeight: "400px" }}
+                />
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p>이미지가 저장되지 않았습니다.</p>
+              </div>
+            )}
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-bold mb-4">AI 가족 평가 결과</h2>
+            <textarea
+              className="w-full h-64 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-vertical text-sm"
+              placeholder="AI 가족 평가 결과를 입력하세요..."
+              value={aiEvaluation}
+              onChange={(e) => { setAiEvaluation(e.target.value); setEvalSaved(false); }}
+            />
+            <div className="flex items-center justify-end gap-3 mt-3">
+              {evalSaved && <span className="text-green-600 text-sm font-medium">저장되었습니다</span>}
+              <button
+                className={`px-4 py-2 rounded-lg text-white font-bold text-sm ${evalSaving ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+                disabled={evalSaving}
+                onClick={async () => {
+                  if (!receiptNo) return;
+                  setEvalSaving(true);
+                  try {
+                    await adminApi.saveEvaluation(receiptNo, aiEvaluation);
+                    setEvalSaved(true);
+                  } catch {
+                    alert("저장에 실패했습니다.");
+                  } finally {
+                    setEvalSaving(false);
+                  }
+                }}
+              >
+                {evalSaving ? '저장 중...' : '저장'}
+              </button>
             </div>
-          ) : (
-            <div className="text-center text-gray-500 py-8">
-              <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <p>이미지가 저장되지 않았습니다.</p>
-              <p className="text-sm mt-1">치료 세션에서 동물 배치 단계를 완료하면 이미지가 저장됩니다.</p>
-            </div>
-          )}
+          </div>
         </div>
 
         {/* 3D Doll Arrangement */}

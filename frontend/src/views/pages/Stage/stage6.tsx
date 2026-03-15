@@ -35,7 +35,7 @@ const Stage6 = () => {
       createChatBotMessage(
         `${botName}${
           selectedFamilyJosa[0] === 1 ? "은" : "는"
-        } 너를 무슨 동물로 세울 것 같니?`,
+        } 너를 무슨 동물로 고를 것 같니?`,
         {
           widget: `ChooseAnimal4Family`,
         }

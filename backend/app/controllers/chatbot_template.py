@@ -107,7 +107,7 @@ def therapy_script(
         stage_6.extend(
             [
                 {
-                    "bot": f"{figure['relation']}{get_josa(figure['relation'])['은/는']} 너를 무슨 동물로 세울 것 같니?"
+                    "bot": f"{figure['relation']}{get_josa(figure['relation'])['은/는']} 너를 무슨 동물로 고를 것 같니?"
                 },
                 {"button": "동물 선택하러 가기"},
                 {

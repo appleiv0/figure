@@ -483,7 +483,7 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
       setCount(0);
       const botMessage2 = createChatBotMessage(
         `${selectedFamily[currentIndex + 1]}${selectedFamilyJosa[currentIndex + 1] === 1 ? "은" : "는"
-        } 너를 무슨 동물로 세울지 골라보자.`,
+        } 너를 무슨 동물로 고를 것 같니?`,
         {
           widget: "ChooseAnimal4Family",
         }

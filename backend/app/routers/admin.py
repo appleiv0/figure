@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, HTTPException, Depends, Header, Request
+from fastapi import APIRouter, Query, HTTPException, Depends, Header, Request, Body
 from fastapi.responses import JSONResponse
 from datetime import datetime
 from typing import Optional
@@ -257,6 +257,25 @@ def regenerate_report(receipt_no: str):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"보고서 재생성 실패: {str(e)}")
+
+
+@router.put(
+    "/sessions/{receipt_no}/evaluation",
+    description="Save AI family evaluation text",
+    response_class=JSONResponse,
+)
+def save_evaluation(receipt_no: str, body: dict = Body(...)):
+    """Save the AI family evaluation text for a session"""
+    session = session_repository.find_by_receipt_no(receipt_no)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    text = body.get("aiEvaluation", "")
+    success = session_repository.update_session(receipt_no, {"aiEvaluation": text})
+    return {
+        "success": success,
+        "message": "평가가 저장되었습니다." if success else "저장에 실패했습니다."
+    }
 
 
 @router.get(

@@ -74,7 +74,7 @@ const DateInput: React.FC<DateInputProps> = ({
         style={{ touchAction: "manipulation" }}
         onClick={handleOpen}
       >
-        <span className={`text-base md:text-2xl font-semibold ${selectedDay ? "" : "text-gray-400"}`}>
+        <span className={`text-base md:text-2xl font-semibold whitespace-nowrap ${selectedDay ? "" : "text-gray-400"}`}>
           {selectedDay ? formatDate() : "생년월일 입력"}
         </span>
         <Icon icon="dropDown" width={24} height={24} className="max-w-6 ml-2" />

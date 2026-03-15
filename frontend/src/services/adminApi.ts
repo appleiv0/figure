@@ -33,6 +33,14 @@ export interface Session {
   scripts?: Array<{ bot?: string; user?: string; button?: string; image?: string }>;
   report?: string;
   canvasImage?: string;
+  dollInstances?: Array<{
+    dollModel: string;
+    label: string;
+    pose: string;
+    rotation: number;
+    position: { x: number; y: number; z: number };
+    size: number;
+  }>;
 }
 
 export interface SessionListResponse {
@@ -99,6 +107,12 @@ export const adminApi = {
   // Regenerate report
   regenerateReport: async (receiptNo: string): Promise<{ success: boolean; message: string; report: string; score: number }> => {
     const response = await api.post(`/admin/sessions/${receiptNo}/regenerate-report`);
+    return response.data;
+  },
+
+  // Save AI evaluation
+  saveEvaluation: async (receiptNo: string, aiEvaluation: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.put(`/admin/sessions/${receiptNo}/evaluation`, { aiEvaluation });
     return response.data;
   },
 
