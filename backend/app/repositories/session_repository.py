@@ -1,4 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+KST = timezone(timedelta(hours=9))
 from typing import Optional, List, Dict, Any
 from bson import ObjectId
 from pymongo.collection import Collection
@@ -20,8 +22,8 @@ class SessionRepository:
 
     def create_session(self, data: Dict[str, Any]) -> str:
         """Create a new therapy session"""
-        data["createdAt"] = datetime.utcnow()
-        data["updatedAt"] = datetime.utcnow()
+        data["createdAt"] = datetime.now(KST)
+        data["updatedAt"] = datetime.now(KST)
         data["status"] = "in_progress"
         result = self.collection.insert_one(data)
         return str(result.inserted_id)
@@ -32,7 +34,7 @@ class SessionRepository:
 
     def update_session(self, receipt_no: str, update_data: Dict[str, Any]) -> bool:
         """Update a session by receipt number"""
-        update_data["updatedAt"] = datetime.utcnow()
+        update_data["updatedAt"] = datetime.now(KST)
         result = self.collection.update_one(
             {"receiptNo": receipt_no},
             {"$set": update_data}
@@ -53,7 +55,7 @@ class SessionRepository:
             {"receiptNo": receipt_no},
             {
                 "$push": {"chatHistory": chat_entry},
-                "$set": {"updatedAt": datetime.utcnow()}
+                "$set": {"updatedAt": datetime.now(KST)}
             }
         )
         return result.modified_count > 0

@@ -72,13 +72,15 @@ const ButtonStart = () => {
       }
     } else if (
       location.pathname === "/stage3" ||
-      location.pathname === "/stage5"
+      location.pathname === "/stage4"
     ) {
       try {
+        // 백엔드 데이터 스테이지: /stage3→"3", /stage4(소망동물)→"5"
+        const dataStage = location.pathname === "/stage4" ? "5" : `${currentStep}`;
         const response = await fetchFigure({
           kidName: userInfo.kidname,
           receiptNo: `${userInfo.receiptNo}`,
-          stage: `${currentStep}`,
+          stage: dataStage,
           figures: figure,
         });
 
@@ -87,9 +89,14 @@ const ButtonStart = () => {
         } else {
           setCurrentStep(currentStep + 1);
           if (location.pathname === "/stage3") {
+            setCurrentIndex(0);
+            if (selectedFamily.length > 0) {
+              selectedFamily.pop();
+              selectedFamilyJosa.pop();
+            }
             navigator("/stage4");
-          } else if (location.pathname === "/stage5") {
-            navigator("/stage6");
+          } else if (location.pathname === "/stage4") {
+            navigator("/stage5");
             setFigure([]);
             setCurrentIndex(0);
           }
@@ -111,7 +118,7 @@ const ButtonStart = () => {
               location.pathname === "/stage1" ||
               location.pathname === "/stage2" ||
               location.pathname === "/stage3" ||
-              location.pathname === "/stage5"
+              location.pathname === "/stage4"
             ) {
               handleStartChat();
             } else {

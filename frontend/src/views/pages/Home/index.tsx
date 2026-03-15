@@ -39,7 +39,7 @@ const Home = () => {
         <h3 className="text-xl md:text-2xl font-bold border border-[#FFFFFF] bg-[#FFFFFF] rounded-md px-5 py-5 text-center mt-10 inline-block">
           오늘은 <span className="text-greenDark">{currentDateString}</span> 입니다.
           <br />
-          {userInfo?.kidname}{userInfo?.endWord.kwaVSwa}의 면담을 시작하겠습니다.
+          지금부터 AI 기술을 통해 동물과 사람 이미지를 활용한 가족평가를 시작하겠습니다.
         </h3>
         <SubmitButton
           className="text-2xl font-extrabold mx-auto mt-10 flex gap-2 items-center border border-primary bg-primary text-white px-7 py-5 rounded-md"

@@ -20,7 +20,9 @@ const AdminDashboard = () => {
   // Pagination State
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(10);
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Search State
   const [searchName, setSearchName] = useState("");
@@ -294,56 +296,62 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-lg">
-        <div className="p-6 border-b">
-          <h1 className="text-xl font-bold text-gray-800">관리자</h1>
-          <p className="text-sm text-gray-500">심리검사 관리 시스템</p>
+      {/* Sidebar - collapsible */}
+      <aside className={`${sidebarOpen ? 'w-52' : 'w-12'} bg-white shadow-lg transition-all duration-200 relative flex-shrink-0`}>
+        <div className={`${sidebarOpen ? 'p-4' : 'p-2'} border-b flex items-center justify-between`}>
+          {sidebarOpen && <h1 className="text-sm font-bold text-gray-800">관리자</h1>}
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1 hover:bg-gray-100 rounded">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sidebarOpen ? "M11 19l-7-7 7-7" : "M13 5l7 7-7 7"} />
+            </svg>
+          </button>
         </div>
-        <nav className="p-4">
-          <ul className="space-y-2">
+        <nav className={`${sidebarOpen ? 'p-2' : 'p-1'}`}>
+          <ul className="space-y-1">
             <li>
               <button
                 onClick={() => setActiveTab("dashboard")}
-                className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${activeTab === "dashboard"
+                className={`w-full text-left ${sidebarOpen ? 'px-3 py-2' : 'p-2 justify-center'} rounded-lg flex items-center gap-2 transition-colors text-sm ${activeTab === "dashboard"
                     ? "bg-blue-50 text-blue-700 font-medium"
                     : "text-gray-600 hover:bg-gray-50"
                   }`}
+                title="대시보드"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
-                대시보드
+                {sidebarOpen && '대시보드'}
               </button>
             </li>
             <li>
               <button
                 onClick={() => setActiveTab("sessions")}
-                className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${activeTab === "sessions"
+                className={`w-full text-left ${sidebarOpen ? 'px-3 py-2' : 'p-2 justify-center'} rounded-lg flex items-center gap-2 transition-colors text-sm ${activeTab === "sessions"
                     ? "bg-blue-50 text-blue-700 font-medium"
                     : "text-gray-600 hover:bg-gray-50"
                   }`}
+                title="세션 목록"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                세션 목록
+                {sidebarOpen && '세션 목록'}
               </button>
             </li>
           </ul>
         </nav>
-        <div className="absolute bottom-0 w-64 p-4 border-t">
-          <Link to="/" className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className={`absolute bottom-0 ${sidebarOpen ? 'w-52' : 'w-12'} p-2 border-t`}>
+          <Link to="/" className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1" title="메인으로">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            메인으로 돌아가기
+            {sidebarOpen && '메인'}
           </Link>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 overflow-auto">
+      <main className="flex-1 p-4 overflow-auto">
         {activeTab === "dashboard" && (
           <>
             <h2 className="text-2xl font-bold mb-6">대시보드</h2>
@@ -490,11 +498,10 @@ const AdminDashboard = () => {
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                   style={{ border: "1px solid #d1d5db", borderRadius: "4px", padding: "4px 8px", fontSize: "14px" }}
                 >
+                  <option value={10}>10개씩</option>
                   <option value={20}>20개씩</option>
-                  <option value={40}>40개씩</option>
                   <option value={50}>50개씩</option>
                   <option value={100}>100개씩</option>
-                  <option value={200}>200개씩</option>
                 </select>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
@@ -528,8 +535,8 @@ const AdminDashboard = () => {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
+            <div className="bg-white rounded-lg shadow overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1100px' }}>
                 <thead className="bg-gray-50">
                   <tr>
                     <th style={{ padding: "12px 16px", textAlign: "center", width: "40px" }}>
@@ -541,51 +548,51 @@ const AdminDashboard = () => {
                       />
                     </th>
                     <th
-                      onClick={() => handleSort("receiptNo")}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    >
-                      접수번호 <span className="ml-1">{getSortIcon("receiptNo")}</span>
-                    </th>
-                    <th
                       onClick={() => handleSort("kid.name")}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
                     >
                       아동명 <span className="ml-1">{getSortIcon("kid.name")}</span>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider">
                       성별
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider">
                       나이
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider">
                       결과
                     </th>
                     <th
                       onClick={() => handleSort("counselor.name")}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
                     >
                       기관/상담사 <span className="ml-1">{getSortIcon("counselor.name")}</span>
                     </th>
                     <th
                       onClick={() => handleSort("status")}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
                     >
                       상태 <span className="ml-1">{getSortIcon("status")}</span>
                     </th>
                     <th
                       onClick={() => handleSort("score")}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
                     >
                       점수 <span className="ml-1">{getSortIcon("score")}</span>
                     </th>
                     <th
                       onClick={() => handleSort("createdAt")}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
                     >
                       생성일 <span className="ml-1">{getSortIcon("createdAt")}</span>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      onClick={() => handleSort("receiptNo")}
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
+                    >
+                      접수번호 <span className="ml-1">{getSortIcon("receiptNo")}</span>
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider">
                       관리
                     </th>
                   </tr>
@@ -614,19 +621,16 @@ const AdminDashboard = () => {
                             style={{ width: "16px", height: "16px", cursor: "pointer" }}
                           />
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {session.receiptNo}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium">
                           {session.kid?.name || "-"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm">
                           {formatSex(session.kid?.sex)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm">
                           {calculateAge(session.kid?.birth)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm">
                           <span style={{
                             color: session.report?.includes("역기능 가능성") ? "#f59e0b" : session.report?.includes("역기능") ? "#dc2626" : "#16a34a",
                             fontWeight: 600
@@ -634,10 +638,10 @@ const AdminDashboard = () => {
                             {session.report || "-"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm">
                           {session.counselor?.organization || "-"} / {session.counselor?.name || "-"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-2 whitespace-nowrap">
                           <span
                             className={`px-2 py-1 text-xs rounded-full ${session.status === "completed"
                                 ? "bg-green-100 text-green-800"
@@ -647,13 +651,16 @@ const AdminDashboard = () => {
                             {session.status === "completed" ? "완료" : "진행중"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm">
                           {session.score || 0}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(session.createdAt)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm">
+                          {session.receiptNo}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm">
                           <Link
                             to={`/admin/sessions/${session.receiptNo}`}
                             className="text-blue-600 hover:underline mr-4"

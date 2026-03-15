@@ -56,7 +56,7 @@ def therapy_script(
         )
 
     stage_4 = [
-        {"bot": "이번에는 동물 중에서 누구 누구가 서로 친한지 친한 동물들끼리 세워보자."},
+        {"bot": "이번에는 우리 가족을 선택하여 세워보세요."},
         {"button": "동물 세우러 가기"},
         {"bot": friendly_message},
         {"bot": f"이번엔 우리 가족이 어떤 동물이었으면 좋겠는지 {kid_name}{get_josa(kid_name)['이/가']} 바라는 동물들로 바꾸어보자."},
@@ -69,7 +69,7 @@ def therapy_script(
         else:
             start_word = "이번에는"
 
-        stage_3_figure = figures["3"][i]["figure"]
+        stage_3_figure = next((f["figure"] for f in figures["3"] if f["relation"] == figure["relation"]), figure["figure"])
 
         stage_5.extend(
             [

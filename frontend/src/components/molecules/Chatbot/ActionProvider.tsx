@@ -24,7 +24,7 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
   const [stage1CardIndex, setStage1CardIndex] = useState(0);
   const [stage2CardIndex, setStage2CardIndex] = useState(0);
 
-  const userInfo = getItemLocalStorage(USER);
+  const userInfo = getItemLocalStorage(USER) || { kidname: '', receiptNo: '' };
   const { fetchLlmCompletion } = useLlmCompletion();
   const { fetchFigure } = useSetFigure();
   const { fetchSaveChat } = useSaveChat();
@@ -306,7 +306,7 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
       }, 500);
     } else {
       const finalWidget = createChatBotMessage(
-        "이번에는 동물 중에서 누구 누구가 서로 친한지 친한 동물들끼리 세워보자.",
+        "이번에는 우리 가족이 어떤 동물이었으면 좋겠는지 바꾸어보자.",
         {
           widget: "ButtonChooseCard",
         }
@@ -444,7 +444,7 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
     const response1 = await fetchFigure({
       kidName: userInfo.kidname,
       receiptNo: `${userInfo.receiptNo}`,
-      stage: `${currentStep}`,
+      stage: "6",
       figures: newFigure,
     });
     if (!response1) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Icon from "../../atoms/Icon";
 import Modal from "../../atoms/Modal";
 import useStore from "../../../store";
@@ -27,8 +27,9 @@ const ChooseAnimal4Family = (props: any) => {
   };
 
   const [checkedState, setCheckedState] = useState(() =>
-    Animal.map(() => false)
+    new Array(Math.max(...Animal.map(a => a.index)) + 1).fill(false)
   );
+  const shuffledAnimal = useMemo(() => [...Animal].sort(() => Math.random() - 0.5), []);
 
   const handleCircleClick = (index: number, name: string, img: string, josa: number) => {
     setCheckedState(checkedState.map((_bool, j) => j === index));
@@ -44,10 +45,10 @@ const ChooseAnimal4Family = (props: any) => {
     if (location.pathname === "/stage3") {
       props.actions.initialAction([...selectedCards, currentFigure]);
       setSelectedCards([...selectedCards, currentFigure]);
-    } else if (location.pathname === "/stage5") {
+    } else if (location.pathname === "/stage4") {
       props.actions.initialAction5([...selectedCardsNew, currentFigure]);
       setSelectedCardsNew([...selectedCardsNew, currentFigure]);
-    } else if (location.pathname === "/stage6") {
+    } else if (location.pathname === "/stage5") {
       props.actions.initialAction6([...selectedCardsNew6, currentFigure]);
       setSelectedCardsNew6([...selectedCardsNew6, currentFigure]);
     }
@@ -74,7 +75,7 @@ const ChooseAnimal4Family = (props: any) => {
               {/* Scrollable animal grid */}
               <div className="overflow-y-auto flex-1">
                 <div className="grid grid-cols-6 sm:grid-cols-6 md:grid-cols-8 gap-1">
-                  {Animal.map((animal) => {
+                  {shuffledAnimal.map((animal) => {
                     return (
                       <div key={animal.index} className={`animal-card`}>
                         <button

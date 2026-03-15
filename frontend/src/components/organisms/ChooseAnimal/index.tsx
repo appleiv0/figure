@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import Chatbot from "react-chatbot-kit";
 import { createChatBotMessage } from "react-chatbot-kit";
 import { Animal } from "../../../data";
@@ -17,8 +17,14 @@ const ChooseAnimal = () => {
   const [selectChatbot, setSelectChatbot] = useState(false);
   const [currentStepChoose, setCurrentStepChoose] = useState(0);
   const [checkedState, setCheckedState] = useState(() =>
-    Animal.map(() => false)
+    new Array(Math.max(...Animal.map(a => a.index)) + 1).fill(false)
   );
+
+  // 마운트 시 이전 선택 초기화
+  useLayoutEffect(() => {
+    setSelectedCards([]);
+  }, []);
+  const shuffledAnimal = useMemo(() => [...Animal].sort(() => Math.random() - 0.5), []);
 
   const handleCircleClick = (index: number, name: string, img: string, josa: number) => {
     if (selectedCards.length === 4 && !checkedState[index]) {
@@ -185,7 +191,7 @@ const ChooseAnimal = () => {
             {/* Desktop: grid with side progress | Mobile: full-width grid */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-1 md:gap-8">
               <div className="grid grid-cols-6 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 md:col-span-11 gap-1 md:gap-8">
-                {Animal.map((animal) => {
+                {shuffledAnimal.map((animal) => {
                   return (
                     <div key={animal.index} className={`animal-card`}>
                       <button

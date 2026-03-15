@@ -169,14 +169,14 @@ const PdfReport = forwardRef<HTMLDivElement, PdfReportProps>(({ data }, ref) => 
             <tr>
               {/* If familyFigures was 0, we need to handle rowSpan carefully. assuming > 0 for normal case */}
               {/* The rowSpan above covers the family members. This is the +1 row */}
-              <td style={styles.subHeaderCell}>친한 가족끼리 동물 세우기</td>
+              <td style={styles.subHeaderCell}>친한 가족끼리 배치 하기</td>
               <td style={styles.dataCell} colSpan={2}>
                 {data.friendly_message || "-"}
               </td>
             </tr>
             {data.canvasImage && (
               <tr>
-                <td style={styles.headerCell} colSpan={4}>동물 배치도</td>
+                <td style={styles.headerCell} colSpan={4}>가족 배치도</td>
               </tr>
             )}
             {data.canvasImage && (
@@ -184,7 +184,7 @@ const PdfReport = forwardRef<HTMLDivElement, PdfReportProps>(({ data }, ref) => 
                 <td colSpan={4} style={{ ...styles.dataCell, textAlign: 'center', padding: '10px' }}>
                   <img
                     src={data.canvasImage}
-                    alt="동물 배치도"
+                    alt="가족 배치도"
                     style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }}
                   />
                 </td>

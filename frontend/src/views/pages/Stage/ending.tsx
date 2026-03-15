@@ -5,7 +5,7 @@ import ButtonEnd from "../../../components/molecules/Widget/ButtonEnd";
 // import useStore from "../../../store";
 
 const Ending = () => {
-  const userInfo = getItemLocalStorage(USER);
+  const userInfo = getItemLocalStorage(USER) || { kidname: '', endWord: { kwaVSwa: '와' } };
 
   return (
     <div className="mx-auto max-w-screen-xl">
@@ -23,7 +23,7 @@ const Ending = () => {
           열심히 하는 네 모습이 정말 대단하다. 아주 잘했어. 안녕!
         </h2>
         <div className="border border-[#FFFFFF] bg-[#FFFFFF] rounded-md px-5 py-5 text-center justify-center text-black text-2xl font-bold mx-auto lg:w-[49.375rem] w-[85%]">
-          {userInfo.kidname}{userInfo.endWord.kwaVSwa}의 면담이 종료되었습니다.
+          검사가 종료되었습니다.
         </div>
         <div className="mx-auto mt-8">
           <ButtonEnd />

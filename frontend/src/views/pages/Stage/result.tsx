@@ -13,7 +13,10 @@ const Result = () => {
           src="assets/images/02.png"
           alt="User"
         />
-        <h3 className="text-2xl">{response.message}</h3>{" "}
+        <h3 className="text-2xl">{response.message}</h3>
+        {response?.result?.tension && (
+          <h3 className="text-xl mt-4 text-gray-600">{response.result.tension}</h3>
+        )}
         <div className="mx-auto mt-8">
           <ButtonEnd />
         </div>

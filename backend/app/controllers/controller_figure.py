@@ -1,7 +1,9 @@
 import os
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+KST = timezone(timedelta(hours=9))
 import libcommon.config.status_error as status_error
 from app.models.response_figure import (
     ReceiptNoRes,
@@ -134,7 +136,7 @@ def set_figure(kidName: str, receiptNo: int, stage: str, figures: list):
     return status_error.OK, SetFigureRes(score=score)
 
 
-def set_position(kidName: str, receiptNo: int, centerH: int, centerV: int, figures: list, canvas_image: str = None):
+def set_position(kidName: str, receiptNo: int, centerH: int, centerV: int, figures: list, canvas_image: str = None, doll_instances: list = None):
     """Set card positions"""
     receipt_no_str = str(receiptNo)
 
@@ -175,6 +177,11 @@ def set_position(kidName: str, receiptNo: int, centerH: int, centerV: int, figur
     if canvas_image:
         session_repository.update_canvas_image(receipt_no_str, canvas_image)
         session["canvasImage"] = canvas_image
+
+    # Save 3D doll instances if provided
+    if doll_instances:
+        session["dollInstances"] = doll_instances
+        session_repository.update_session(receipt_no_str, {"dollInstances": doll_instances})
 
     # Also update JSON for backward compatibility
     sanitized_name = sanitize_filename(kidName)
@@ -224,7 +231,7 @@ def llm_completion(kidName: str, receiptNo: int, count: int, relation: str, mess
             "role": "user",
             "relation": relation,
             "content": message,
-            "timestamp": datetime.utcnow()
+            "timestamp": datetime.now(KST)
         }
         session_repository.update_chat_history(receipt_no_str, chat_entry)
 
@@ -248,7 +255,7 @@ def llm_completion(kidName: str, receiptNo: int, count: int, relation: str, mess
         "role": "bot",
         "relation": relation,
         "content": completion,
-        "timestamp": datetime.utcnow()
+        "timestamp": datetime.now(KST)
     }
     session_repository.update_chat_history(receipt_no_str, bot_entry)
     
@@ -290,7 +297,7 @@ def save_chat(kidName: str, receiptNo: int, role: str, content: str, relation: s
     chat_entry = {
         "role": role,
         "content": content,
-        "timestamp": datetime.utcnow()
+        "timestamp": datetime.now(KST)
     }
     if relation:
         chat_entry["relation"] = relation

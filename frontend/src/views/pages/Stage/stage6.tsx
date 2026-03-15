@@ -80,7 +80,7 @@ const Stage6 = () => {
       {chooseAnimal && (
         <>
           <div className="container mx-auto">
-            {location.pathname === "/stage6" && (
+            {location.pathname === "/stage5" && (
               <Chatbot
                 config={config6 as any}
                 actionProvider={ActionProvider}

@@ -12,6 +12,7 @@ const ButtonEnd = () => {
   const navigator = useNavigate();
   const setResponse = useStore((state: any) => state.setResponse);
   const response = useStore((state: any) => state.response);
+  const setCurrentStep = useStore((state: any) => state.setCurrentStep);
 
   const handleReport = async () => {
     try {
@@ -20,20 +21,18 @@ const ButtonEnd = () => {
         receiptNo: `${userInfo.receiptNo}`,
       });
 
-      if (!response) {
-        console.error("API Error:", response.statusText);
+      if (response) {
+        setResponse(response);
       }
-
-      navigator("/result");
-      setResponse(response);
-      return response;
     } catch (error: any) {
       console.error("Error:", error.message);
     }
+    navigator("/result");
   };
 
   const handleNext = () => {
-    navigator("/ending");
+    setCurrentStep(6);
+    navigator("/stage6");
   };
 
   const handleOpenReport = () => {
@@ -76,7 +75,7 @@ const ButtonEnd = () => {
   return (
     <>
       <div className="react-chatbot-kit-chat-bot-message-container flex gap-2">
-        {location.pathname === "/stage6" && (
+        {location.pathname === "/stage5" && (
           <button
             type="button"
             className="text-2xl font-bold ml-auto flex items-center gap-2 border border-primary bg-primary hover:bg-grey-100 hover:text-[#2C9608] text-white px-3 py-4 rounded-md cursor-pointer select-none"
@@ -141,7 +140,7 @@ const generateReportHTML = (data: any): string => {
 
   const formatFigures = (figures: any[]) => {
     if (!figures || figures.length === 0) return "-";
-    return figures.map((f) => `${f.figure}(${f.message || "이유 없음"})`).join(", ");
+    return figures.map((f) => `${f.figure} - ${f.message || "이유 없음"}`).join("<br/>");
   };
 
   const llmConversations = formatLLMConversation(data.llmCompletion, data.chatHistory);
@@ -203,6 +202,10 @@ const generateReportHTML = (data: any): string => {
           <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">진단 결과</td>
           <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold; color: #d32f2f;" colspan="3">${data.report || "-"}</td>
         </tr>
+        <tr>
+          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">관계구조분석</td>
+          <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold; color: #1976d2;" colspan="3">${data.tension || "-"}</td>
+        </tr>
       </table>
 
       <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 8px;">1. 나 (Me)</h2>
@@ -257,14 +260,14 @@ const generateReportHTML = (data: any): string => {
       <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 8px;">3. 나와 가족 관계</h2>
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
         <tr>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold; width: 25%;">친한 가족끼리 동물 세우기</td>
+          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold; width: 25%;">친한 가족끼리 배치 하기</td>
           <td style="border: 1px solid #ccc; padding: 8px;">${data.friendly_message || "-"}</td>
         </tr>
         ${data.canvasImage ? `
         <tr>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">동물 배치도</td>
+          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">가족 배치도</td>
           <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">
-            <img src="${data.canvasImage}" alt="동물 배치도" style="max-width: 100%; max-height: 250px; object-fit: contain;" />
+            <img src="${data.canvasImage}" alt="가족 배치도" style="max-width: 100%; max-height: 250px; object-fit: contain;" />
           </td>
         </tr>
         ` : ''}

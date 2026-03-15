@@ -1,0 +1,104 @@
+{
+  "figures": [
+    {
+      "id": "adult_male_1",
+      "enabled": true,
+      "label": "성인남자",
+      "category": "adult",
+      "gender": "male",
+      "variant": 1,
+      "size": 1.0,
+      "hasImages": true,
+      "dollModel": "adult_male"
+    },
+    {
+      "id": "adult_female_1",
+      "enabled": true,
+      "label": "성인여자",
+      "category": "adult",
+      "gender": "female",
+      "variant": 1,
+      "size": 1.0,
+      "hasImages": true,
+      "dollModel": "adult_female"
+    },
+    {
+      "id": "child_male_1",
+      "enabled": true,
+      "label": "소년",
+      "category": "child",
+      "gender": "male",
+      "variant": 1,
+      "size": 0.7,
+      "hasImages": true,
+      "dollModel": "child_male"
+    },
+    {
+      "id": "child_female_1",
+      "enabled": true,
+      "label": "소녀",
+      "category": "child",
+      "gender": "female",
+      "variant": 1,
+      "size": 0.75,
+      "hasImages": true,
+      "dollModel": "child_female"
+    },
+    {
+      "id": "grand_fa_1",
+      "enabled": true,
+      "label": "할아버지",
+      "category": "adult",
+      "gender": "male",
+      "variant": 1,
+      "size": 0.9,
+      "hasImages": true,
+      "dollModel": "grand_fa"
+    },
+    {
+      "id": "grand_ma_1",
+      "enabled": true,
+      "label": "할머니",
+      "category": "adult",
+      "gender": "female",
+      "variant": 1,
+      "size": 0.95,
+      "hasImages": true,
+      "dollModel": "grand_ma"
+    },
+    {
+      "id": "infant_1",
+      "enabled": true,
+      "label": "아기",
+      "category": "infant",
+      "gender": "male",
+      "variant": 1,
+      "size": 0.55,
+      "hasImages": true,
+      "dollModel": "infant"
+    },
+    {
+      "id": "teenager_male_1",
+      "enabled": true,
+      "label": "남자 청소년",
+      "category": "teenager",
+      "gender": "male",
+      "variant": 1,
+      "size": 0.85,
+      "hasImages": true,
+      "dollModel": "teenager_male"
+    },
+    {
+      "id": "teenager_female_1",
+      "enabled": true,
+      "label": "여자 청소년",
+      "category": "teenager",
+      "gender": "female",
+      "variant": 1,
+      "size": 0.8,
+      "hasImages": true,
+      "dollModel": "teenager_female"
+    }
+  ],
+  "rotationAngles": [0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320, 340]
+}

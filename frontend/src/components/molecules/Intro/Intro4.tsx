@@ -13,19 +13,13 @@ const Intro4 = ({ handleActivePosition }: Intro4Props) => {
           className="w-[3.5rem] md:w-[4.5rem] flex justify-center mx-auto items-center mt-[1.5rem] md:mt-[2rem]"
           src="./assets/images/01.png"
         />
-        <h1 className="text-center text-xl md:text-3xl font-bold mt-6 md:mt-8">[ 진행 방법 ]</h1>
-        <div className="text-center text-lg md:text-2xl font-bold mt-6 md:mt-10 max-w-full md:max-w-[39rem] mx-auto px-4 md:px-0 leading-relaxed">
-          동물 중에서 누구 누구가 서로 친한지
-          <br />
-          <span className="text-greenDark">
-            친한 동물들끼리 가까이 옮겨보자.
-          </span>
-          <br /><br />
-          손가락으로 동물 카드를 움직일 수 있어요!
-          <br />
-          동물을 더블클릭하면 동물의 방향이 바뀌어요.
-          <br /><br />
-          <span className="text-greenDark">확인 버튼</span>을 누르면 다음 화면으로 이동할 거야.
+        <div className="relative mx-auto mt-6 md:mt-8 max-w-[22rem] px-4">
+          <div className="bg-yellow-200 border border-yellow-300 rounded-2xl p-4 text-center text-lg md:text-2xl font-bold leading-relaxed">
+            가족을 선택해서
+            <br />
+            <span className="text-greenDark">원하는 위치에 세워보세요.</span>
+          </div>
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 bg-yellow-200 border-l border-t border-yellow-300 rotate-45" />
         </div>
       </div>
       <div className="mt-[1.75rem] relative">

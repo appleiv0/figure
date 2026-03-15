@@ -20,10 +20,10 @@ abuser = [
     "호랑이",
     "돼지",
     "코브라",
-    "뱀",
     "도마뱀",
     "악어",
     "독수리",
+    "여우",
 ]
 victim = [
     "병아리",
@@ -38,22 +38,7 @@ victim = [
     "토끼",
     "알에서-나오는-병아리",
 ]
-hope_positive = ["학", "일반-새", "돌고래", "나비", "새끼팬더", "말", "강아지", "양", "새끼-양"]
-hope_negative = [
-    "코끼리",
-    "불곰",
-    "흑표범",
-    "사자",
-    "상어",
-    "공룡",
-    "호랑이",
-    "돼지",
-    "코브라",
-    "뱀",
-    "도마뱀",
-    "악어",
-    "독수리",
-]
+hope_positive = ["새", "돌고래", "나비", "새끼팬더", "말", "강아지", "개", "양", "새끼-양", "캥거루", "버팔로", "젖소", "코끼리"]
 kid_relation = ["형", "누나", "동생", "언니", "오빠"]
 
 
@@ -220,6 +205,8 @@ def get_llm_completion(kidName: str, receiptNo: int, count: int, relation: str):
 
 def get_friendly(kidName: str, positions: dict):
     x_ceter, y_center = positions["centerH"], positions["centerV"]
+    if not positions.get("figures"):
+        return 0, ""
     card_size_x = (
         positions["figures"][0]["position"]["p2"][0] - positions["figures"][0]["position"]["p1"][0]
     )
@@ -277,7 +264,9 @@ def get_friendly(kidName: str, positions: dict):
     message = f"그렇구나. {', '.join(message_friend)}"
 
     score = 0
-    if {"엄마", "아빠"} & set(family_dict[kidName]["contact"] + family_dict[kidName]["far"]):
+    # kidName 또는 "나"로 조회 시도
+    kid_data = family_dict.get(kidName) or family_dict.get("나")
+    if kid_data and {"엄마", "아빠"} & set(kid_data["contact"] + kid_data["far"]):
         score += 1
 
     # print(set(family_dict[kidName]["contact"] + family_dict[kidName]["far"]))
@@ -308,47 +297,50 @@ def get_score(kidName: str, receiptNo: int):
                 data_json["abuse"]["1"] = 1
 
     if "2" in stages.keys():
-        positive_count = 0
-        negative_count = 0
+        abuser_count = 0
         for figure in stages["2"]:
-            if figure["figure"] in hope_positive:
-                positive_count += 1
-            if figure["figure"] in hope_negative:
-                negative_count += 1
-            if (positive_count >= 1 or negative_count >= 1) and positive_count + negative_count >= 3:
+            if figure["figure"] in abuser:
+                abuser_count += 1
+            if abuser_count >= 1:
                 score += 1
                 data_json["abuse"]["2"] = 1
 
     if "3" in stages.keys():
         abuser_count = 0
-        victim_kid_count = 0
-        victim_relation = kid_relation + [kidName]
         for figure in stages["3"]:
             if figure["figure"] in abuser:
                 abuser_count += 1
-            if figure["figure"] in victim:
-                for k in victim_relation:
-                    if k in figure["relation"].replace(" ", ""):
-                        victim_kid_count += 1
-            if abuser_count >= 1 and victim_kid_count >= 1:
+            if abuser_count >= 1:
                 score += 1
                 data_json["abuse"]["3"] = 1
-        # print(abuser_count, victim_kid_count)
 
-    if "6" in stages.keys():
-        positive_count = 0
-        negative_count = 0
-        victim_count = 0
-        for figure in stages["6"]:
-            if figure["figure"] in hope_positive:
-                positive_count += 1
-            if figure["figure"] in hope_negative:
-                negative_count += 1
-            if figure["figure"] in victim:
-                victim_count += 1
-            if negative_count >= 1 or victim_count >= 1:
-                score += 1
-                data_json["abuse"]["6"] = 1
+    # Stage 5: figures["5"] vs figures["3"] — 가족 동물이 가해자↔피해자로 바뀌면 긴장/갈등
+    tension_5 = 0
+    if "5" in stages.keys() and "3" in stages.keys():
+        for fig5 in stages["5"]:
+            for fig3 in stages["3"]:
+                if fig3["relation"] == fig5["relation"]:
+                    fig3_abuser = fig3["figure"] in abuser
+                    fig3_victim = fig3["figure"] in victim
+                    fig5_abuser = fig5["figure"] in abuser
+                    fig5_victim = fig5["figure"] in victim
+                    if (fig3_abuser and fig5_victim) or (fig3_victim and fig5_abuser):
+                        tension_5 = 1
+                    break
+            if tension_5:
+                break
+    data_json["abuse"]["5"] = tension_5
+
+    # Stage 6: figures["6"] vs figures["1"] — 나의 동물이 가해자↔피해자로 바뀌면 긴장/갈등
+    tension_6 = 0
+    if "6" in stages.keys() and "1" in stages.keys():
+        stage1_has_abuser = any(fig["figure"] in abuser for fig in stages["1"])
+        stage1_has_victim = any(fig["figure"] in victim for fig in stages["1"])
+        stage6_has_abuser = any(fig["figure"] in abuser for fig in stages["6"])
+        stage6_has_victim = any(fig["figure"] in victim for fig in stages["6"])
+        if (stage1_has_abuser and stage6_has_victim) or (stage1_has_victim and stage6_has_abuser):
+            tension_6 = 1
+    data_json["abuse"]["6"] = tension_6
 
     if data_json["positions"]:
         ## position으로 score 계산
@@ -364,16 +356,13 @@ def get_score(kidName: str, receiptNo: int):
 
 
 def get_report(kidName: str, receiptNo: int):
-    """stage 1, 2, 3가 모두 1이면 학대 가능성 있음.
-    + stage4, 6 중 하나 이상이 1이면 학대 있음.
-    그 외는 없음
-
+    """stage 1 피해자 1+, stage 2 가해자 1+, stage 3 가해자 1+ 이면 역기능.
+    그 외는 기능.
 
     Args:
         kidName (str): [description]
         receiptNo (int): [description]
     """
-    # message = "학대가 없습니다."
     message = "기능적입니다."
 
     data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{kidName}.json")
@@ -381,13 +370,20 @@ def get_report(kidName: str, receiptNo: int):
 
     abuse = data_json["abuse"]
     if abuse["1"] + abuse["2"] + abuse["3"] == 3:
-        # message = "학대 가능성이 있습니다."
-        message = "역기능 가능성 있습니다."
-        if abuse["4"] + abuse["6"] >= 1:
-            # message = "학대가 있습니다."
-            message = "역기능 있습니다."
+        message = "역기능 있습니다."
+
+    # 긴장/갈등 판정: stage 5 + stage 6
+    tension_5 = abuse.get("5", 0)
+    tension_6 = abuse.get("6", 0)
+    if tension_5 + tension_6 == 2:
+        tension_message = "긴장/갈등 높음"
+    elif tension_5 + tension_6 == 1:
+        tension_message = "긴장/갈등 있음"
+    else:
+        tension_message = "긴장/갈등 없음"
 
     data_json["report"] = message
+    data_json["tension"] = tension_message
     data_json["scripts"] = chatbot_template.therapy_script(
         kidName,
         data_json["figures"],

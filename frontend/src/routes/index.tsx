@@ -16,6 +16,8 @@ import Result from "../views/pages/Stage/result";
 import AdminDashboard from "../views/pages/Admin";
 import AdminSessions from "../views/pages/Admin/Sessions";
 import AdminSessionDetail from "../views/pages/Admin/SessionDetail";
+import Test3D from "../views/pages/Test3D";
+import SeedCompare from "../views/pages/Test3D/SeedCompare";
 
 export const Router = () => {
   const currentStep = useStore((state: any) => state.currentStep);
@@ -70,7 +72,7 @@ export const Router = () => {
           path: "/stage4",
           element:
             currentStep === 4 ? (
-              <Stage4 />
+              <Stage5 />
             ) : (
               <Navigate to={`/stage${currentStep}`} replace />
             ),
@@ -79,7 +81,7 @@ export const Router = () => {
           path: "/stage5",
           element:
             currentStep === 5 ? (
-              <Stage5 />
+              <Stage6 />
             ) : (
               <Navigate to={`/stage${currentStep}`} replace />
             ),
@@ -88,24 +90,18 @@ export const Router = () => {
           path: "/stage6",
           element:
             currentStep === 6 ? (
-              <Stage6 />
+              <Stage4 />
             ) : (
               <Navigate to={`/stage${currentStep}`} replace />
             ),
         },
         {
           path: "/ending",
-          element:
-            currentStep === 6 ? (
-              <Ending />
-            ) : (
-              <Navigate to={`/ending`} replace />
-            ),
+          element: <Ending />,
         },
         {
           path: "/result",
-          element:
-            currentStep === 6 ? <Result /> : <Navigate to={`/`} replace />,
+          element: <Result />,
         },
         {
           path: "/admin",
@@ -118,6 +114,14 @@ export const Router = () => {
         {
           path: "/admin/sessions/:receiptNo",
           element: <AdminSessionDetail />,
+        },
+        {
+          path: "/test3d",
+          element: <Test3D />,
+        },
+        {
+          path: "/seeds",
+          element: <SeedCompare />,
         },
         {
           path: "*",

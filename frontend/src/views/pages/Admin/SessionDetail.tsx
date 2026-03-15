@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { adminApi, Session } from "../../../services/adminApi";
 import { formatLLMConversation } from "../../../utils/pdfReport";
+import DeskScene3D from "../../../components/organisms/DeskScene3D";
+import { DollInstanceData } from "../../../types/figure3d";
 
 const AdminSessionDetail = () => {
   const { receiptNo } = useParams<{ receiptNo: string }>();
@@ -47,7 +49,7 @@ const AdminSessionDetail = () => {
 
     const formatFigures = (figures: any[]) => {
       if (!figures || figures.length === 0) return "-";
-      return figures.map((f: any) => `${f.figure}(${f.message || "이유 없음"})`).join(", ");
+      return figures.map((f: any) => `${f.figure} - ${f.message || "이유 없음"}`).join("<br/>");
     };
 
     const llmHTML = llmConversations
@@ -95,8 +97,8 @@ const AdminSessionDetail = () => {
         </table>
         <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 8px;">3. 나와 가족 관계</h2>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
-          <tr><td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold; width: 25%;">친한 가족끼리 동물 세우기</td><td style="border: 1px solid #ccc; padding: 8px;">${data.friendly_message || "-"}</td></tr>
-          ${data.canvasImage ? `<tr><td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">동물 배치도</td><td style="border: 1px solid #ccc; padding: 8px; text-align: center;"><img src="${data.canvasImage}" alt="동물 배치도" style="max-width: 100%; max-height: 250px; object-fit: contain;" /></td></tr>` : ''}
+          <tr><td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold; width: 25%;">친한 가족끼리 배치 하기</td><td style="border: 1px solid #ccc; padding: 8px;">${data.friendly_message || "-"}</td></tr>
+          ${data.canvasImage ? `<tr><td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">가족 배치도</td><td style="border: 1px solid #ccc; padding: 8px; text-align: center;"><img src="${data.canvasImage}" alt="가족 배치도" style="max-width: 100%; max-height: 250px; object-fit: contain;" /></td></tr>` : ''}
         </table>
         <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 8px;">4. 심층 분석</h2>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
@@ -250,6 +252,42 @@ const AdminSessionDetail = () => {
             </div>
           )}
         </div>
+
+        {/* 3D Doll Arrangement */}
+        {(session as any).dollInstances && (session as any).dollInstances.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-bold mb-4">3D 인형 배치 데이터</h2>
+            <div className="mt-3">
+              <h3 className="text-sm font-medium text-gray-500 mb-2">인형 배치 데이터</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="border border-gray-200 px-3 py-2 text-left">역할</th>
+                      <th className="border border-gray-200 px-3 py-2 text-left">인형 모델</th>
+                      <th className="border border-gray-200 px-3 py-2 text-left">자세</th>
+                      <th className="border border-gray-200 px-3 py-2 text-left">크기</th>
+                      <th className="border border-gray-200 px-3 py-2 text-left">위치 (X, Y, Z)</th>
+                      <th className="border border-gray-200 px-3 py-2 text-left">회전 (°)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {((session as any).dollInstances as DollInstanceData[]).map((doll, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50">
+                        <td className="border border-gray-200 px-3 py-2 font-medium">{doll.label}</td>
+                        <td className="border border-gray-200 px-3 py-2">{doll.dollModel}</td>
+                        <td className="border border-gray-200 px-3 py-2">{doll.pose === 'stand' ? '서있음' : '앉음'}</td>
+                        <td className="border border-gray-200 px-3 py-2">{doll.size}</td>
+                        <td className="border border-gray-200 px-3 py-2">{doll.position.x.toFixed(2)}, {doll.position.y.toFixed(2)}, {doll.position.z.toFixed(2)}</td>
+                        <td className="border border-gray-200 px-3 py-2">{Math.round(doll.rotation * 180 / Math.PI)}°</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Figures by Stage */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">

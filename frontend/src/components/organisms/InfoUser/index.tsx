@@ -14,6 +14,7 @@ import SubmitButton from "../../atoms/Form/Button/SubmitButton";
 import DateInput from "../../atoms/Form/DateInput";
 import FormLayout from "../../atoms/Form/FormLayout";
 import TextField from "../../atoms/Form/InputField/TextField";
+import useStore from "../../../store";
 
 interface AuthInterface {
   kidname: string;
@@ -86,6 +87,9 @@ const InforUser: React.FC = () => {
       }
 
       if (response) {
+        // 새 검사 시작: 이전 세션 상태 초기화
+        useStore.getState().setCurrentStep(0);
+        localStorage.setItem('currentStep', '0');
         setItemLocalStorage(USER, {
           kidname: formData.kidname,
           selectedDate: formData.selectedDate,
@@ -101,7 +105,15 @@ const InforUser: React.FC = () => {
   };
 
   useEffect(() => {
-    removeItemLocalStorage(USER);
+    // 이어하기 세션이 없을 때만 USER 초기화
+    try {
+      const saved = JSON.parse(localStorage.getItem('abuse-therapy-store') || '{}');
+      if (!saved?.state?.currentStep || saved.state.currentStep === 0) {
+        removeItemLocalStorage(USER);
+      }
+    } catch {
+      removeItemLocalStorage(USER);
+    }
   }, []);
 
   return (
@@ -230,6 +242,22 @@ const InforUser: React.FC = () => {
             </SubmitButton>
           </div>
         </FormLayout>
+        {/* 검사 이어하기 - 저장된 세션이 있을 때만 표시 */}
+        {parseInt(localStorage.getItem('currentStep') || '0') > 0 && (
+          <div className="flex justify-center pt-6">
+            <a
+              href="#"
+              className="py-3 px-8 text-lg font-bold text-blue-600 border-2 border-blue-600 rounded-[0.625rem] hover:bg-blue-600 hover:text-white transition-colors text-center inline-block"
+              onClick={(e) => {
+                e.preventDefault();
+                useStore.getState().setCurrentStep(6);
+                window.location.href = '/stage6';
+              }}
+            >
+              검사 이어하기
+            </a>
+          </div>
+        )}
       </div>
       <ToastContainer />
     </div>
