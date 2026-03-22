@@ -24,7 +24,7 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
   const [stage1CardIndex, setStage1CardIndex] = useState(0);
   const [stage2CardIndex, setStage2CardIndex] = useState(0);
 
-  const userInfo = getItemLocalStorage(USER) || { kidname: '', receiptNo: '' };
+  const userInfo = getItemLocalStorage(USER) || { kidname: '', receiptNo: '', endWord: { liVSka: '이', eunVSneun: '은', kwaVSwa: '와' } };
   const { fetchLlmCompletion } = useLlmCompletion();
   const { fetchFigure } = useSetFigure();
   const { fetchSaveChat } = useSaveChat();
@@ -566,10 +566,11 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
   };
   const handleConfirmSelectCard2 = (message: string) => {
     setMessageUser(message);
+    const names = selectedCards.map((c: any) => c.name).join(', ');
+    const lastCard = selectedCards[selectedCards.length - 1];
+    const josa = lastCard?.josa === 1 ? "을" : "를";
     const botMessage = createChatBotMessage(
-      `그랬구나, 그래서 ${userInfo.kidname}${userInfo.endWord.eunVSneun} ${selectedCards[0].name
-      }, ${selectedCards[1].name}, ${selectedCards[2].name}, ${selectedCards[3].name
-      }${selectedCards[3].josa === 1 ? "을" : "를"} 선택했구나.`
+      `그랬구나, 그래서 ${userInfo.kidname}${userInfo.endWord.eunVSneun} ${names}${josa} 선택했구나.`
     );
 
     const botMessage1 = createChatBotMessage(
@@ -577,7 +578,7 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
     );
 
     saveChatMessage("user", message, "나(소망)");
-    saveChatMessage("bot", `그랬구나, 그래서 ${userInfo.kidname}${userInfo.endWord.eunVSneun} ${selectedCards[0].name}, ${selectedCards[1].name}, ${selectedCards[2].name}, ${selectedCards[3].name}${selectedCards[3].josa === 1 ? "을" : "를"} 선택했구나.`, "나(소망)");
+    saveChatMessage("bot", `그랬구나, 그래서 ${userInfo.kidname}${userInfo.endWord.eunVSneun} ${names}${josa} 선택했구나.`, "나(소망)");
 
     const botMessage2 = createChatBotMessage(
       `${userInfo.kidname}의 가족들은 누구누구야?`,

@@ -1,4 +1,5 @@
 import os
+import re
 import numpy as np
 
 from libcommon.utils.jsonUtils import make_json, read_json
@@ -7,6 +8,13 @@ from app.controllers import chatbot_template
 from libcommon.utils.chatUtils import get_josa
 
 from openai import OpenAI
+
+
+def _sanitize(name: str) -> str:
+    """Remove characters unsafe for filenames."""
+    if not name:
+        return ""
+    return re.sub(r'[\\/*?:"<>|]', '_', name)
 
 client = OpenAI(api_key=CFG.OPENAI_API_KEY)
 
@@ -177,7 +185,7 @@ def prompt_engineering_1(data_json: dict, relation: str):
 def get_llm_completion(kidName: str, receiptNo: int, count: int, relation: str):
     ## 가족 구성원 학대 여부에 따른 prompt 정의
 
-    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{kidName}.json")
+    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{_sanitize(kidName)}.json")
     data_json = read_json(data_json_path)
     if not data_json:
         return ""
@@ -279,7 +287,7 @@ def get_friendly(kidName: str, positions: dict):
 
 
 def get_score(kidName: str, receiptNo: int):
-    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{kidName}.json")
+    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{_sanitize(kidName)}.json")
     data_json = read_json(data_json_path)
     if not data_json:
         return 0, ""
@@ -378,7 +386,7 @@ def get_reliability(kidName: str, receiptNo: int):
     """
     from datetime import datetime
 
-    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{kidName}.json")
+    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{_sanitize(kidName)}.json")
     data_json = read_json(data_json_path)
     if not data_json:
         return {}
@@ -904,7 +912,7 @@ def get_report(kidName: str, receiptNo: int):
     """
     message = "기능적입니다."
 
-    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{kidName}.json")
+    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{_sanitize(kidName)}.json")
     data_json = read_json(data_json_path)
     if not data_json:
         return "기능적입니다.", {}

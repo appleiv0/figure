@@ -81,7 +81,7 @@ def therapy_script(
             ]
         )
         if figure["figure"] == stage_3_figure:
-            stage_5.append(
+            stage_5.extend(
                 [
                     {
                         "bot": f"{figure['relation']}{get_josa(figure['relation'])['은/는']} {stage_3_figure}{get_josa(stage_3_figure)['였/이었']}는데, {figure['figure']}{get_josa(figure['figure'])['이/가']} 되었으면 좋겠는 이유가 있을까?"

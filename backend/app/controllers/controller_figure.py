@@ -253,9 +253,9 @@ def llm_completion(kidName: str, receiptNo: int, count: int, relation: str, mess
 
     # Update bot message in llmCompletion structure
     bot_messages = session["llmCompletion"][relation]["bot"]
-    while len(bot_messages) < count:
+    while len(bot_messages) <= count:
         bot_messages.append("")
-    bot_messages[count - 1] = completion
+    bot_messages[count] = completion
     
     # Update MongoDB with bot message
     session_repository.update_llm_completion(receipt_no_str, relation, session["llmCompletion"][relation])

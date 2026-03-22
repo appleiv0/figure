@@ -44,6 +44,7 @@ const ChooseAnimal4Family = (props: any) => {
     });
   };
   const initialAction = () => {
+    if (!currentFigure) return;
     if (location.pathname === "/stage3") {
       props.actions.initialAction([...selectedCards, currentFigure]);
       setSelectedCards([...selectedCards, currentFigure]);
