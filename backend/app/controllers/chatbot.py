@@ -214,7 +214,7 @@ def get_llm_completion(kidName: str, receiptNo: int, count: int, relation: str):
 
 
 def get_friendly(kidName: str, positions: dict):
-    x_ceter, y_center = positions["centerH"], positions["centerV"]
+    x_center, y_center = positions["centerH"], positions["centerV"]
     if not positions.get("figures") or len(positions["figures"]) == 0:
         return 0, ""
     card_size_x = (
@@ -225,7 +225,7 @@ def get_friendly(kidName: str, positions: dict):
     )
 
     distance_1 = (card_size_x**2 + card_size_y**2) ** 0.5
-    distance_2 = ((x_ceter - card_size_x) ** 2 + (y_center - card_size_y) ** 2) ** 0.5
+    distance_2 = distance_1 * 2  # 카드 대각선의 2배 이상이면 "멀다"
 
     friend_dict = {}
     family_dict = {}

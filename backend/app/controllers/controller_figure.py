@@ -241,7 +241,7 @@ def llm_completion(kidName: str, receiptNo: int, count: int, relation: str, mess
             "role": "user",
             "relation": relation,
             "content": message,
-            "timestamp": datetime.now(KST)
+            "timestamp": datetime.now(KST).isoformat()
         }
         session_repository.update_chat_history(receipt_no_str, chat_entry)
 
@@ -265,7 +265,7 @@ def llm_completion(kidName: str, receiptNo: int, count: int, relation: str, mess
         "role": "bot",
         "relation": relation,
         "content": completion,
-        "timestamp": datetime.now(KST)
+        "timestamp": datetime.now(KST).isoformat()
     }
     session_repository.update_chat_history(receipt_no_str, bot_entry)
     
@@ -319,7 +319,7 @@ def save_chat(kidName: str, receiptNo: int, role: str, content: str, relation: s
     chat_entry = {
         "role": role,
         "content": content,
-        "timestamp": datetime.now(KST)
+        "timestamp": datetime.now(KST).isoformat()
     }
     if relation:
         chat_entry["relation"] = relation

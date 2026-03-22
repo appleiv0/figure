@@ -7,6 +7,9 @@ def therapy_script(
     friendly_message: str,
     llm_completion: dict,
 ):
+    if not figures.get("1") or not figures.get("2"):
+        return []
+
     stage_0 = [
         {"bot": "안녕? 내 이름은 푸름이야"},
         {"bot": f"나는 {kid_name}{get_josa(kid_name)['과/와']} 함께 동물들을 가지고 {kid_name}의 이야기를 들어보려고 해."},

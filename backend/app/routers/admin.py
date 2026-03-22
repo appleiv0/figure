@@ -60,6 +60,7 @@ def serialize_session(session: dict) -> dict:
     """Convert MongoDB document to JSON-serializable format"""
     if session is None:
         return None
+    session = dict(session)  # shallow copy - 원본 mutation 방지
 
     # Convert ObjectId to string
     if "_id" in session:
@@ -521,9 +522,6 @@ def generate_code(req: GenerateCodeRequest):
     credits = user.get("credits", DEFAULT_CREDITS)
     is_super = req.email in SUPER_USERS
 
-    if not is_super and credits <= 0:
-        raise HTTPException(status_code=400, detail="크레딧이 부족합니다.")
-
     users_col = get_users_collection()
     now = datetime.now(KST)
 
@@ -533,15 +531,21 @@ def generate_code(req: GenerateCodeRequest):
             {"email": req.email},
             {"$set": {"name": req.name, "organization": req.organization, "updatedAt": now}}
         )
+        remaining = credits
     else:
-        # 일반 유저는 1 차감
-        users_col.update_one(
-            {"email": req.email},
+        # 일반 유저는 읽기+검사+차감을 단일 원자적 연산으로 처리
+        from pymongo import ReturnDocument
+        result = users_col.find_one_and_update(
+            {"email": req.email, "credits": {"$gt": 0}},
             {
                 "$inc": {"credits": -1},
                 "$set": {"name": req.name, "organization": req.organization, "updatedAt": now},
-            }
+            },
+            return_document=ReturnDocument.AFTER
         )
+        if not result:
+            raise HTTPException(status_code=400, detail="크레딧이 부족합니다.")
+        remaining = result.get("credits", 0)
 
     # Generate unique code
     code = _generate_code()
@@ -559,7 +563,6 @@ def generate_code(req: GenerateCodeRequest):
         "sessionReceiptNo": None,
     })
 
-    remaining = credits if is_super else credits - 1
     return GenerateCodeResponse(code=code, credits=remaining)
 
 
