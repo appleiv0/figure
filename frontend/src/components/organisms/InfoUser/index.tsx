@@ -10,6 +10,7 @@ import {
   removeItemLocalStorage,
   setItemLocalStorage,
 } from "../../../utils/helper";
+import { adminApi } from "../../../services/adminApi";
 import SubmitButton from "../../atoms/Form/Button/SubmitButton";
 import DateInput from "../../atoms/Form/DateInput";
 import FormLayout from "../../atoms/Form/FormLayout";
@@ -29,8 +30,61 @@ const InforUser: React.FC = () => {
   const [selectedDatecolor, setSelectedDatecolor] = useState<string | null>(
     null
   );
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [password, setPassword] = useState("");
+  const [tapCount, setTapCount] = useState(0);
+  const [tapTimer, setTapTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [isCodeLogin, setIsCodeLogin] = useState(false);
   const navigator = useNavigate();
   const { fetchReceipt } = useCreatReceipt();
+
+  const handleTitleTap = () => {
+    const newCount = tapCount + 1;
+    setTapCount(newCount);
+    if (tapTimer) clearTimeout(tapTimer);
+    if (newCount >= 5) {
+      setTapCount(0);
+      setShowPasswordModal(true);
+    } else {
+      setTapTimer(setTimeout(() => setTapCount(0), 2000));
+    }
+  };
+
+  const handlePasswordSubmit = async () => {
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || "1234";
+    const counselorAuth = JSON.parse(sessionStorage.getItem("counselorAuth") || "{}");
+
+    // 1. 개인 비밀번호 확인 (API)
+    try {
+      if (counselorAuth.email) {
+        const result = await adminApi.verifyPassword(counselorAuth.email, password);
+        if (result.valid) {
+          setShowPasswordModal(false);
+          setPassword("");
+          navigator("/my-sessions");
+          return;
+        }
+        // 비밀번호를 변경한 적 없으면 마스터 비밀번호 허용
+        if (!result.passwordChanged && password === adminPassword) {
+          setShowPasswordModal(false);
+          setPassword("");
+          navigator("/my-sessions");
+          return;
+        }
+      }
+    } catch (_e) {
+      // API 실패 시 마스터 비밀번호로 fallback
+      if (password === adminPassword) {
+        setShowPasswordModal(false);
+        setPassword("");
+        navigator("/my-sessions");
+        return;
+      }
+    }
+
+    alert("비밀번호가 틀렸습니다.");
+    setPassword("");
+  };
 
   const form = useForm<AuthInterface>({
     defaultValues: {
@@ -67,6 +121,7 @@ const InforUser: React.FC = () => {
       ? dayjs(formData.selectedDate, "yyyyMMdd")
       : "";
     try {
+      const counselorAuth = JSON.parse(sessionStorage.getItem("counselorAuth") || "{}");
       const response = await fetchReceipt({
         counselor: {
           name: formData.name_counselor,
@@ -78,6 +133,7 @@ const InforUser: React.FC = () => {
           sex: formData.gender,
         },
         agree: true,
+        counselorEmail: counselorAuth.email || undefined,
       });
 
       if (!response) {
@@ -87,9 +143,17 @@ const InforUser: React.FC = () => {
       }
 
       if (response) {
+        // 일회용 코드로 로그인한 경우 코드 사용 처리
+        if (counselorAuth.loginCode) {
+          try {
+            await adminApi.useCode(counselorAuth.loginCode, response.receiptNo);
+          } catch (codeErr) {
+            console.error("Failed to use login code:", codeErr);
+          }
+        }
+
         // 새 검사 시작: 이전 세션 상태 초기화
         useStore.getState().setCurrentStep(0);
-        localStorage.setItem('currentStep', '0');
         setItemLocalStorage(USER, {
           kidname: formData.kidname,
           selectedDate: formData.selectedDate,
@@ -105,14 +169,30 @@ const InforUser: React.FC = () => {
   };
 
   useEffect(() => {
-    // 이어하기 세션이 없을 때만 USER 초기화
+    removeItemLocalStorage(USER);
+
     try {
-      const saved = JSON.parse(localStorage.getItem('abuse-therapy-store') || '{}');
-      if (!saved?.state?.currentStep || saved.state.currentStep === 0) {
-        removeItemLocalStorage(USER);
+      const counselorAuth = JSON.parse(sessionStorage.getItem("counselorAuth") || "{}");
+      if (counselorAuth.loginCode) {
+        // 일회용 코드 로그인: organization, name 자동 입력 + 읽기 전용
+        setIsCodeLogin(true);
+        if (counselorAuth.organization) {
+          form.setValue("counselor", counselorAuth.organization, { shouldDirty: true });
+        }
+        if (counselorAuth.name) {
+          form.setValue("name_counselor", counselorAuth.name, { shouldDirty: true });
+        }
+      } else {
+        // Google 로그인: 기존 로직
+        if (counselorAuth.userName) {
+          form.setValue("name_counselor", counselorAuth.userName, { shouldDirty: true });
+        }
+        if (counselorAuth.userOrganization) {
+          form.setValue("counselor", counselorAuth.userOrganization, { shouldDirty: true });
+        }
       }
-    } catch {
-      removeItemLocalStorage(USER);
+    } catch (_e) {
+      // sessionStorage 파싱 실패 시 무시
     }
   }, []);
 
@@ -120,7 +200,10 @@ const InforUser: React.FC = () => {
     <div className="container-xs mx-auto px-4 md:px-0">
       <div className="w-full min-h-screen flex flex-col justify-center font-bold py-8 md:py-0">
         {/* 제목 - 모바일에서 더 작은 폰트 */}
-        <h1 className="text-center text-grey-800 mb-6 md:mb-10 text-xl md:text-[2.5rem] font-extrabold tracking-widest">
+        <h1
+          className="text-center text-grey-800 mb-6 md:mb-10 text-xl md:text-[2.5rem] font-extrabold tracking-widest select-none cursor-default"
+          onClick={handleTitleTap}
+        >
           상담 정보를 입력하세요
         </h1>
 
@@ -202,24 +285,26 @@ const InforUser: React.FC = () => {
 
           {/* 상담기관 필드 */}
           <TextField
-            className="text-left md:text-end mb-4 md:mb-5"
+            className={`text-left md:text-end mb-4 md:mb-5 ${isCodeLogin ? "bg-grey-100 text-grey-500" : ""}`}
             form={form}
             name="counselor"
             placeholder="상담기관명을 입력해주세요"
             type="text"
             required
             label="상담기관"
+            disabled={isCodeLogin}
           />
 
           {/* 상담사 필드 */}
           <TextField
-            className="text-left md:text-end mb-4 md:mb-5"
+            className={`text-left md:text-end mb-4 md:mb-5 ${isCodeLogin ? "bg-grey-100 text-grey-500" : ""}`}
             form={form}
             name="name_counselor"
             placeholder="상담사명을 입력해주세요"
             type="text"
             required
             label="상담사"
+            disabled={isCodeLogin}
           />
 
           {/* 버튼 영역 - 모바일에서 전체 너비 */}
@@ -242,24 +327,46 @@ const InforUser: React.FC = () => {
             </SubmitButton>
           </div>
         </FormLayout>
-        {/* 검사 이어하기 - 저장된 세션이 있을 때만 표시 */}
-        {parseInt(localStorage.getItem('currentStep') || '0') > 0 && (
-          <div className="flex justify-center pt-6">
-            <a
-              href="#"
-              className="py-3 px-8 text-lg font-bold text-blue-600 border-2 border-blue-600 rounded-[0.625rem] hover:bg-blue-600 hover:text-white transition-colors text-center inline-block"
-              onClick={(e) => {
-                e.preventDefault();
-                useStore.getState().setCurrentStep(6);
-                window.location.href = '/stage6';
-              }}
-            >
-              검사 이어하기
-            </a>
-          </div>
-        )}
       </div>
       <ToastContainer />
+
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}
+          onClick={() => { setShowPasswordModal(false); setPassword(""); }}
+        >
+          <div
+            style={{ background: "white", borderRadius: "12px", padding: "24px", minWidth: "300px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "16px" }}>비밀번호 입력</h3>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handlePasswordSubmit()}
+              placeholder="비밀번호를 입력하세요"
+              autoFocus
+              style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", marginBottom: "16px" }}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <button
+                onClick={() => { setShowPasswordModal(false); setPassword(""); }}
+                style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid #d1d5db", background: "white", cursor: "pointer" }}
+              >
+                취소
+              </button>
+              <button
+                onClick={handlePasswordSubmit}
+                style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: "#2563eb", color: "white", cursor: "pointer" }}
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

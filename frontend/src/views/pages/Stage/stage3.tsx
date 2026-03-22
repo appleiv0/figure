@@ -1,4 +1,5 @@
-import Chatbot, { createChatBotMessage } from "react-chatbot-kit";
+import { createChatBotMessage } from "react-chatbot-kit";
+import ChatbotWrapper from "../../../components/molecules/Chatbot/ChatbotWrapper";
 import ActionProvider from "../../../components/molecules/Chatbot/ActionProvider";
 import MessageParser from "../../../components/molecules/Chatbot/MessageParser";
 import Intro from "../../../components/molecules/Intro/Intro";
@@ -77,7 +78,7 @@ const Stage3 = () => {
         <>
           <div className="container mx-auto">
             {location.pathname === "/stage3" && (
-              <Chatbot
+              <ChatbotWrapper
                 config={config3 as any}
                 actionProvider={ActionProvider}
                 messageParser={MessageParser}

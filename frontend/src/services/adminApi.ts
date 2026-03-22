@@ -41,6 +41,11 @@ export interface Session {
     position: { x: number; y: number; z: number };
     size: number;
   }>;
+  aiEvaluation?: string;
+  familyType?: string;
+  abuse?: Record<string, number>;
+  tension?: string;
+  abuser?: Record<string, number>;
 }
 
 export interface SessionListResponse {
@@ -111,14 +116,86 @@ export const adminApi = {
   },
 
   // Save AI evaluation
-  saveEvaluation: async (receiptNo: string, aiEvaluation: string): Promise<{ success: boolean; message: string }> => {
-    const response = await api.put(`/admin/sessions/${receiptNo}/evaluation`, { aiEvaluation });
+  saveEvaluation: async (receiptNo: string, aiEvaluation: string, familyType?: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.put(`/admin/sessions/${receiptNo}/evaluation`, { aiEvaluation, familyType });
+    return response.data;
+  },
+
+  // Get user usage stats
+  getUsers: async (): Promise<{ users: Array<{ email: string; name: string; organization: string; sessionCount: number; lastUsed: string }> }> => {
+    const response = await api.get("/admin/users");
+    return response.data;
+  },
+
+  // Get sessions by counselor email
+  getMySessions: async (email: string, page = 1, limit = 20): Promise<SessionListResponse> => {
+    const response = await api.get(`/admin/sessions/my?email=${encodeURIComponent(email)}&page=${page}&limit=${limit}`);
     return response.data;
   },
 
   // Health check
   healthCheck: async (): Promise<{ status: string; database: string; sessions_count: number }> => {
     const response = await api.get("/admin/health");
+    return response.data;
+  },
+
+  // Get credits
+  getCredits: async (email: string): Promise<{ email: string; credits: number }> => {
+    const response = await api.get(`/admin/credits?email=${encodeURIComponent(email)}`);
+    return response.data;
+  },
+
+  // Set credits (admin)
+  setCredits: async (email: string, credits: number): Promise<{ email: string; credits: number }> => {
+    const response = await api.put("/admin/credits", { email, credits });
+    return response.data;
+  },
+
+  // Generate one-time code
+  generateCode: async (email: string, name: string, organization: string): Promise<{ code: string; credits: number }> => {
+    const response = await api.post("/admin/generate-code", { email, name, organization });
+    return response.data;
+  },
+
+  // Validate code (public API)
+  validateCode: async (code: string): Promise<{ valid: boolean; counselorEmail?: string; counselorName?: string; organization?: string; message?: string; used?: boolean; sessionReceiptNo?: string }> => {
+    const response = await axios.post(`${API_BASE}/public/validate-code`, { code });
+    return response.data;
+  },
+
+  // Use code (public API)
+  useCode: async (code: string, receiptNo: string): Promise<{ success: boolean }> => {
+    const response = await axios.post(`${API_BASE}/public/use-code`, { code, receiptNo });
+    return response.data;
+  },
+
+  // Get user info (public API)
+  getUserInfo: async (email: string): Promise<{ exists: boolean; name?: string; organization?: string; credits?: number }> => {
+    const response = await axios.get(`${API_BASE}/public/user-info?email=${encodeURIComponent(email)}`);
+    return response.data;
+  },
+
+  // Register user (public API)
+  registerUser: async (email: string, name: string, organization: string): Promise<{ email: string; name: string; organization: string; credits: number; isNew: boolean }> => {
+    const response = await axios.post(`${API_BASE}/public/register-user`, { email, name, organization });
+    return response.data;
+  },
+
+  // Verify password (public API)
+  verifyPassword: async (email: string, password: string): Promise<{ valid: boolean }> => {
+    const response = await axios.post(`${API_BASE}/public/verify-password`, { email, password });
+    return response.data;
+  },
+
+  // Change password (public API)
+  changePassword: async (email: string, oldPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
+    const response = await axios.put(`${API_BASE}/public/change-password`, { email, oldPassword, newPassword });
+    return response.data;
+  },
+
+  // Get my codes
+  getMyCodes: async (email: string): Promise<{ codes: Array<{ code: string; used: boolean; createdAt: string; usedAt?: string; sessionReceiptNo?: string }> }> => {
+    const response = await api.get(`/admin/my-codes?email=${encodeURIComponent(email)}`);
     return response.data;
   },
 };

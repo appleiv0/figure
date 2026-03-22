@@ -64,7 +64,7 @@ card_directions = {
 }
 
 
-def create_receipt_number(counselor: dict, kid: dict, agree: bool):
+def create_receipt_number(counselor: dict, kid: dict, agree: bool, counselor_email: str = None):
     """Create a new therapy session with unique receipt number"""
     receipt_no = str(int(time.time() * 1000))
     josa = get_josa_en(kid["name"])
@@ -74,6 +74,7 @@ def create_receipt_number(counselor: dict, kid: dict, agree: bool):
         "date": datetime.strftime(datetime.now(), format="%Y%m%d%H%M%S"),
         "receiptNo": receipt_no,
         "counselor": counselor,
+        "counselorEmail": counselor_email,
         "kid": {**kid, **josa},
         "agree": agree,
         "figures": {"1": [], "2": [], "3": [], "5": [], "6": []},
@@ -273,9 +274,18 @@ def get_Report(kidName: str, receiptNo: int):
     score, _ = chatbot.get_score(kidName, receiptNo)
     message, data_json = chatbot.get_report(kidName, receiptNo)
 
+    # 신뢰도 분석
+    reliability = chatbot.get_reliability(kidName, receiptNo)
+    data_json["reliability"] = reliability
+
+    # Save reliability to JSON file
+    sanitized_name = sanitize_filename(kidName)
+    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{sanitized_name}.json")
+    make_json(data_json_path, data_json)
+
     # Update MongoDB with final report
     session_repository.update_report(receipt_no_str, message)
-    session_repository.update_scoring(receipt_no_str, score, data_json.get("abuse", {}), data_json.get("abuser", {}))
+    session_repository.update_scoring(receipt_no_str, score, data_json.get("abuse", {}), data_json.get("abuser", {}), data_json.get("tension"), reliability)
 
     return status_error.OK, GetReportRes(score=score, message=message, result=data_json)
 

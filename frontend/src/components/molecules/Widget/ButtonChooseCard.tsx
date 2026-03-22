@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { USER } from "../../../constants/common.constant";
 import { useSetFigure } from "../../../services/hooks/hookFigures";
@@ -6,6 +7,20 @@ import { getItemLocalStorage } from "../../../utils/helper";
 import Icon from "../../atoms/Icon";
 
 const ButtonStart = () => {
+  const btnRef = useRef<HTMLDivElement>(null);
+
+  // 이 버튼이 보일 때 텍스트 입력창 숨기기
+  useEffect(() => {
+    const chatContainer = btnRef.current?.closest(".react-chatbot-kit-chat-container");
+    const inputContainer = chatContainer?.querySelector(
+      ".react-chatbot-kit-chat-input-container"
+    ) as HTMLElement;
+    if (inputContainer) inputContainer.style.display = "none";
+    return () => {
+      if (inputContainer) inputContainer.style.display = "";
+    };
+  }, []);
+
   const navigator = useNavigate();
   const location = useLocation();
   const setSelectedCards = useStore((state: any) => state.setSelectedCards);
@@ -109,7 +124,7 @@ const ButtonStart = () => {
 
   return (
     <>
-      <div className="react-chatbot-kit-chat-bot-message-container flex gap-2">
+      <div ref={btnRef} className="react-chatbot-kit-chat-bot-message-container flex gap-2">
         <button
           type="button"
           className="text-2xl font-bold ml-auto flex gap-2 items-center border border-primary bg-primary hover:bg-grey-100 hover:text-greenDark text-white px-3 py-4 rounded-md cursor-pointer select-none"

@@ -20,7 +20,8 @@ const Ending = () => {
         />
         <h2 className="text-2xl mb-[2.875rem]">
           포기하지 않고 끝까지 해줘서 고마워. <br />
-          열심히 하는 네 모습이 정말 대단하다. 아주 잘했어. 안녕!
+          열심히 하는 네 모습이 정말 대단하다. <br />
+          아주 잘했어. 안녕!
         </h2>
         <div className="border border-[#FFFFFF] bg-[#FFFFFF] rounded-md px-5 py-5 text-center justify-center text-black text-2xl font-bold mx-auto lg:w-[49.375rem] w-[85%]">
           검사가 종료되었습니다.

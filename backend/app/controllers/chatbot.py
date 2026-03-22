@@ -284,35 +284,31 @@ def get_score(kidName: str, receiptNo: int):
     message = ""
     stages = data_json["figures"]
     if "1" in stages.keys():
-        abuser_count = 0
         victim_count = 0
         for figure in stages["1"]:
-            if figure["figure"] in abuser:
-                abuser_count += 1
             if figure["figure"] in victim:
                 victim_count += 1
-            # if abuser_count >= 1 and victim_count >= 1:
-            if victim_count >= 1:
-                score += 1
-                data_json["abuse"]["1"] = 1
+        if victim_count >= 1:
+            score += 1
+            data_json["abuse"]["1"] = 1
 
     if "2" in stages.keys():
         abuser_count = 0
         for figure in stages["2"]:
             if figure["figure"] in abuser:
                 abuser_count += 1
-            if abuser_count >= 1:
-                score += 1
-                data_json["abuse"]["2"] = 1
+        if abuser_count >= 1:
+            score += 1
+            data_json["abuse"]["2"] = 1
 
     if "3" in stages.keys():
         abuser_count = 0
         for figure in stages["3"]:
             if figure["figure"] in abuser:
                 abuser_count += 1
-            if abuser_count >= 1:
-                score += 1
-                data_json["abuse"]["3"] = 1
+        if abuser_count >= 1:
+            score += 1
+            data_json["abuse"]["3"] = 1
 
     # Stage 5: figures["5"] vs figures["3"] — 가족 동물이 가해자↔피해자로 바뀌면 긴장/갈등
     tension_5 = 0
@@ -342,6 +338,14 @@ def get_score(kidName: str, receiptNo: int):
             tension_6 = 1
     data_json["abuse"]["6"] = tension_6
 
+    # 긴장/갈등 메시지 설정
+    if tension_5 + tension_6 == 2:
+        data_json["tension"] = "높음"
+    elif tension_5 + tension_6 == 1:
+        data_json["tension"] = "있음"
+    else:
+        data_json["tension"] = "없음"
+
     if data_json["positions"]:
         ## position으로 score 계산
         score_4, message = get_friendly(kidName, data_json["positions"])
@@ -353,6 +357,535 @@ def get_score(kidName: str, receiptNo: int):
     make_json(data_json_path, data_json)
 
     return score, message
+
+
+def get_reliability(kidName: str, receiptNo: int):
+    """응답 신뢰도 분석: 응답시간, 인형조작, 동물선택, 가족선택, 대화품질 5가지 지표를 종합.
+
+    Returns:
+        dict: {
+            responseTime: {score, detail},
+            dollInteraction: {score, detail},
+            animalSelection: {score, detail},
+            familySelection: {score, detail},
+            chatQuality: {score, detail},
+            totalScore, grade
+        }
+    """
+    from datetime import datetime
+
+    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{kidName}.json")
+    data_json = read_json(data_json_path)
+
+    result = {}
+
+    # ── A. 응답시간: chatHistory에서 bot→user 쌍의 시간차 분석 ──
+    chat_history = data_json.get("chatHistory", [])
+    response_delays = []
+    for i in range(len(chat_history) - 1):
+        cur = chat_history[i]
+        nxt = chat_history[i + 1]
+        if cur.get("role") == "bot" and nxt.get("role") == "user":
+            try:
+                ts_bot = cur.get("timestamp", "")
+                ts_user = nxt.get("timestamp", "")
+                if isinstance(ts_bot, str) and isinstance(ts_user, str) and ts_bot and ts_user:
+                    t_bot = datetime.fromisoformat(ts_bot)
+                    t_user = datetime.fromisoformat(ts_user)
+                    diff = (t_user - t_bot).total_seconds()
+                    if diff >= 0:
+                        response_delays.append(diff)
+            except (ValueError, TypeError):
+                continue
+
+    if response_delays:
+        # 극단값 제거 후 중위값 사용 (Bowling et al. 2021)
+        sorted_delays = sorted(response_delays)
+        # 상하 10% 제거
+        trim = max(1, len(sorted_delays) // 10)
+        trimmed = sorted_delays[trim:-trim] if len(sorted_delays) > 4 else sorted_delays
+        median_delay = trimmed[len(trimmed) // 2] if trimmed else sorted_delays[len(sorted_delays) // 2]
+        avg_delay = sum(trimmed) / len(trimmed) if trimmed else sum(sorted_delays) / len(sorted_delays)
+        # 아동 자유응답 기준: 질문 읽기 + 생각 + 입력에 최소 5초
+        if median_delay >= 8.0:
+            rt_score = 3
+            rt_detail = f"챗봇 대화 응답 중위값 {median_delay:.1f}초 (충실한 응답, {len(response_delays)}건)"
+        elif median_delay >= 5.0:
+            rt_score = 2
+            rt_detail = f"챗봇 대화 응답 중위값 {median_delay:.1f}초 (보통, {len(response_delays)}건)"
+        elif median_delay >= 2.0:
+            rt_score = 1
+            rt_detail = f"챗봇 대화 응답 중위값 {median_delay:.1f}초 (빠른 응답, {len(response_delays)}건)"
+        else:
+            rt_score = 1
+            rt_detail = f"챗봇 대화 응답 중위값 {median_delay:.1f}초 (너무 빠름, {len(response_delays)}건)"
+    else:
+        rt_score = 0
+        rt_detail = "대화 기록 없음"
+
+    result["responseTime"] = {"score": rt_score, "detail": rt_detail}
+
+    # ── B. 인형 조작 신뢰도: interactionCount 기반 분석 (fallback: dragCount → 좌표 분산도) ──
+    doll_instances = data_json.get("dollInstances", [])
+    positions_data = data_json.get("positions", {})
+
+    # interactionCount 데이터가 있는지 확인
+    has_interaction_data = (
+        doll_instances
+        and len(doll_instances) >= 2
+        and any(d.get("interactionCount") is not None for d in doll_instances)
+    )
+
+    # dragCount 데이터가 있는지 확인 (fallback용)
+    has_drag_data = (
+        doll_instances
+        and len(doll_instances) >= 2
+        and any(d.get("dragCount") is not None for d in doll_instances)
+    )
+
+    if has_interaction_data:
+        # interactionCount 기반 분석
+        total_dolls = len(doll_instances)
+        interacted_count = 0
+        drag_total = 0
+        rotation_total = 0
+        pose_total = 0
+        size_total = 0
+
+        for d in doll_instances:
+            ic = d.get("interactionCount", 0)
+            if ic > 0:
+                interacted_count += 1
+            drag_total += d.get("dragCount", 0)
+            if d.get("rotationChanged", False):
+                rotation_total += 1
+            if d.get("poseChanged", False):
+                pose_total += 1
+            if d.get("sizeChanged", False):
+                size_total += 1
+
+        interacted_ratio = interacted_count / total_dolls if total_dolls > 0 else 0
+
+        detail_str = f"{total_dolls}개 인형 중 {interacted_count}개 조작 (드래그 {drag_total}, 회전 {rotation_total}, 포즈 {pose_total}, 크기 {size_total})"
+        # ADPA 문헌: 조작 0 = 놀이 거부(비타당), 1개 이상이면 의미 있는 표현 가능
+        if interacted_count == 0:
+            pv_score = 0
+            pv_detail = f"조작 없음 - 놀이 거부 ({detail_str})"
+        elif interacted_ratio >= 0.8:
+            pv_score = 3
+            pv_detail = f"충실한 조작 ({detail_str})"
+        elif interacted_ratio >= 0.3:
+            pv_score = 2
+            pv_detail = f"보통 조작 ({detail_str})"
+        else:
+            pv_score = 1
+            pv_detail = f"일부만 조작 ({detail_str})"
+
+    elif has_drag_data:
+        # Fallback 1: dragCount 기반 분석 (interactionCount 없는 이전 세션)
+        total_dolls = len(doll_instances)
+        moved_count = 0
+        for d in doll_instances:
+            drag_count = d.get("dragCount", 0)
+            if drag_count > 0:
+                initial_pos = d.get("initialPosition", {})
+                final_pos = d.get("position", {})
+                if initial_pos and final_pos:
+                    dx = final_pos.get("x", 0) - initial_pos.get("x", 0)
+                    dy = final_pos.get("y", 0) - initial_pos.get("y", 0)
+                    dz = final_pos.get("z", 0) - initial_pos.get("z", 0)
+                    move_dist = (dx ** 2 + dy ** 2 + dz ** 2) ** 0.5
+                    if move_dist >= 0.1:
+                        moved_count += 1
+                else:
+                    moved_count += 1
+
+        moved_ratio = moved_count / total_dolls if total_dolls > 0 else 0
+
+        if moved_ratio >= 0.8:
+            pv_score = 3
+            pv_detail = f"충실한 배치 (이동한 인형: {moved_count}/{total_dolls}, {moved_ratio:.0%})"
+        elif moved_ratio >= 0.5:
+            pv_score = 2
+            pv_detail = f"보통 배치 (이동한 인형: {moved_count}/{total_dolls}, {moved_ratio:.0%})"
+        else:
+            pv_score = 1
+            pv_detail = f"대부분 이동하지 않음 (이동한 인형: {moved_count}/{total_dolls}, {moved_ratio:.0%})"
+    else:
+        # Fallback 2: 기존 좌표 분산도 분석 (dragCount도 없는 이전 세션)
+        coords = []
+        if doll_instances and len(doll_instances) >= 2:
+            for d in doll_instances:
+                pos = d.get("position", {})
+                x = pos.get("x", 0)
+                z = pos.get("z", 0)
+                coords.append((x, z))
+        elif positions_data.get("figures") and len(positions_data["figures"]) >= 2:
+            for fig in positions_data["figures"]:
+                p1 = fig.get("position", {}).get("p1", [0, 0])
+                coords.append((p1[0], p1[1]))
+
+        if len(coords) >= 2:
+            distances = []
+            for i in range(len(coords)):
+                for j in range(i + 1, len(coords)):
+                    dx = coords[i][0] - coords[j][0]
+                    dy = coords[i][1] - coords[j][1]
+                    distances.append((dx ** 2 + dy ** 2) ** 0.5)
+            avg_dist = sum(distances) / len(distances) if distances else 0
+            std_dist = (sum((d - avg_dist) ** 2 for d in distances) / len(distances)) ** 0.5 if distances else 0
+
+            if std_dist > avg_dist * 0.3 and avg_dist > 0.01:
+                pv_score = 3
+                pv_detail = f"다양한 위치 배치 (분산도: {std_dist:.2f})"
+            elif avg_dist > 0.01:
+                pv_score = 2
+                pv_detail = f"보통 위치 배치 (분산도: {std_dist:.2f})"
+            else:
+                pv_score = 1
+                pv_detail = "인형들이 거의 같은 위치에 배치됨"
+        else:
+            pv_score = 0
+            pv_detail = "위치 데이터 부족"
+
+    result["dollInteraction"] = {"score": pv_score, "detail": pv_detail}
+
+    # ── 카드 선택 시간 분석 헬퍼 ──
+    def _analyze_selection_timing(stage_keys: list[str], figures_data: dict) -> dict | None:
+        """selectedAt 타임스탬프로 연속 선택 간 시간차를 분석한다.
+
+        Returns:
+            dict with keys: intervals, median, fast_count, rush_count, total, detail
+            or None if selectedAt data is not available.
+        """
+        timestamps = []
+        for sk in stage_keys:
+            for fig in figures_data.get(sk, []):
+                ts_str = fig.get("selectedAt")
+                if ts_str and isinstance(ts_str, str):
+                    try:
+                        timestamps.append(datetime.fromisoformat(ts_str))
+                    except (ValueError, TypeError):
+                        continue
+        if len(timestamps) < 2:
+            return None
+
+        timestamps.sort()
+        intervals = []
+        for i in range(1, len(timestamps)):
+            diff = (timestamps[i] - timestamps[i - 1]).total_seconds()
+            if diff >= 0:
+                intervals.append(diff)
+
+        if not intervals:
+            return None
+
+        sorted_iv = sorted(intervals)
+        median = sorted_iv[len(sorted_iv) // 2]
+        rush_count = sum(1 for iv in intervals if iv < 1.0)
+        fast_count = sum(1 for iv in intervals if 1.0 <= iv < 3.0)
+        normal_count = sum(1 for iv in intervals if iv >= 3.0)
+
+        if median >= 3.0:
+            detail = f"선택 간격 중위값 {median:.1f}초 (정상, {normal_count}건 정상/{fast_count}건 빠름/{rush_count}건 매우빠름)"
+            score_adj = 0
+        elif median >= 1.0:
+            detail = f"선택 간격 중위값 {median:.1f}초 (빠른 선택, {normal_count}건 정상/{fast_count}건 빠름/{rush_count}건 매우빠름)"
+            score_adj = -1
+        else:
+            detail = f"선택 간격 중위값 {median:.1f}초 (막 찍기 의심, {normal_count}건 정상/{fast_count}건 빠름/{rush_count}건 매우빠름)"
+            score_adj = -2
+
+        return {
+            "intervals": intervals,
+            "median": median,
+            "fast_count": fast_count,
+            "rush_count": rush_count,
+            "normal_count": normal_count,
+            "total": len(intervals),
+            "detail": detail,
+            "score_adj": score_adj,
+        }
+
+    # ── C-1. 동물 선택 패턴 (animalSelection): stage 1, 2의 동물 다양성 + 위치 반복 분석 ──
+    # 동물 카드 고정 순서 (프론트엔드 Animal 배열의 index 순서)
+    ANIMAL_ORDER = [
+        "강아지", "개", "개구리", "고슴도치", "나비", "독수리", "돌고래", "돼지",
+        "병아리", "사자", "상어", "악어", "알에서-나오는-병아리", "새", "젖소", "조개",
+        "캥거루", "코끼리", "코브라", "토끼", "호랑이", "흑표범", "새끼팬더", "공룡",
+        "도마뱀", "돌", "말", "불곰", "새끼-양", "양", "버팔로", "여우",
+    ]
+    animal_index_map = {name: idx for idx, name in enumerate(ANIMAL_ORDER)}
+
+    figures = data_json.get("figures", {})
+
+    # stage 1, 2에서 선택된 동물들의 인덱스 수집
+    animal_indices_per_stage = []
+    animal_names_all = []
+    for stage_key in ["1", "2"]:
+        stage_figs = figures.get(stage_key, [])
+        stage_indices = []
+        for fig in stage_figs:
+            name = fig.get("figure", "")
+            if name:
+                animal_names_all.append(name)
+                idx = animal_index_map.get(name)
+                if idx is not None:
+                    stage_indices.append(idx)
+        if stage_indices:
+            animal_indices_per_stage.append(stage_indices)
+
+    if animal_names_all:
+        unique_animals = set(animal_names_all)
+        total_animals = len(animal_names_all)
+        diversity_ratio = len(unique_animals) / total_animals
+
+        # 위치 반복 분석: 모든 stage에서 선택된 인덱스가 동일한지 확인
+        all_indices = []
+        for indices in animal_indices_per_stage:
+            all_indices.extend(indices)
+
+        position_repeat = False
+        if len(animal_indices_per_stage) == 2 and all(len(s) > 0 for s in animal_indices_per_stage):
+            # stage 1과 stage 2에서 선택한 인덱스 집합이 동일하면 위치 반복 의심
+            if set(animal_indices_per_stage[0]) == set(animal_indices_per_stage[1]):
+                position_repeat = True
+
+        # 선택 이유(message) 품질 분석: 무의미한 텍스트(1~2자, 자음만, 숫자/특수문자만) 비율
+        import re
+        all_messages = []
+        for stage_key in ["1", "2"]:
+            for fig in figures.get(stage_key, []):
+                msg = fig.get("message", "").strip()
+                all_messages.append(msg)
+
+        meaningless_count = 0
+        for msg in all_messages:
+            if not msg or len(msg) <= 2 or re.match(r'^[ㄱ-ㅎㅏ-ㅣ\d\W]+$', msg):
+                meaningless_count += 1
+        msg_total = len(all_messages) if all_messages else 1
+        meaningless_ratio = meaningless_count / msg_total
+
+        # 종합 판정: 다양성 + 이유 품질 + 위치 반복
+        # 무의미 이유 예시 수집 (최대 3개)
+        meaningless_examples = []
+        for msg in all_messages:
+            if not msg or len(msg) <= 2 or re.match(r'^[ㄱ-ㅎㅏ-ㅣ\d\W]+$', msg):
+                if msg:
+                    meaningless_examples.append(f'"{msg}"')
+                if len(meaningless_examples) >= 3:
+                    break
+        examples_str = ", ".join(meaningless_examples) if meaningless_examples else "빈 입력"
+
+        if meaningless_ratio >= 0.8:
+            as_score = 1
+            as_detail = f"선택 이유 {meaningless_ratio:.0%}가 무의미 ({meaningless_count}/{msg_total}건, 예: {examples_str}) - 1~2자, 자음만, 숫자/특수문자"
+        elif position_repeat and len(unique_animals) <= 2:
+            as_score = 1
+            as_detail = f"위치 반복 + 낮은 다양성 ({len(unique_animals)}종/{total_animals}개) - 무성의 응답 가능"
+        elif meaningless_ratio >= 0.5:
+            as_score = 2
+            as_detail = f"보통 ({len(unique_animals)}종/{total_animals}개, 무의미 이유 {meaningless_ratio:.0%})"
+        elif diversity_ratio >= 0.5 and len(unique_animals) >= 3:
+            as_score = 3
+            as_detail = f"다양한 동물 선택 ({len(unique_animals)}종/{total_animals}개, 다양성 {diversity_ratio:.0%})"
+        else:
+            as_score = 2
+            note = " (참고: 위치 반복 감지)" if position_repeat else ""
+            as_detail = f"보통 다양성 ({len(unique_animals)}종/{total_animals}개, 다양성 {diversity_ratio:.0%}){note}"
+    else:
+        as_score = 0
+        as_detail = "동물 선택 데이터 없음"
+
+    result["animalSelection"] = {"score": as_score, "detail": as_detail}
+
+    # 동물 카드 선택 시간 분석 (stage 1, 2) - 별도 항목
+    animal_timing = _analyze_selection_timing(["1", "2"], figures)
+    if animal_timing:
+        at_score = 3 if animal_timing["median"] >= 3.0 else (2 if animal_timing["median"] >= 1.0 else 1)
+        result["animalTiming"] = {"score": at_score, "detail": animal_timing["detail"]}
+    else:
+        result["animalTiming"] = {"score": 0, "detail": "선택 시간 데이터 없음"}
+
+    # ── C-2. 가족 선택 패턴 (familySelection): stage 3, 5, 6의 가족 동물 분석 ──
+    family_animals_all = []
+    family_by_relation = {}  # relation -> {stage -> animal}
+
+    for stage_key in ["3", "5", "6"]:
+        stage_figs = figures.get(stage_key, [])
+        for fig in stage_figs:
+            name = fig.get("figure", "")
+            relation = fig.get("relation", "")
+            if name and relation:
+                family_animals_all.append(name)
+                if relation not in family_by_relation:
+                    family_by_relation[relation] = {}
+                family_by_relation[relation][stage_key] = name
+
+    if family_animals_all:
+        unique_family = set(family_animals_all)
+        total_family = len(family_animals_all)
+
+        # 모든 가족 구성원에 같은 동물을 선택했는지
+        stage3_animals = [fig.get("figure", "") for fig in figures.get("3", []) if fig.get("figure")]
+        all_same_in_stage3 = len(set(stage3_animals)) <= 1 and len(stage3_animals) >= 2
+
+        # stage 3과 stage 5에서 같은 가족에 대해 같은 동물만 반복했는지
+        same_repeat_35 = 0
+        compare_count_35 = 0
+        for relation, stages in family_by_relation.items():
+            if "3" in stages and "5" in stages:
+                compare_count_35 += 1
+                if stages["3"] == stages["5"]:
+                    same_repeat_35 += 1
+
+        repeat_ratio_35 = same_repeat_35 / compare_count_35 if compare_count_35 > 0 else 0
+
+        diversity_ratio_fam = len(unique_family) / total_family if total_family > 0 else 0
+
+        # 가족 선택 이유(message) 품질 분석
+        fam_messages = []
+        for stage_key in ["3", "5", "6"]:
+            for fig in figures.get(stage_key, []):
+                msg = fig.get("message", "").strip()
+                fam_messages.append(msg)
+
+        fam_meaningless = 0
+        for msg in fam_messages:
+            if not msg or len(msg) <= 2 or re.match(r'^[ㄱ-ㅎㅏ-ㅣ\d\W]+$', msg):
+                fam_meaningless += 1
+        fam_msg_total = len(fam_messages) if fam_messages else 1
+        fam_meaningless_ratio = fam_meaningless / fam_msg_total
+
+        notes = []
+        if all_same_in_stage3:
+            notes.append("가족 전원에 같은 동물 선택")
+        if compare_count_35 > 0 and repeat_ratio_35 >= 0.8:
+            notes.append(f"stage 3↔5 동일 동물 반복 ({same_repeat_35}/{compare_count_35})")
+
+        # 무의미 이유 예시 수집 (최대 3개)
+        fam_examples = []
+        for msg in fam_messages:
+            if not msg or len(msg) <= 2 or re.match(r'^[ㄱ-ㅎㅏ-ㅣ\d\W]+$', msg):
+                if msg:
+                    fam_examples.append(f'"{msg}"')
+                if len(fam_examples) >= 3:
+                    break
+        fam_examples_str = ", ".join(fam_examples) if fam_examples else "빈 입력"
+
+        if fam_meaningless_ratio >= 0.8:
+            fs_score = 1
+            fs_detail = f"선택 이유 {fam_meaningless_ratio:.0%}가 무의미 ({fam_meaningless}/{fam_msg_total}건, 예: {fam_examples_str}) - 1~2자, 자음만, 숫자/특수문자"
+        elif diversity_ratio_fam >= 0.5 and len(unique_family) >= 3 and fam_meaningless_ratio < 0.5:
+            fs_score = 3
+            fs_detail = f"다양한 가족 동물 선택 ({len(unique_family)}종/{total_family}개, 다양성 {diversity_ratio_fam:.0%})"
+        elif diversity_ratio_fam >= 0.3 or len(unique_family) >= 2:
+            fs_score = 2
+            note_str = f" (참고: {', '.join(notes)})" if notes else ""
+            fs_detail = f"보통 다양성 ({len(unique_family)}종/{total_family}개, 다양성 {diversity_ratio_fam:.0%}){note_str}"
+        else:
+            fs_score = 2
+            note_str = f" - {', '.join(notes)}" if notes else ""
+            fs_detail = f"반복적 선택 ({len(unique_family)}종/{total_family}개) - 임상적 고착 가능성 참고{note_str}"
+    else:
+        fs_score = 0
+        fs_detail = "가족 동물 선택 데이터 없음"
+
+    result["familySelection"] = {"score": fs_score, "detail": fs_detail}
+
+    # 가족 카드 선택 시간 분석 (stage 3, 5, 6) - 별도 항목
+    family_timing = _analyze_selection_timing(["3", "5", "6"], figures)
+    if family_timing:
+        ft_score = 3 if family_timing["median"] >= 3.0 else (2 if family_timing["median"] >= 1.0 else 1)
+        result["familyTiming"] = {"score": ft_score, "detail": family_timing["detail"]}
+    else:
+        result["familyTiming"] = {"score": 0, "detail": "선택 시간 데이터 없음"}
+
+    # ── D. 대화품질: user 메시지 길이 분석 ──
+    user_messages = [e.get("content", "") for e in chat_history if e.get("role") == "user"]
+
+    if user_messages:
+        avg_len = sum(len(m) for m in user_messages) / len(user_messages)
+        # 아동 기준: "응", "아빠", "무서워" 등 2~4자 응답도 임상적으로 유효
+        meaningful_msgs = sum(1 for m in user_messages if len(m) >= 2)
+        meaningful_ratio = meaningful_msgs / len(user_messages)
+
+        if avg_len >= 5 and meaningful_ratio >= 0.5:
+            cq_score = 3
+            cq_detail = f"챗봇 대화 충실 (평균 {avg_len:.1f}자, 2자 이상 {meaningful_ratio:.0%}, {len(user_messages)}건)"
+        elif avg_len >= 2:
+            cq_score = 2
+            cq_detail = f"챗봇 대화 보통 (평균 {avg_len:.1f}자, 2자 이상 {meaningful_ratio:.0%}, {len(user_messages)}건)"
+        else:
+            cq_score = 1
+            cq_detail = f"챗봇 대화 짧음 (평균 {avg_len:.1f}자, 2자 이상 {meaningful_ratio:.0%}, {len(user_messages)}건)"
+    else:
+        cq_score = 0
+        cq_detail = "챗봇 대화 기록 없음"
+
+    result["chatQuality"] = {"score": cq_score, "detail": cq_detail}
+
+    # ── 그룹별 점수 ──
+    def calc_group(items):
+        scores = [s for s in items if s > 0]
+        if not scores:
+            return 0, "낮음"
+        avg = sum(scores) / len(scores)
+        if avg >= 2.5:
+            return round(avg, 2), "높음"
+        elif avg >= 1.5:
+            return round(avg, 2), "보통"
+        else:
+            return round(avg, 2), "낮음"
+
+    # 동물 검사 신뢰도: 동물 선택 + 동물 선택 시간 + 가족 선택 + 가족 선택 시간 + 대화 품질 + 응답 시간
+    animal_score, animal_grade = calc_group([
+        result["animalSelection"]["score"],
+        result["animalTiming"]["score"],
+        result["familySelection"]["score"],
+        result["familyTiming"]["score"],
+        result["chatQuality"]["score"],
+        result["responseTime"]["score"],
+    ])
+    result["animalTest"] = {"score": animal_score, "grade": animal_grade}
+
+    # 인형 가족검사 신뢰도: 인형 조작
+    family_score, family_grade = calc_group([
+        result["dollInteraction"]["score"],
+    ])
+    result["familyTest"] = {"score": family_score, "grade": family_grade}
+
+    # 종합 점수 (IER 문헌: 2개 이상 지표가 동시에 플래그될 때만 "낮음" 판정)
+    all_item_scores = [
+        result["responseTime"]["score"],
+        result["dollInteraction"]["score"],
+        result["animalSelection"]["score"],
+        result["familySelection"]["score"],
+        result["chatQuality"]["score"],
+    ]
+    # score 0은 데이터 없음이므로 제외
+    active_scores = [s for s in all_item_scores if s > 0]
+    low_count = sum(1 for s in active_scores if s <= 1)
+
+    all_group_scores = [animal_score, family_score]
+    valid = [s for s in all_group_scores if s > 0]
+    total_score = round(sum(valid) / len(valid), 2) if valid else 0
+
+    # 2개 이상 지표가 score 1이면 "낮음", 그 외 점수 기반 판정
+    if low_count >= 2:
+        grade = "낮음"
+    elif total_score >= 2.5:
+        grade = "높음"
+    elif total_score >= 1.5:
+        grade = "보통"
+    else:
+        grade = "낮음"
+
+    result["totalScore"] = total_score
+    result["grade"] = grade
+    result["lowIndicatorCount"] = low_count
+
+    return result
 
 
 def get_report(kidName: str, receiptNo: int):
@@ -376,11 +909,11 @@ def get_report(kidName: str, receiptNo: int):
     tension_5 = abuse.get("5", 0)
     tension_6 = abuse.get("6", 0)
     if tension_5 + tension_6 == 2:
-        tension_message = "긴장/갈등 높음"
+        tension_message = "높음"
     elif tension_5 + tension_6 == 1:
-        tension_message = "긴장/갈등 있음"
+        tension_message = "있음"
     else:
-        tension_message = "긴장/갈등 없음"
+        tension_message = "없음"
 
     data_json["report"] = message
     data_json["tension"] = tension_message

@@ -68,13 +68,18 @@ class SessionRepository:
         """Update scripts for a family relation"""
         return self.update_session(receipt_no, {f"scripts.{relation}": scripts})
 
-    def update_scoring(self, receipt_no: str, score: int, abuse: Dict, abuser: Dict) -> bool:
+    def update_scoring(self, receipt_no: str, score: int, abuse: Dict, abuser: Dict, tension: str = None, reliability: Dict = None) -> bool:
         """Update scoring data"""
-        return self.update_session(receipt_no, {
+        data = {
             "score": score,
             "abuse": abuse,
             "abuser": abuser
-        })
+        }
+        if tension is not None:
+            data["tension"] = tension
+        if reliability is not None:
+            data["reliability"] = reliability
+        return self.update_session(receipt_no, data)
 
     def update_report(self, receipt_no: str, report: str) -> bool:
         """Update the final report"""

@@ -77,6 +77,12 @@ export interface FigureInstance {
   selected: boolean;
   pose: DollPose;
   isMe?: boolean;
+  dragCount: number; // 드래그 완료 횟수
+  initialPosition: Position3D; // 최초 배치 위치
+  rotationChanged: boolean; // 회전이 변경되었는지
+  poseChanged: boolean; // 포즈(stand/sit)가 변경되었는지
+  sizeChanged: boolean; // 크기가 변경되었는지
+  interactionCount: number; // 총 인터랙션 횟수 (드래그+회전+포즈+크기 변경 합계)
 }
 
 export interface FiguresConfig {
@@ -92,6 +98,12 @@ export interface DollInstanceData {
   rotation: number;
   position: Position3D;
   size: number;
+  dragCount: number; // 드래그 완료 횟수
+  initialPosition: Position3D; // 최초 배치 위치
+  rotationChanged: boolean; // 회전이 변경되었는지
+  poseChanged: boolean; // 포즈(stand/sit)가 변경되었는지
+  sizeChanged: boolean; // 크기가 변경되었는지
+  interactionCount: number; // 총 인터랙션 횟수 (드래그+회전+포즈+크기 변경 합계)
 }
 
 export const ROTATION_ANGLES = [

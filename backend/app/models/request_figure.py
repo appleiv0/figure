@@ -17,6 +17,7 @@ class ReceiptNoReq(BaseModel):
         default=None, examples=[{"name": "victor", "sex": "male", "birth": "20101212"}]
     )
     agree: bool = Field(default=True, examples=[True])
+    counselorEmail: Optional[str] = Field(default=None, examples=["user@gmail.com"])
 
 
 class SetFigureReq(BaseModel):
@@ -66,6 +67,22 @@ class SetPostionReq(BaseModel):
         ],
     )
     canvasImage: Optional[str] = Field(default=None, description="Base64 encoded canvas image")
+    dollInstances: Optional[list] = Field(
+        default=None,
+        description="3D doll instance data for reconstruction",
+        examples=[
+            [
+                {
+                    "dollModel": "adult_male",
+                    "label": "아빠",
+                    "pose": "stand",
+                    "rotation": 0.5,
+                    "position": {"x": 0.2, "y": 0.01, "z": -0.3},
+                    "size": 1.0,
+                }
+            ]
+        ],
+    )
 
 
 class LLMCompletionReq(BaseModel):

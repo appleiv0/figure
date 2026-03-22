@@ -13,20 +13,26 @@ const MessageParser = ({ children, actions }: any) => {
   const parse = (message: any) => {
     if (checker === "first") {
       actions.afterInitMessage(message);
-      const newFigure = {
+      const newFigure: any = {
         figure: selectedCards[currentIndex].figure,
         message: message,
         relation: selectedFamily[currentIndex],
       };
+      if (selectedCards[currentIndex].selectedAt) {
+        newFigure.selectedAt = selectedCards[currentIndex].selectedAt;
+      }
       setFigure([...figure, newFigure]);
     }
     if (checker === "second") {
       actions.afterInitMessage5(message);
-      const newFigure = {
+      const newFigure: any = {
         figure: selectedCardsNew[currentIndex].figure,
         message: message,
         relation: selectedFamily[currentIndex],
       };
+      if (selectedCardsNew[currentIndex].selectedAt) {
+        newFigure.selectedAt = selectedCardsNew[currentIndex].selectedAt;
+      }
       setFigure([...figure, newFigure]);
     }
     if (checker === "stage6_1") {

@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
       port: parseInt(env.PORT) || 3001,
       proxy: {
         "/api": {
-          target: "http://192.168.0.188:3302",
+          target: "http://localhost:3302",
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ""),
         },

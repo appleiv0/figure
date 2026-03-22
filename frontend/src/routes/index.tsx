@@ -3,6 +3,7 @@ import PageMeta from "../components/atoms/PageMeta";
 import useStore from "../store";
 import Layout from "../views/layout";
 import Home from "../views/pages/Home";
+import Landing from "../views/pages/Landing";
 import Register from "../views/pages/Register";
 import Ending from "../views/pages/Stage/ending";
 import Stage0 from "../views/pages/Stage/stage0";
@@ -16,6 +17,7 @@ import Result from "../views/pages/Stage/result";
 import AdminDashboard from "../views/pages/Admin";
 import AdminSessions from "../views/pages/Admin/Sessions";
 import AdminSessionDetail from "../views/pages/Admin/SessionDetail";
+import MySessions from "../views/pages/MySessions";
 import Test3D from "../views/pages/Test3D";
 import SeedCompare from "../views/pages/Test3D/SeedCompare";
 
@@ -27,7 +29,8 @@ export const Router = () => {
       path: "/",
       element: <Layout />,
       children: [
-        { path: "/", element: <Register /> },
+        { path: "/", element: <Landing /> },
+        { path: "/register", element: <Register /> },
         {
           path: "/information",
           element: <Home />,
@@ -102,6 +105,10 @@ export const Router = () => {
         {
           path: "/result",
           element: <Result />,
+        },
+        {
+          path: "/my-sessions",
+          element: <MySessions />,
         },
         {
           path: "/admin",

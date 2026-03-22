@@ -40,6 +40,16 @@ class MongoDB:
         # Compound index for common queries
         sessions.create_index([("createdAt", -1), ("status", 1)])
 
+        # Users collection indexes
+        users = self._db["users"]
+        users.create_index("email", unique=True)
+
+        # Login codes collection indexes
+        login_codes = self._db["login_codes"]
+        login_codes.create_index("code", unique=True)
+        login_codes.create_index("counselorEmail")
+        login_codes.create_index("createdAt")
+
     def get_db(self) -> Database:
         """Get database instance, connecting if necessary"""
         if self._db is None:
@@ -67,3 +77,11 @@ def get_database() -> Database:
 def get_sessions_collection() -> Collection:
     """Get the therapy_sessions collection"""
     return mongodb.get_collection("therapy_sessions")
+
+def get_users_collection() -> Collection:
+    """Get the users collection"""
+    return mongodb.get_collection("users")
+
+def get_login_codes_collection() -> Collection:
+    """Get the login_codes collection"""
+    return mongodb.get_collection("login_codes")

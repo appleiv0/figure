@@ -7,11 +7,12 @@ import { FigureInstance, Figure3DType, FiguresConfig, DollPose, DollInstanceData
 import * as THREE from 'three';
 
 // gl 인스턴스를 외부 ref에 저장하는 헬퍼 컴포넌트
-function GlCapture({ glRef }: { glRef: React.MutableRefObject<THREE.WebGLRenderer | null> }) {
-  const { gl } = useThree();
+function GlCapture({ glRef, cameraRef }: { glRef: React.MutableRefObject<THREE.WebGLRenderer | null>; cameraRef: React.MutableRefObject<THREE.Camera | null> }) {
+  const { gl, camera } = useThree();
   useEffect(() => {
     glRef.current = gl;
-  }, [gl, glRef]);
+    cameraRef.current = camera;
+  }, [gl, camera, glRef, cameraRef]);
   return null;
 }
 
@@ -104,9 +105,11 @@ interface DeskScene3DProps {
   onNext?: (canvasImage: string, dollInstances: DollInstanceData[]) => void;
   initialDollInstances?: DollInstanceData[];
   readOnly?: boolean;
+  phase?: number;
+  onPhaseChange?: (phase: number) => void;
 }
 
-export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: DeskScene3DProps = {}) {
+export default function DeskScene3D({ onNext, initialDollInstances, readOnly, phase = 2, onPhaseChange }: DeskScene3DProps = {}) {
   const [figures, setFigures] = useState<Figure3DType[]>([]);
   const [instances, setInstances] = useState<FigureInstance[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -116,6 +119,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
   const [customRole, setCustomRole] = useState('');
   const canvasRef = useRef<HTMLDivElement>(null);
   const glRef = useRef<THREE.WebGLRenderer | null>(null);
+  const cameraRef = useRef<THREE.Camera | null>(null);
   const touchDragEnabled = useRef(false);
   const touchStartTime = useRef(0);
   const instancesRef = useRef<FigureInstance[]>([]);
@@ -128,7 +132,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
       .then((config: FiguresConfig) => {
         const enabledFigures = config.figures.filter(f => f.enabled);
         setFigures(enabledFigures);
-        setShowDollPicker(true);
+        if (phase >= 2) setShowDollPicker(true);
         // 모든 모델 프리로드 (stand + sit)
         enabledFigures.forEach(fig => {
           const dollKey = fig.dollModel || 'adult_male';
@@ -160,6 +164,12 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
       rotation: doll.rotation,
       selected: false,
       pose: doll.pose as DollPose,
+      dragCount: doll.dragCount || 0,
+      initialPosition: doll.initialPosition ? { ...doll.initialPosition } : { ...doll.position },
+      rotationChanged: doll.rotationChanged || false,
+      poseChanged: doll.poseChanged || false,
+      sizeChanged: doll.sizeChanged || false,
+      interactionCount: doll.interactionCount || 0,
     }));
     setInstances(restored);
     // 모델 프리로드
@@ -185,13 +195,20 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
     const labeledFig = { ...fig, label: role };
     setInstances(prev => {
       const spot = findEmptySpot(prev, fig);
+      const spawnPos = { x: spot.x, y: 0.01, z: spot.z };
       const newInstance: FigureInstance = {
         id,
         figureType: labeledFig,
-        position: { x: spot.x, y: 0.01, z: spot.z },
+        position: { ...spawnPos },
         rotation: 0,
         selected: true,
         pose: 'stand',
+        dragCount: 0,
+        initialPosition: { ...spawnPos },
+        rotationChanged: false,
+        poseChanged: false,
+        sizeChanged: false,
+        interactionCount: 0,
       };
       return [...prev.map(inst => ({ ...inst, selected: false })), newInstance];
     });
@@ -216,7 +233,12 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
 
   const handleRotate = (id: string, angle: number) => {
     setInstances(prev => prev.map(inst =>
-      inst.id === id ? { ...inst, rotation: angle } : inst
+      inst.id === id ? {
+        ...inst,
+        rotation: angle,
+        rotationChanged: true,
+        interactionCount: (inst.interactionCount || 0) + 1,
+      } : inst
     ));
   };
 
@@ -229,11 +251,26 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
     });
   };
 
+  const handleDragEnd = useCallback((id: string) => {
+    setInstances(prev => prev.map(inst =>
+      inst.id === id ? {
+        ...inst,
+        dragCount: (inst.dragCount || 0) + 1,
+        interactionCount: (inst.interactionCount || 0) + 1,
+      } : inst
+    ));
+  }, []);
+
   const handleTogglePose = () => {
     if (!selectedId) return;
     setInstances(prev => prev.map(inst =>
       inst.id === selectedId
-        ? { ...inst, pose: inst.pose === 'stand' ? 'sit' : 'stand' }
+        ? {
+            ...inst,
+            pose: inst.pose === 'stand' ? 'sit' : 'stand',
+            poseChanged: true,
+            interactionCount: (inst.interactionCount || 0) + 1,
+          }
         : inst
     ));
   };
@@ -252,7 +289,50 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
     setTimeout(() => {
       let canvasImage = '';
       if (glRef.current) {
-        canvasImage = glRef.current.domElement.toDataURL('image/png');
+        const glCanvas = glRef.current.domElement;
+        const w = glCanvas.width;
+        const h = glCanvas.height;
+        // 2D 캔버스에 WebGL 스크린샷 + 라벨 그리기
+        const offscreen = document.createElement('canvas');
+        offscreen.width = w;
+        offscreen.height = h;
+        const ctx = offscreen.getContext('2d');
+        if (ctx && cameraRef.current) {
+          ctx.drawImage(glCanvas, 0, 0);
+          const camera = cameraRef.current as THREE.PerspectiveCamera;
+          // 각 인형 위에 라벨 그리기
+          instancesRef.current.forEach(inst => {
+            const labelHeight = inst.figureType.size * (inst.pose === 'sit' ? 1.0 : 1.4);
+            const pos3 = new THREE.Vector3(inst.position.x, labelHeight, inst.position.z);
+            pos3.project(camera);
+            const sx = (pos3.x * 0.5 + 0.5) * w;
+            const sy = (-pos3.y * 0.5 + 0.5) * h;
+            const fontSize = Math.round(w / 30);
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.textAlign = 'center';
+            const text = inst.figureType.label;
+            const metrics = ctx.measureText(text);
+            const pw = 6;
+            const ph = 4;
+            ctx.fillStyle = 'rgba(0,0,0,0.55)';
+            const rx = sx - metrics.width / 2 - pw;
+            const ry = sy - fontSize / 2 - ph;
+            const rw = metrics.width + pw * 2;
+            const rh = fontSize + ph * 2;
+            ctx.beginPath();
+            if (ctx.roundRect) {
+              ctx.roundRect(rx, ry, rw, rh, 6);
+            } else {
+              ctx.rect(rx, ry, rw, rh);
+            }
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(text, sx, sy + fontSize / 3);
+          });
+          canvasImage = offscreen.toDataURL('image/png');
+        } else {
+          canvasImage = glCanvas.toDataURL('image/png');
+        }
       }
       // 인형 인스턴스 데이터 직렬화
       const dollInstances: DollInstanceData[] = instancesRef.current.map(inst => ({
@@ -262,6 +342,12 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
         rotation: inst.rotation,
         position: { ...inst.position },
         size: inst.figureType.size,
+        dragCount: inst.dragCount || 0,
+        initialPosition: inst.initialPosition ? { ...inst.initialPosition } : { ...inst.position },
+        rotationChanged: inst.rotationChanged || false,
+        poseChanged: inst.poseChanged || false,
+        sizeChanged: inst.sizeChanged || false,
+        interactionCount: inst.interactionCount || 0,
       }));
       onNext(canvasImage, dollInstances);
     }, 200);
@@ -299,6 +385,9 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
     };
 
     const handleTouchEnd = () => {
+      if (touchDragEnabled.current && selectedId) {
+        handleDragEnd(selectedId);
+      }
       touchDragEnabled.current = false;
       touchStartTime.current = 0;
     };
@@ -336,7 +425,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
         }}
       >
         <CameraSetup />
-        <GlCapture glRef={glRef} />
+        <GlCapture glRef={glRef} cameraRef={cameraRef} />
         <ambientLight intensity={0.9} />
         <directionalLight
           castShadow
@@ -354,7 +443,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
         <pointLight position={[-2, 2, 2]} intensity={0.4} />
         <Environment preset="apartment" />
 
-        <DeskModel />
+        {phase >= 2 && <DeskModel />}
 
         {deferredInstances.map(instance => (
           <Suspense key={instance.id} fallback={null}>
@@ -369,6 +458,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
               onSelect={() => handleSelectFigure(instance.id)}
               onRotate={(angle) => handleRotate(instance.id, angle)}
               onPositionChange={(position) => handlePositionChange(instance.id, position)}
+              onDragEnd={() => handleDragEnd(instance.id)}
               onResolvePosition={(x, z) => resolveCollision(instance.id, x, z, instancesRef.current)}
             />
           </Suspense>
@@ -381,7 +471,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
       {!readOnly && (
         <div style={{
           position: 'absolute',
-          top: 90,
+          top: phase >= 2 ? 12 : 130,
           left: 0,
           right: 0,
           display: 'flex',
@@ -390,26 +480,27 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
           gap: 8,
           zIndex: 10,
           padding: '0 12px',
-          flexWrap: 'nowrap',
-          whiteSpace: 'nowrap',
+          flexWrap: 'wrap',
         }}>
-          {/* 인형 추가 버튼 */}
-          <button
-            onClick={() => setShowDollPicker(!showDollPicker)}
-            style={{
-              padding: '8px 20px',
-              fontSize: 15,
-              fontWeight: 'bold',
-              background: showDollPicker ? '#fff' : 'rgba(0,0,0,0.8)',
-              color: showDollPicker ? '#333' : 'white',
-              border: '2px solid white',
-              borderRadius: 8,
-              cursor: 'pointer',
-              fontFamily: 'sans-serif',
-            }}
-          >
-            + 가족 추가
-          </button>
+          {/* 인형 추가 버튼 (phase 2에서만 표시) */}
+          {phase >= 2 && (
+            <button
+              onClick={() => setShowDollPicker(!showDollPicker)}
+              style={{
+                padding: '8px 20px',
+                fontSize: 15,
+                fontWeight: 'bold',
+                background: showDollPicker ? '#fff' : 'rgba(0,0,0,0.8)',
+                color: showDollPicker ? '#333' : 'white',
+                border: '2px solid white',
+                borderRadius: 8,
+                cursor: 'pointer',
+                fontFamily: 'sans-serif',
+              }}
+            >
+              + 가족 추가
+            </button>
+          )}
 
           {/* 자세 토글 */}
           {selectedInstance && (
@@ -454,11 +545,11 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
         </div>
       )}
 
-      {/* 인형 선택 패널 */}
-      {!readOnly && showDollPicker && !showRolePicker && (
+      {/* 인형 선택 패널 (phase 2에서만) */}
+      {!readOnly && phase >= 2 && showDollPicker && !showRolePicker && (
         <div style={{
           position: 'absolute',
-          top: 134,
+          top: 54,
           left: 8,
           right: 8,
           display: 'grid',
@@ -605,43 +696,50 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
         </div>
       )}
 
-      {/* 캐릭터 안내 */}
-      {!readOnly && onNext && (
+      {/* 캐릭터 안내 (Intro4 스타일, phase 1에서만) */}
+      {!readOnly && onNext && phase === 1 && (
         <div style={{
           position: 'absolute',
-          top: 12,
-          left: 12,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          gap: 8,
+          justifyContent: 'center',
           zIndex: 10,
         }}>
-          <img src="./assets/images/01.png" alt="purum" style={{ width: 48 }} />
           <div style={{
             position: 'relative',
-            background: '#FEF9C3',
+            background: '#FFFBE3',
             border: '1px solid #FDE68A',
-            borderRadius: 12,
-            padding: '8px 14px',
-            fontSize: 14,
+            borderRadius: 16,
+            padding: '12px 18px',
+            fontSize: 17,
             fontWeight: 'bold',
             fontFamily: 'sans-serif',
-            textAlign: 'left',
+            textAlign: 'center',
             whiteSpace: 'pre-line',
+            marginBottom: 8,
+            maxWidth: '90%',
           }}>
             <div style={{
               position: 'absolute',
-              left: -7,
-              top: '50%',
-              transform: 'translateY(-50%) rotate(45deg)',
+              bottom: -7,
+              left: '50%',
+              transform: 'translateX(-50%) rotate(45deg)',
               width: 14,
               height: 14,
-              background: '#FEF9C3',
-              borderLeft: '1px solid #FDE68A',
-              borderTop: '1px solid #FDE68A',
+              background: '#FFFBE3',
+              borderRight: '1px solid #FDE68A',
+              borderBottom: '1px solid #FDE68A',
             }} />
-            {'가족을 선택해서 원하는 위치에 세워보세요.\n인형을 드래그하면 위치를 옮길 수 있습니다.\n화살표를 클릭하면 360도 회전합니다.'}
+            {phase === 1
+              ? '가족을 선택해서 원하는 위치에 세워보세요.\n인형을 드래그하면 위치를 옮길 수 있습니다.\n화살표를 클릭하면 360도 회전합니다.\n앉음 버튼을 클릭하면 사람을 앉힐 수 있습니다.'
+              : '가족을 추가하세요.'}
           </div>
+          <img src="./assets/images/01.png" alt="purum" style={{ width: 56, marginTop: 10 }} />
         </div>
       )}
 
@@ -654,22 +752,41 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly }: 
           transform: 'translateX(-50%)',
           zIndex: 10,
         }}>
-          <button
-            onClick={handleComplete}
-            style={{
-              padding: '10px 28px',
-              fontSize: 16,
-              fontWeight: 'bold',
-              background: '#2EB500',
-              color: 'white',
-              border: '2px solid white',
-              borderRadius: 10,
-              cursor: 'pointer',
-              fontFamily: 'sans-serif',
-            }}
-          >
-            검사완료
-          </button>
+          {phase === 1 ? (
+            <button
+              onClick={() => onPhaseChange?.(2)}
+              style={{
+                padding: '10px 28px',
+                fontSize: 16,
+                fontWeight: 'bold',
+                background: '#2EB500',
+                color: 'white',
+                border: '2px solid white',
+                borderRadius: 10,
+                cursor: 'pointer',
+                fontFamily: 'sans-serif',
+              }}
+            >
+              확인
+            </button>
+          ) : (
+            <button
+              onClick={handleComplete}
+              style={{
+                padding: '10px 28px',
+                fontSize: 16,
+                fontWeight: 'bold',
+                background: '#2EB500',
+                color: 'white',
+                border: '2px solid white',
+                borderRadius: 10,
+                cursor: 'pointer',
+                fontFamily: 'sans-serif',
+              }}
+            >
+              검사완료
+            </button>
+          )}
         </div>
       )}
     </div>

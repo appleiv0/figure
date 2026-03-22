@@ -11,8 +11,10 @@ const AdminSessionDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aiEvaluation, setAiEvaluation] = useState("");
+  const [familyType, setFamilyType] = useState("");
   const [evalSaving, setEvalSaving] = useState(false);
   const [evalSaved, setEvalSaved] = useState(false);
+  const isAdmin = sessionStorage.getItem("adminAuth") === "true";
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -21,6 +23,7 @@ const AdminSessionDetail = () => {
         const data = await adminApi.getSession(receiptNo);
         setSession(data.session);
         setAiEvaluation((data.session as any)?.aiEvaluation || "");
+        setFamilyType((data.session as any)?.familyType || "");
       } catch (err) {
         setError("세션을 불러오는데 실패했습니다.");
       } finally {
@@ -79,12 +82,12 @@ const AdminSessionDetail = () => {
 
     const html = `
       <div style="width: 210mm; min-height: 297mm; padding: 15mm; background: #fff; font-family: 'Noto Sans KR', sans-serif; font-size: 11px; line-height: 1.6; color: #333;">
-        <h1 style="text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">부모-자녀 관계 진단 보고서</h1>
+        <h1 style="text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">AI 가족 평가 보고서</h1>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
           <tr><td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold; width: 25%;">검사일</td><td style="border: 1px solid #ccc; padding: 8px;">${testDate}</td><td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold; width: 25%;">관리번호</td><td style="border: 1px solid #ccc; padding: 8px;">${data.receiptNo}</td></tr>
           <tr><td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">상담기관</td><td style="border: 1px solid #ccc; padding: 8px;">${data.counselor?.organization || "-"}</td><td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">상담사</td><td style="border: 1px solid #ccc; padding: 8px;">${data.counselor?.name || "-"}</td></tr>
           <tr><td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">아동 이름</td><td style="border: 1px solid #ccc; padding: 8px;">${kidName}</td><td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">성별 / 나이</td><td style="border: 1px solid #ccc; padding: 8px;">${sex} / 만 ${age}세</td></tr>
-          <tr><td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">진단 결과</td><td style="border: 1px solid #ccc; padding: 8px; font-weight: bold; color: #d32f2f;" colspan="3">${data.report || "-"}</td></tr>
+          <tr><td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">역기능</td><td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${(() => { const abuse = data.abuse; if (!abuse) return "-"; const sum = (abuse["1"] || 0) + (abuse["2"] || 0) + (abuse["3"] || 0); return sum === 3 ? '<span style="color:#d32f2f">있음</span>' : sum >= 1 ? '<span style="color:#f59e0b">가능성</span>' : '<span style="color:#16a34a">없음</span>'; })()}</td><td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">긴장/갈등</td><td style="border: 1px solid #ccc; padding: 8px; font-weight: bold;">${(() => { const t = data.tension; if (!t) return "-"; return t === "높음" ? '<span style="color:#d32f2f">높음</span>' : t === "있음" ? '<span style="color:#f59e0b">있음</span>' : '<span style="color:#16a34a">없음</span>'; })()}</td></tr>
         </table>
         <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 8px;">1. 나 (Me)</h2>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
@@ -111,7 +114,6 @@ const AdminSessionDetail = () => {
         </table>
         <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 8px;">5. 종합 소견 (상담 대화 내용)</h2>
         ${llmHTML || '<p style="color: #666;">대화 기록이 없습니다.</p>'}
-        <div style="margin-top: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px; text-align: center;"><strong>종합 점수:</strong> ${data.score || 0}점</div>
       </div>
     `;
 
@@ -180,7 +182,7 @@ const AdminSessionDetail = () => {
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-3xl font-bold">세션 상세</h1>
-          <Link to="/admin/sessions" className="text-blue-600 hover:underline">
+          <Link to="/admin#sessions" className="text-blue-600 hover:underline">
             ← 목록으로
           </Link>
         </div>
@@ -220,10 +222,6 @@ const AdminSessionDetail = () => {
               <span className="ml-2 font-medium">{session.kid?.name}</span>
             </div>
             <div>
-              <span className="text-gray-500">점수:</span>
-              <span className="ml-2 font-bold text-lg">{session.score || 0}</span>
-            </div>
-            <div>
               <span className="text-gray-500">기관:</span>
               <span className="ml-2">{session.counselor?.organization}</span>
             </div>
@@ -231,11 +229,167 @@ const AdminSessionDetail = () => {
               <span className="text-gray-500">상담사:</span>
               <span className="ml-2">{session.counselor?.name}</span>
             </div>
+            <div>
+              <span className="text-gray-500">역기능:</span>
+              <span className={`ml-2 font-bold ${(() => { const abuse = (session as any).abuse; if (!abuse) return ""; const sum = (abuse["1"] || 0) + (abuse["2"] || 0) + (abuse["3"] || 0); return sum === 3 ? "text-red-600" : sum >= 1 ? "text-yellow-600" : "text-green-600"; })()}`}>
+                {(() => { const abuse = (session as any).abuse; if (!abuse) return "-"; const sum = (abuse["1"] || 0) + (abuse["2"] || 0) + (abuse["3"] || 0); return sum === 3 ? "있음" : sum >= 1 ? "가능성" : "없음"; })()}
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-500">긴장/갈등:</span>
+              <span className={`ml-2 font-bold ${(session as any).tension === "높음" ? "text-red-600" : (session as any).tension === "있음" ? "text-yellow-600" : "text-green-600"}`}>
+                {(session as any).tension || "-"}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Canvas Image + AI 평가 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* AI 진단 목록 - 관리자만 */}
+        {isAdmin && (session as any).abuse && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-bold mb-4">AI 가족 평가 진단 목록</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border border-gray-200 px-3 py-2 text-left">진단 항목</th>
+                    <th className="border border-gray-200 px-3 py-2 text-left">설명</th>
+                    <th className="border border-gray-200 px-3 py-2 text-center">결과</th>
+                    <th className="border border-gray-200 px-3 py-2 text-center">점수</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { key: "1", label: "자기상(나)", desc: "나를 표현하는 동물에 피해 동물 포함" },
+                    { key: "2", label: "소망상", desc: "되고 싶은 동물에 가해 동물 포함" },
+                    { key: "3", label: "가족상", desc: "가족 동물에 가해 동물 포함" },
+                    { key: "4", label: "배치 점수", desc: "가족 배치 거리/관계 점수" },
+                    { key: "5", label: "가족소망 긴장", desc: "가족 동물이 가해↔피해로 변경" },
+                    { key: "6", label: "자기인식 긴장", desc: "나의 동물이 가해↔피해로 변경" },
+                  ].map(item => {
+                    const val = (session as any).abuse?.[item.key] ?? 0;
+                    const isScore = item.key === "4";
+                    return (
+                      <tr key={item.key} className="hover:bg-gray-50">
+                        <td className="border border-gray-200 px-3 py-2 font-medium">{item.label}</td>
+                        <td className="border border-gray-200 px-3 py-2 text-gray-600">{item.desc}</td>
+                        <td className="border border-gray-200 px-3 py-2 text-center">
+                          {isScore ? (
+                            <span className="font-semibold">{val}점</span>
+                          ) : val === 1 ? (
+                            <span className="text-red-600 font-bold">해당</span>
+                          ) : (
+                            <span className="text-green-600">정상</span>
+                          )}
+                        </td>
+                        <td className="border border-gray-200 px-3 py-2 text-center font-semibold">
+                          {isScore ? val : val === 1 ? <span className="text-red-600">1</span> : <span className="text-gray-400">0</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* 검사 신뢰도 - 관리자만 */}
+        {isAdmin && <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-bold mb-2">검사 신뢰도</h2>
+          <div className="text-sm text-gray-600 mb-4 space-y-1 bg-gray-50 rounded p-3">
+            <p><b>동물 선택</b>: 나/소망 동물(stage 1,2) 선택 이유 품질 분석</p>
+            <p><b>동물 선택 시간</b>: 나/소망 동물 카드 클릭 간 시간 간격 (막 찍기 감지)</p>
+            <p><b>가족 선택</b>: 가족 동물(stage 3,5,6) 선택 이유 품질 분석</p>
+            <p><b>가족 선택 시간</b>: 가족 동물 카드 클릭 간 시간 간격 (막 찍기 감지)</p>
+            <p><b>대화 품질</b>: 챗봇(푸름이)과의 대화 응답 길이 분석</p>
+            <p><b>응답 시간</b>: 챗봇 질문 후 답변까지 걸린 시간 분석</p>
+            <p><b>인형 조작</b>: 인형 드래그/회전/포즈/크기 변경 여부 분석</p>
+          </div>
+          {!(session as any).reliability ? (
+            <p className="text-gray-400 text-sm">신뢰도 분석 데이터 없음</p>
+          ) : (() => {
+            const r = (session as any).reliability;
+            const gradeColor = (g: string) => g === "높음" ? "text-green-600" : g === "보통" ? "text-yellow-600" : "text-red-600 font-bold";
+            const scoreColor = (score: number) => score >= 3 ? "text-green-600" : score >= 2 ? "text-yellow-600" : "text-red-600 font-bold";
+
+            const renderTable = (items: Array<{label: string; key: string}>) => (
+              <table className="min-w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border border-gray-200 px-3 py-2 text-left">항목</th>
+                    <th className="border border-gray-200 px-3 py-2 text-center">점수</th>
+                    <th className="border border-gray-200 px-3 py-2 text-left">상세</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map(({ label, key }) => {
+                    const item = r[key] || (key === "dollInteraction" ? r["positionVariety"] : null);
+                    if (!item) return null;
+                    return (
+                      <tr key={key} className="hover:bg-gray-50">
+                        <td className="border border-gray-200 px-3 py-2 font-medium">{label}</td>
+                        <td className={`border border-gray-200 px-3 py-2 text-center font-semibold ${scoreColor(item.score)}`}>{item.score}/3</td>
+                        <td className="border border-gray-200 px-3 py-2 text-gray-600">{item.detail || "-"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            );
+
+            return (
+              <div>
+                <div className="mb-4">
+                  <span className="text-gray-600 text-sm">종합 판정: </span>
+                  <span className={`font-bold text-base ${gradeColor(r.grade)}`}>
+                    {r.grade} ({r.totalScore}/3)
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* 동물 검사 신뢰도 */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-bold text-gray-700">동물 검사 신뢰도</p>
+                      {r.animalTest && (
+                        <span className={`text-sm font-bold ${gradeColor(r.animalTest.grade)}`}>
+                          {r.animalTest.grade} ({r.animalTest.score}/3)
+                        </span>
+                      )}
+                    </div>
+                    {renderTable([
+                      { label: "동물 선택", key: "animalSelection" },
+                      { label: "동물 선택 시간", key: "animalTiming" },
+                      { label: "가족 선택", key: "familySelection" },
+                      { label: "가족 선택 시간", key: "familyTiming" },
+                      { label: "대화 품질", key: "chatQuality" },
+                      { label: "응답 시간", key: "responseTime" },
+                    ])}
+                  </div>
+
+                  {/* 인형 가족검사 신뢰도 */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-bold text-gray-700">인형 가족검사 신뢰도</p>
+                      {r.familyTest && (
+                        <span className={`text-sm font-bold ${gradeColor(r.familyTest.grade)}`}>
+                          {r.familyTest.grade} ({r.familyTest.score}/3)
+                        </span>
+                      )}
+                    </div>
+                    {renderTable([
+                      { label: "인형 조작", key: "dollInteraction" },
+                    ])}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>}
+
+        {/* Canvas Image + AI 평가 - 관리자만 */}
+        {isAdmin && <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-bold mb-4">인형 배치 이미지</h2>
             {session.canvasImage ? (
@@ -257,23 +411,47 @@ const AdminSessionDetail = () => {
             )}
           </div>
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">AI 가족 평가 결과</h2>
-            <textarea
-              className="w-full h-64 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-vertical text-sm"
-              placeholder="AI 가족 평가 결과를 입력하세요..."
-              value={aiEvaluation}
-              onChange={(e) => { setAiEvaluation(e.target.value); setEvalSaved(false); }}
-            />
-            <div className="flex items-center justify-end gap-3 mt-3">
+            <h2 className="text-xl font-bold mb-4">가족유형 판정</h2>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">가족유형</label>
+              <select
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                value={familyType}
+                onChange={(e) => { setFamilyType(e.target.value); setEvalSaved(false); }}
+                disabled={!isAdmin}
+              >
+                <option value="">선택하세요</option>
+                <option value="균형형">① 균형형 (기능적)</option>
+                <option value="고립형">② 고립형 (역기능)</option>
+                <option value="세대단절형">③ 세대단절형 (역기능)</option>
+                <option value="우회공격형">④ 우회공격형 (역기능)</option>
+                <option value="분열형">⑤ 분열형 (역기능)</option>
+                <option value="이산형">⑥ 이산형 (역기능)</option>
+                <option value="우회보호형">⑦ 우회보호형 (역기능)</option>
+                <option value="밀착형">⑧ 밀착형 (역기능)</option>
+                <option value="목적지향형">⑨ 목적지향형 (역기능)</option>
+              </select>
+            </div>
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">판정 내용</label>
+              <textarea
+                className="w-full h-40 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-vertical text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                placeholder="판정 내용을 입력하세요..."
+                value={aiEvaluation}
+                onChange={(e) => { setAiEvaluation(e.target.value); setEvalSaved(false); }}
+                disabled={!isAdmin}
+              />
+            </div>
+            <div className="flex items-center justify-end gap-3">
               {evalSaved && <span className="text-green-600 text-sm font-medium">저장되었습니다</span>}
-              <button
-                className={`px-4 py-2 rounded-lg text-white font-bold text-sm ${evalSaving ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
-                disabled={evalSaving}
+              {isAdmin && <button
+                className="px-4 py-2 rounded-lg text-white font-bold text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+                disabled={evalSaving || evalSaved}
                 onClick={async () => {
                   if (!receiptNo) return;
                   setEvalSaving(true);
                   try {
-                    await adminApi.saveEvaluation(receiptNo, aiEvaluation);
+                    await adminApi.saveEvaluation(receiptNo, aiEvaluation, familyType);
                     setEvalSaved(true);
                   } catch {
                     alert("저장에 실패했습니다.");
@@ -283,13 +461,13 @@ const AdminSessionDetail = () => {
                 }}
               >
                 {evalSaving ? '저장 중...' : '저장'}
-              </button>
+              </button>}
             </div>
           </div>
-        </div>
+        </div>}
 
-        {/* 3D Doll Arrangement */}
-        {(session as any).dollInstances && (session as any).dollInstances.length > 0 && (
+        {/* 3D Doll Arrangement - 관리자만 */}
+        {isAdmin && (session as any).dollInstances && (session as any).dollInstances.length > 0 && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <h2 className="text-xl font-bold mb-4">3D 인형 배치 데이터</h2>
             <div className="mt-3">
@@ -324,8 +502,8 @@ const AdminSessionDetail = () => {
           </div>
         )}
 
-        {/* Figures by Stage */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        {/* Figures by Stage - 관리자만 */}
+        {isAdmin && <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-bold mb-4">스테이지별 동물 선택</h2>
           {Object.entries(session.figures || {}).map(([stage, figures]) => (
             <div key={stage} className="mb-4">
@@ -343,10 +521,10 @@ const AdminSessionDetail = () => {
               </div>
             </div>
           ))}
-        </div>
+        </div>}
 
-        {/* Chat History */}
-        {(session as any).chatHistory && (session as any).chatHistory.length > 0 && (
+        {/* Chat History - 관리자만 */}
+        {isAdmin && (session as any).chatHistory && (session as any).chatHistory.length > 0 && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <h2 className="text-xl font-bold mb-4">대화 기록 (Chat History)</h2>
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
@@ -395,13 +573,6 @@ const AdminSessionDetail = () => {
           </div>
         )}
 
-        {/* Report */}
-        {session.report && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">최종 리포트</h2>
-            <div className="whitespace-pre-wrap text-gray-700">{session.report}</div>
-          </div>
-        )}
       </div>
     </div>
   );

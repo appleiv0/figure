@@ -26,26 +26,32 @@ const formatSex = (sex?: string): string => {
 export const exportSessionsToExcel = (sessions: SessionData[], filename?: string) => {
   if (sessions.length === 0) return;
 
-  // 1. Find max family count across all selected sessions
-  //    figures["3"] = family figures, figures["5"] = wished family figures
+  // 1. Find max counts across all selected sessions
   let maxFamilyCount = 0;
   let maxWishedFamilyCount = 0;
+  let maxDollCount = 0;
 
   sessions.forEach((session) => {
     const familyFigures = session.figures?.["3"] || [];
     const wishedFamilyFigures = session.figures?.["5"] || [];
+    const dollInstances = session.dollInstances || [];
     if (familyFigures.length > maxFamilyCount) maxFamilyCount = familyFigures.length;
     if (wishedFamilyFigures.length > maxWishedFamilyCount) maxWishedFamilyCount = wishedFamilyFigures.length;
+    if (dollInstances.length > maxDollCount) maxDollCount = dollInstances.length;
   });
 
   // Ensure at least 1 column for dynamic fields
   maxFamilyCount = Math.max(maxFamilyCount, 1);
   maxWishedFamilyCount = Math.max(maxWishedFamilyCount, 1);
+  maxDollCount = Math.max(maxDollCount, 1);
 
   // 2. Build headers
   const headers: string[] = [
     "이름",
     "결과",
+    "가족유형",
+    "판정내용",
+    "진단(자기상)", "진단(소망상)", "진단(가족상)", "배치점수", "가족소망긴장", "자기인식긴장", "긴장/갈등",
     "성별",
     "나이",
     "나1", "나2", "나3", "나4",
@@ -59,6 +65,11 @@ export const exportSessionsToExcel = (sessions: SessionData[], filename?: string
     headers.push(`가족소망상징${i}`);
   }
 
+  // 3D 인형 배치 데이터 헤더
+  for (let i = 1; i <= maxDollCount; i++) {
+    headers.push(`인형${i}_역할`, `인형${i}_모델`, `인형${i}_자세`, `인형${i}_회전`, `인형${i}_X`, `인형${i}_Y`, `인형${i}_Z`, `인형${i}_크기`);
+  }
+
   // 3. Build rows
   const rows: string[][] = sessions.map((session) => {
     const meFigures = session.figures?.["1"] || [];
@@ -66,9 +77,19 @@ export const exportSessionsToExcel = (sessions: SessionData[], filename?: string
     const familyFigures = session.figures?.["3"] || [];
     const wishedFamilyFigures = session.figures?.["5"] || [];
 
+    const abuse = session.abuse || {};
     const row: string[] = [
       session.kid?.name || "-",
       session.report || "-",
+      session.familyType || "-",
+      session.aiEvaluation || "-",
+      abuse["1"] ? "해당" : "정상",
+      abuse["2"] ? "해당" : "정상",
+      abuse["3"] ? "해당" : "정상",
+      `${abuse["4"] || 0}`,
+      abuse["5"] ? "해당" : "정상",
+      abuse["6"] ? "해당" : "정상",
+      session.tension || "-",
       formatSex(session.kid?.sex),
       session.kid?.birth ? `${calculateAge(session.kid.birth)}` : "-",
     ];
@@ -93,6 +114,26 @@ export const exportSessionsToExcel = (sessions: SessionData[], filename?: string
     for (let i = 0; i < maxWishedFamilyCount; i++) {
       const fig = wishedFamilyFigures[i];
       row.push(fig ? `${fig.relation}:${fig.figure || fig.name || ""}` : "");
+    }
+
+    // 3D 인형 배치 데이터
+    const dollInstances = session.dollInstances || [];
+    for (let i = 0; i < maxDollCount; i++) {
+      const doll = dollInstances[i];
+      if (doll) {
+        row.push(
+          doll.label || "",
+          doll.dollModel || "",
+          doll.pose || "",
+          `${doll.rotation ?? ""}`,
+          `${doll.position?.x ?? ""}`,
+          `${doll.position?.y ?? ""}`,
+          `${doll.position?.z ?? ""}`,
+          `${doll.size ?? ""}`,
+        );
+      } else {
+        row.push("", "", "", "", "", "", "", "");
+      }
     }
 
     return row;

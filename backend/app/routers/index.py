@@ -30,6 +30,7 @@ from app.models.response_figure import (
 
 import app.controllers.controller_figure as controller_figure
 from app.routers.admin import router as admin_router
+from app.routers.public import router as public_router
 
 
 logger = config.init_logger()
@@ -44,6 +45,9 @@ TAGS = ["IndexRouter"]
 
 # Include admin router
 router.include_router(admin_router)
+
+# Include public router (no auth required)
+router.include_router(public_router)
 
 
 @router.get(
@@ -99,7 +103,7 @@ def robots_txt(res: PlainTextResponse):
     response_model=ReceiptNoRes,
 )
 def create_receipt_number(res: JSONResponse, req: ReceiptNoReq):
-    status_error, ret = controller_figure.create_receipt_number(req.counselor, req.kid, req.agree)
+    status_error, ret = controller_figure.create_receipt_number(req.counselor, req.kid, req.agree, req.counselorEmail)
     return response(res, status_error, ret)
 
 
@@ -158,7 +162,8 @@ def set_figure(res: JSONResponse, req: SetFigureReq):
 )
 def set_position(res: JSONResponse, req: SetPostionReq):
     status_error, ret = controller_figure.set_position(
-        req.kidName, req.receiptNo, req.centerH, req.centerV, req.figures, req.canvasImage
+        req.kidName, req.receiptNo, req.centerH, req.centerV, req.figures,
+        canvas_image=req.canvasImage, doll_instances=req.dollInstances
     )
     return response(res, status_error, ret)
 

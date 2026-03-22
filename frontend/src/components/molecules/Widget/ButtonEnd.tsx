@@ -81,7 +81,7 @@ const ButtonEnd = () => {
             className="text-2xl font-bold ml-auto flex items-center gap-2 border border-primary bg-primary hover:bg-grey-100 hover:text-[#2C9608] text-white px-3 py-4 rounded-md cursor-pointer select-none"
             onClick={handleNext}
           >
-            인터뷰 종료
+            확인
             <Icon
               icon="arrowRight"
               width={24}
@@ -176,7 +176,7 @@ const generateReportHTML = (data: any): string => {
   return `
     <div style="width: 210mm; min-height: 297mm; padding: 15mm; background: #fff; font-family: 'Noto Sans KR', sans-serif; font-size: 11px; line-height: 1.6; color: #333;">
       <h1 style="text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">
-        부모-자녀 관계 진단 보고서
+        AI 가족 평가 보고서
       </h1>
 
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">

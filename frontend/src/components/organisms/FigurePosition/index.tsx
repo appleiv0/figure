@@ -1,5 +1,6 @@
 import { useState } from "react";
-import Chatbot, { createChatBotMessage } from "react-chatbot-kit";
+import { createChatBotMessage } from "react-chatbot-kit";
+import ChatbotWrapper from "../../molecules/Chatbot/ChatbotWrapper";
 import CanvasDrag from "../../molecules/CanvasDrag";
 import ActionProvider from "../../molecules/Chatbot/ActionProvider";
 import MessageParser from "../../molecules/Chatbot/MessageParser";
@@ -60,7 +61,7 @@ const FigurePosition = () => {
         </>
       ) : (
         <div className="container mx-auto">
-          <Chatbot
+          <ChatbotWrapper
             config={config as any}
             actionProvider={ActionProvider}
             messageParser={MessageParser}

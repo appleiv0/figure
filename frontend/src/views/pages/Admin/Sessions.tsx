@@ -104,7 +104,8 @@ const AdminSessions = () => {
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "-";
     const date = new Date(dateStr);
-    return date.toLocaleDateString("ko-KR", {
+    return date.toLocaleString("ko-KR", {
+      timeZone: "Asia/Seoul",
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -156,9 +157,34 @@ const AdminSessions = () => {
     exportSessionsToExcel(selectedSessions);
   };
 
+  const handleAIDatasetDownload = () => {
+    const selectedSessions = filteredSessions.filter(s => selectedIds.has(s.receiptNo));
+    if (selectedSessions.length === 0) {
+      alert("세션을 선택해주세요.");
+      return;
+    }
+    exportSessionsToExcel(selectedSessions, `AI_데이터셋_${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.xlsx`);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) {
+      alert("삭제할 세션을 선택해주세요.");
+      return;
+    }
+    if (!confirm(`선택한 ${selectedIds.size}건을 삭제하시겠습니까?`)) return;
+    try {
+      await Promise.all(Array.from(selectedIds).map(id => adminApi.deleteSession(id)));
+      setSelectedIds(new Set());
+      fetchSessions(page);
+    } catch (err) {
+      alert("일부 삭제에 실패했습니다.");
+      fetchSessions(page);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
+      <div className="mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">세션 목록</h1>
           <Link to="/admin" className="text-blue-600 hover:underline">
@@ -253,26 +279,60 @@ const AdminSessions = () => {
               <option value={200}>200개씩</option>
             </select>
           </div>
-          <button
-            onClick={handleExcelDownload}
-            disabled={selectedIds.size === 0}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: selectedIds.size > 0 ? "#2563eb" : "#9ca3af",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              cursor: selectedIds.size > 0 ? "pointer" : "not-allowed",
-              fontSize: "14px",
-              fontWeight: 500,
-            }}
-          >
-            엑셀 다운로드 ({selectedIds.size}건)
-          </button>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              onClick={handleBulkDelete}
+              disabled={selectedIds.size === 0}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: selectedIds.size > 0 ? "#dc2626" : "#9ca3af",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: selectedIds.size > 0 ? "pointer" : "not-allowed",
+                fontSize: "14px",
+                fontWeight: 500,
+              }}
+            >
+              선택 삭제 ({selectedIds.size}건)
+            </button>
+            <button
+              onClick={handleExcelDownload}
+              disabled={selectedIds.size === 0}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: selectedIds.size > 0 ? "#2563eb" : "#9ca3af",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: selectedIds.size > 0 ? "pointer" : "not-allowed",
+                fontSize: "14px",
+                fontWeight: 500,
+              }}
+            >
+              엑셀 다운로드 ({selectedIds.size}건)
+            </button>
+            <button
+              onClick={handleAIDatasetDownload}
+              disabled={selectedIds.size === 0}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: selectedIds.size > 0 ? "#7c3aed" : "#9ca3af",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: selectedIds.size > 0 ? "pointer" : "not-allowed",
+                fontSize: "14px",
+                fontWeight: 500,
+              }}
+            >
+              AI 데이터셋 ({selectedIds.size}건)
+            </button>
+          </div>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow" style={{ overflowX: "auto" }}>
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -284,34 +344,43 @@ const AdminSessions = () => {
                     style={{ width: "16px", height: "16px", cursor: "pointer" }}
                   />
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                   접수번호
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                   아동명
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                   성별
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                   나이
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  결과
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                   기관/상담사
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                   상태
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  점수
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                  가족유형
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                  판정내용
+                </th>
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                  역기능
+                </th>
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                  긴장/갈등
+                </th>
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                  신뢰도
+                </th>
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                   생성일
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                   관리
                 </th>
               </tr>
@@ -319,13 +388,13 @@ const AdminSessions = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-4 text-center">
+                  <td colSpan={14} className="px-6 py-4 text-center">
                     로딩 중...
                   </td>
                 </tr>
               ) : filteredSessions.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={14} className="px-6 py-4 text-center text-gray-500">
                     데이터가 없습니다.
                   </td>
                 </tr>
@@ -340,30 +409,22 @@ const AdminSessions = () => {
                         style={{ width: "16px", height: "16px", cursor: "pointer" }}
                       />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-0.5 py-1 whitespace-nowrap text-sm">
                       {session.receiptNo}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-0.5 py-1 whitespace-nowrap text-sm font-medium">
                       {session.kid?.name || "-"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-0.5 py-1 whitespace-nowrap text-sm">
                       {formatSex(session.kid?.sex)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-0.5 py-1 whitespace-nowrap text-sm">
                       {calculateAge(session.kid?.birth)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span style={{
-                        color: session.report?.includes("역기능 가능성") ? "#f59e0b" : session.report?.includes("역기능") ? "#dc2626" : "#16a34a",
-                        fontWeight: 600
-                      }}>
-                        {session.report || "-"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-0.5 py-1 whitespace-nowrap text-sm">
                       {session.counselor?.organization || "-"} / {session.counselor?.name || "-"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-0.5 py-1 whitespace-nowrap">
                       <span
                         className={`px-2 py-1 text-xs rounded-full ${
                           session.status === "completed"
@@ -374,13 +435,49 @@ const AdminSessions = () => {
                         {session.status === "completed" ? "완료" : "진행중"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {session.score || 0}
+                    <td className="px-0.5 py-1 whitespace-nowrap text-sm font-medium">
+                      {(session as any).familyType || "-"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-0.5 py-1 text-sm" style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {session.aiEvaluation || "-"}
+                    </td>
+                    <td className="px-0.5 py-1 whitespace-nowrap text-sm">
+                      {(() => {
+                        const abuse = (session as any).abuse;
+                        if (!abuse) return "-";
+                        const sum = (abuse["1"] || 0) + (abuse["2"] || 0) + (abuse["3"] || 0);
+                        return sum === 3
+                          ? <span className="text-red-600 font-bold">있음</span>
+                          : sum >= 1
+                          ? <span className="text-yellow-600 font-semibold">가능성</span>
+                          : <span className="text-green-600">없음</span>;
+                      })()}
+                    </td>
+                    <td className="px-0.5 py-1 whitespace-nowrap text-sm">
+                      {(() => {
+                        const t = (session as any).tension;
+                        if (!t) return "-";
+                        return t === "높음"
+                          ? <span className="text-red-600 font-bold">{t}</span>
+                          : t === "있음"
+                          ? <span className="text-yellow-600 font-semibold">{t}</span>
+                          : <span className="text-green-600">{t}</span>;
+                      })()}
+                    </td>
+                    <td className="px-0.5 py-1 whitespace-nowrap text-sm">
+                      {(() => {
+                        const reliability = (session as any).reliability;
+                        if (!reliability?.grade) return <span className="text-gray-400">-</span>;
+                        if (reliability.grade === "높음") return <span className="text-green-600">{reliability.grade}</span>;
+                        if (reliability.grade === "보통") return <span className="text-yellow-600">{reliability.grade}</span>;
+                        if (reliability.grade === "낮음") return <span className="text-red-600 font-bold">{reliability.grade}</span>;
+                        return <span>{reliability.grade}</span>;
+                      })()}
+                    </td>
+                    <td className="px-0.5 py-1 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(session.createdAt)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-0.5 py-1 whitespace-nowrap text-sm">
                       <Link
                         to={`/admin/sessions/${session.receiptNo}`}
                         className="text-blue-600 hover:underline mr-4"

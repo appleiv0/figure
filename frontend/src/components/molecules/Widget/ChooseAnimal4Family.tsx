@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Icon from "../../atoms/Icon";
 import Modal from "../../atoms/Modal";
 import useStore from "../../../store";
@@ -29,7 +29,8 @@ const ChooseAnimal4Family = (props: any) => {
   const [checkedState, setCheckedState] = useState(() =>
     new Array(Math.max(...Animal.map(a => a.index)) + 1).fill(false)
   );
-  const shuffledAnimal = useMemo(() => [...Animal].sort(() => Math.random() - 0.5), []);
+  // 고정 순서로 동물 표시 (셔플 제거)
+  const orderedAnimal = Animal;
 
   const handleCircleClick = (index: number, name: string, img: string, josa: number) => {
     setCheckedState(checkedState.map((_bool, j) => j === index));
@@ -39,6 +40,7 @@ const ChooseAnimal4Family = (props: any) => {
       img,
       josa,
       relation: selectedFamily[currentIndex],
+      selectedAt: new Date().toISOString(),
     });
   };
   const initialAction = () => {
@@ -75,7 +77,7 @@ const ChooseAnimal4Family = (props: any) => {
               {/* Scrollable animal grid */}
               <div className="overflow-y-auto flex-1">
                 <div className="grid grid-cols-6 sm:grid-cols-6 md:grid-cols-8 gap-1">
-                  {shuffledAnimal.map((animal) => {
+                  {orderedAnimal.map((animal) => {
                     return (
                       <div key={animal.index} className={`animal-card`}>
                         <button

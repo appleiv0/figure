@@ -20,9 +20,15 @@ const AdminDashboard = () => {
   // Pagination State
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [users, setUsers] = useState<Array<{ email: string; name: string; organization: string; sessionCount: number; lastUsed: string }>>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [creditModal, setCreditModal] = useState<{ email: string; credits: number } | null>(null);
+  const [creditInput, setCreditInput] = useState("");
+
+  const SUPER_USERS = ["appleiv@gmail.com"];
 
   // Search State
   const [searchName, setSearchName] = useState("");
@@ -32,8 +38,6 @@ const AdminDashboard = () => {
   const [searchAgeMin, setSearchAgeMin] = useState("");
   const [searchAgeMax, setSearchAgeMax] = useState("");
 
-  // Sort State
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Session | "kid.name" | "counselor.name"; direction: "asc" | "desc" } | null>(null);
 
   // Selected Sessions State
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -41,12 +45,14 @@ const AdminDashboard = () => {
   // Get active tab from URL hash, default to "dashboard"
   const getTabFromHash = () => {
     const hash = window.location.hash.replace("#", "");
-    return hash === "sessions" ? "sessions" : "dashboard";
+    if (hash === "sessions") return "sessions";
+    if (hash === "users") return "users";
+    return "dashboard";
   };
 
-  const [activeTab, setActiveTabState] = useState<"dashboard" | "sessions">(getTabFromHash);
+  const [activeTab, setActiveTabState] = useState<"dashboard" | "sessions" | "users">(getTabFromHash);
 
-  const setActiveTab = (tab: "dashboard" | "sessions") => {
+  const setActiveTab = (tab: "dashboard" | "sessions" | "users") => {
     window.location.hash = tab;
     setActiveTabState(tab);
   };
@@ -116,6 +122,17 @@ const AdminDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, activeTab, page, pageSize]);
 
+  // Fetch users when switching to users tab
+  useEffect(() => {
+    if (isAuthenticated && activeTab === "users") {
+      setUsersLoading(true);
+      adminApi.getUsers()
+        .then(data => setUsers(data.users))
+        .catch(err => console.error(err))
+        .finally(() => setUsersLoading(false));
+    }
+  }, [isAuthenticated, activeTab]);
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const envPassword = import.meta.env.VITE_ADMIN_PASSWORD || "1234";
@@ -145,10 +162,49 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) {
+      alert("삭제할 세션을 선택해주세요.");
+      return;
+    }
+    if (!confirm(`선택한 ${selectedIds.size}건을 삭제하시겠습니까?`)) return;
+    try {
+      await Promise.all(Array.from(selectedIds).map(id => adminApi.deleteSession(id)));
+      setSelectedIds(new Set());
+      fetchSessions(page);
+      const statsData = await adminApi.getStatistics();
+      setStats(statsData);
+    } catch (err) {
+      alert("일부 삭제에 실패했습니다.");
+      fetchSessions(page);
+    }
+  };
+
+  const handleAIDatasetDownload = () => {
+    const selectedSessions = filteredSessions.filter(s => selectedIds.has(s.receiptNo));
+    if (selectedSessions.length === 0) {
+      alert("세션을 선택해주세요.");
+      return;
+    }
+    exportSessionsToExcel(selectedSessions, `AI_데이터셋_${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.xlsx`);
+  };
+
+  const handleReset = () => {
+    setSearchName("");
+    setSearchOrg("");
+    setSearchSex("");
+    setSearchStatus("");
+    setSearchAgeMin("");
+    setSearchAgeMax("");
+    setPage(1);
+    fetchSessions(1);
+  };
+
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "-";
     const date = new Date(dateStr);
-    return date.toLocaleDateString("ko-KR", {
+    return date.toLocaleString("ko-KR", {
+      timeZone: "Asia/Seoul",
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -171,15 +227,6 @@ const AdminDashboard = () => {
     if (sex === "Female") return "여";
     if (sex === "Male") return "남";
     return "-";
-  };
-
-  // Sorting Logic
-  const handleSort = (key: keyof Session | "kid.name" | "counselor.name") => {
-    let direction: "asc" | "desc" = "asc";
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-    setSortConfig({ key, direction });
   };
 
   const filteredSessions = useMemo(() => {
@@ -208,42 +255,11 @@ const AdminDashboard = () => {
     return filtered;
   }, [sessions, searchSex, searchStatus, searchAgeMin, searchAgeMax]);
 
-  const sortedSessions = useMemo(() => {
-    if (!sortConfig) return filteredSessions;
-
-    return [...filteredSessions].sort((a, b) => {
-      let aValue: any = a[sortConfig.key as keyof Session];
-      let bValue: any = b[sortConfig.key as keyof Session];
-
-      // Handle nested properties
-      if (sortConfig.key === "kid.name") {
-        aValue = a.kid?.name || "";
-        bValue = b.kid?.name || "";
-      } else if (sortConfig.key === "counselor.name") {
-        aValue = a.counselor?.organization || ""; // Sorting by Org/Counselor string
-        bValue = b.counselor?.organization || "";
-      }
-
-      if (aValue < bValue) {
-        return sortConfig.direction === "asc" ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return sortConfig.direction === "asc" ? 1 : -1;
-      }
-      return 0;
-    });
-  }, [filteredSessions, sortConfig]);
-
-  const getSortIcon = (key: string) => {
-    if (sortConfig?.key !== key) return "↕";
-    return sortConfig.direction === "asc" ? "↑" : "↓";
-  };
-
   const handleSelectAll = () => {
-    if (selectedIds.size === sortedSessions.length) {
+    if (selectedIds.size === filteredSessions.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(sortedSessions.map(s => s.receiptNo)));
+      setSelectedIds(new Set(filteredSessions.map(s => s.receiptNo)));
     }
   };
 
@@ -262,8 +278,21 @@ const AdminDashboard = () => {
     setPage(1);
   };
 
+  const handleCreditSave = async () => {
+    if (!creditModal || !creditInput) return;
+    try {
+      await adminApi.setCredits(creditModal.email, parseInt(creditInput));
+      setCreditModal(null);
+      // Refresh users list
+      const data = await adminApi.getUsers();
+      setUsers(data.users);
+    } catch (err) {
+      alert("크레딧 변경에 실패했습니다.");
+    }
+  };
+
   const handleExcelDownload = () => {
-    const selectedSessions = sortedSessions.filter(s => selectedIds.has(s.receiptNo));
+    const selectedSessions = filteredSessions.filter(s => selectedIds.has(s.receiptNo));
     if (selectedSessions.length === 0) {
       alert("세션을 선택해주세요.");
       return;
@@ -338,6 +367,21 @@ const AdminDashboard = () => {
                 {sidebarOpen && '세션 목록'}
               </button>
             </li>
+            <li>
+              <button
+                onClick={() => setActiveTab("users")}
+                className={`w-full text-left ${sidebarOpen ? 'px-3 py-2' : 'p-2 justify-center'} rounded-lg flex items-center gap-2 transition-colors text-sm ${activeTab === "users"
+                    ? "bg-blue-50 text-blue-700 font-medium"
+                    : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                title="사용량 관리"
+              >
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                {sidebarOpen && '사용량 관리'}
+              </button>
+            </li>
           </ul>
         </nav>
         <div className={`absolute bottom-0 ${sidebarOpen ? 'w-52' : 'w-12'} p-2 border-t`}>
@@ -401,6 +445,110 @@ const AdminDashboard = () => {
           </>
         )}
 
+        {activeTab === "users" && (
+          <>
+            <h2 className="text-2xl font-bold mb-6">사용량 관리</h2>
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              <p className="text-gray-600 text-sm mb-4">Google 로그인 사용자별 검사 사용량을 관리합니다.</p>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">이메일</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">이름</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">사용 횟수</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">제한</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">최근 로그인</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">관리</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {usersLoading ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">로딩 중...</td>
+                      </tr>
+                    ) : users.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">등록된 사용자가 없습니다.</td>
+                      </tr>
+                    ) : (
+                      users.map(user => {
+                        const isSuperUser = SUPER_USERS.includes(user.email);
+                        return (
+                        <tr key={user.email} className="hover:bg-gray-50">
+                          <td className="px-4 py-2 text-sm">{user.email}{isSuperUser && <span className="ml-1 text-xs text-purple-600 font-bold">(슈퍼)</span>}</td>
+                          <td className="px-4 py-2 text-sm">{user.name || "-"}</td>
+                          <td className="px-4 py-2 text-sm font-semibold">{user.sessionCount}</td>
+                          <td className="px-4 py-2 text-sm text-gray-500">
+                            {isSuperUser ? <span className="font-bold">-</span> : `${(user as any).credits ?? 10}회`}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-500">
+                            {user.lastUsed ? new Date(user.lastUsed).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) : "-"}
+                          </td>
+                          <td className="px-4 py-2 text-sm">
+                            {!isSuperUser && (
+                              <button
+                                className="text-blue-600 hover:underline text-xs"
+                                onClick={() => { setCreditModal({ email: user.email, credits: (user as any).credits ?? 10 }); setCreditInput(String((user as any).credits ?? 10)); }}
+                              >
+                                제한 변경
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-6">
+              <p className="text-xs text-gray-400">슈퍼유저 ({SUPER_USERS.join(", ")})는 사용량 제한 없음 (- 표시)</p>
+              <p className="text-xs text-gray-400">제한 변경 클릭 시 해당 사용자의 남은 크레딧을 수정할 수 있습니다.</p>
+            </div>
+
+            {/* 크레딧 변경 모달 */}
+            {creditModal && (
+              <div
+                style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}
+                onClick={() => setCreditModal(null)}
+              >
+                <div style={{ background: "white", borderRadius: "12px", padding: "24px", minWidth: "320px" }} onClick={(e) => e.stopPropagation()}>
+                  <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "8px" }}>사용량 제한 변경</h3>
+                  <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "16px" }}>{creditModal.email}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+                    <label style={{ fontSize: "14px", color: "#374151" }}>남은 크레딧:</label>
+                    <input
+                      type="number"
+                      value={creditInput}
+                      onChange={(e) => setCreditInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && creditInput && handleCreditSave()}
+                      style={{ width: "80px", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "14px" }}
+                      autoFocus
+                    />
+                    <span style={{ fontSize: "14px", color: "#6b7280" }}>회</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                    <button
+                      onClick={() => setCreditModal(null)}
+                      style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid #d1d5db", background: "white", cursor: "pointer", fontSize: "14px" }}
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={handleCreditSave}
+                      style={{ padding: "8px 16px", borderRadius: "6px", border: "none", background: "#2563eb", color: "white", cursor: "pointer", fontSize: "14px" }}
+                    >
+                      저장
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
         {activeTab === "sessions" && (
           <>
             <h2 className="text-2xl font-bold mb-6">세션 목록</h2>
@@ -413,16 +561,14 @@ const AdminDashboard = () => {
                   placeholder="아동 이름"
                   value={searchName}
                   onChange={(e) => setSearchName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border rounded px-3 py-2"
                 />
                 <input
                   type="text"
                   placeholder="기관명"
                   value={searchOrg}
                   onChange={(e) => setSearchOrg(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border rounded px-3 py-2"
                 />
                 <select
                   value={searchSex}
@@ -462,31 +608,20 @@ const AdminDashboard = () => {
                 </div>
                 <button
                   onClick={handleSearch}
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                 >
                   검색
                 </button>
-                {(searchName || searchOrg || searchSex || searchStatus || searchAgeMin || searchAgeMax) && (
-                  <button
-                    onClick={() => {
-                      setSearchName("");
-                      setSearchOrg("");
-                      setSearchSex("");
-                      setSearchStatus("");
-                      setSearchAgeMin("");
-                      setSearchAgeMax("");
-                      setPage(1);
-                      fetchSessions(1);
-                    }}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    초기화
-                  </button>
-                )}
+                <button
+                  onClick={handleReset}
+                  style={{ padding: "8px 16px", color: "#6b7280", fontSize: "14px", cursor: "pointer", background: "none", border: "none" }}
+                >
+                  초기화
+                </button>
               </div>
             </div>
 
-            {/* Total count and refresh */}
+            {/* Total count and actions */}
             <div style={{ marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <span style={{ color: "#4b5563" }}>
@@ -498,13 +633,30 @@ const AdminDashboard = () => {
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                   style={{ border: "1px solid #d1d5db", borderRadius: "4px", padding: "4px 8px", fontSize: "14px" }}
                 >
-                  <option value={10}>10개씩</option>
                   <option value={20}>20개씩</option>
+                  <option value={40}>40개씩</option>
                   <option value={50}>50개씩</option>
                   <option value={100}>100개씩</option>
+                  <option value={200}>200개씩</option>
                 </select>
               </div>
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={selectedIds.size === 0}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor: selectedIds.size > 0 ? "#dc2626" : "#9ca3af",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: selectedIds.size > 0 ? "pointer" : "not-allowed",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                  }}
+                >
+                  선택 삭제 ({selectedIds.size}건)
+                </button>
                 <button
                   onClick={handleExcelDownload}
                   disabled={selectedIds.size === 0}
@@ -522,77 +674,71 @@ const AdminDashboard = () => {
                   엑셀 다운로드 ({selectedIds.size}건)
                 </button>
                 <button
-                  onClick={() => fetchSessions(page)}
-                  disabled={sessionsLoading}
-                  className="flex items-center gap-2 px-3 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
+                  onClick={handleAIDatasetDownload}
+                  disabled={selectedIds.size === 0}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor: selectedIds.size > 0 ? "#7c3aed" : "#9ca3af",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: selectedIds.size > 0 ? "pointer" : "not-allowed",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                  }}
                 >
-                  <svg className={`w-4 h-4 ${sessionsLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  새로고침
+                  AI 데이터셋 ({selectedIds.size}건)
                 </button>
               </div>
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-lg shadow overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1100px' }}>
+            <div className="bg-white rounded-lg shadow" style={{ overflowX: "auto" }}>
+              <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th style={{ padding: "12px 16px", textAlign: "center", width: "40px" }}>
                       <input
                         type="checkbox"
-                        checked={sortedSessions.length > 0 && selectedIds.size === sortedSessions.length}
+                        checked={filteredSessions.length > 0 && selectedIds.size === filteredSessions.length}
                         onChange={handleSelectAll}
                         style={{ width: "16px", height: "16px", cursor: "pointer" }}
                       />
                     </th>
-                    <th
-                      onClick={() => handleSort("kid.name")}
-                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
-                    >
-                      아동명 <span className="ml-1">{getSortIcon("kid.name")}</span>
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                      접수번호
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider">
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                      아동명
+                    </th>
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                       성별
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider">
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                       나이
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider">
-                      결과
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                      기관/상담사
                     </th>
-                    <th
-                      onClick={() => handleSort("counselor.name")}
-                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
-                    >
-                      기관/상담사 <span className="ml-1">{getSortIcon("counselor.name")}</span>
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                      상태
                     </th>
-                    <th
-                      onClick={() => handleSort("status")}
-                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
-                    >
-                      상태 <span className="ml-1">{getSortIcon("status")}</span>
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                      가족유형
                     </th>
-                    <th
-                      onClick={() => handleSort("score")}
-                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
-                    >
-                      점수 <span className="ml-1">{getSortIcon("score")}</span>
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                      판정내용
                     </th>
-                    <th
-                      onClick={() => handleSort("createdAt")}
-                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
-                    >
-                      생성일 <span className="ml-1">{getSortIcon("createdAt")}</span>
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                      역기능
                     </th>
-                    <th
-                      onClick={() => handleSort("receiptNo")}
-                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider cursor-pointer hover:bg-gray-100"
-                    >
-                      접수번호 <span className="ml-1">{getSortIcon("receiptNo")}</span>
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                      긴장/갈등
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider">
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                      생성일
+                    </th>
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                       관리
                     </th>
                   </tr>
@@ -600,18 +746,18 @@ const AdminDashboard = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {sessionsLoading ? (
                     <tr>
-                      <td colSpan={11} className="px-6 py-4 text-center">
+                      <td colSpan={12} className="px-6 py-4 text-center">
                         로딩 중...
                       </td>
                     </tr>
-                  ) : sortedSessions.length === 0 ? (
+                  ) : filteredSessions.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={12} className="px-6 py-4 text-center text-gray-500">
                         데이터가 없습니다.
                       </td>
                     </tr>
                   ) : (
-                    sortedSessions.map((session) => (
+                    filteredSessions.map((session) => (
                       <tr key={session.receiptNo} className="hover:bg-gray-50">
                         <td style={{ padding: "16px", textAlign: "center" }}>
                           <input
@@ -621,46 +767,65 @@ const AdminDashboard = () => {
                             style={{ width: "16px", height: "16px", cursor: "pointer" }}
                           />
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium">
+                        <td className="px-0.5 py-1 whitespace-nowrap text-sm">
+                          {session.receiptNo}
+                        </td>
+                        <td className="px-0.5 py-1 whitespace-nowrap text-sm font-medium">
                           {session.kid?.name || "-"}
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm">
+                        <td className="px-0.5 py-1 whitespace-nowrap text-sm">
                           {formatSex(session.kid?.sex)}
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm">
+                        <td className="px-0.5 py-1 whitespace-nowrap text-sm">
                           {calculateAge(session.kid?.birth)}
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm">
-                          <span style={{
-                            color: session.report?.includes("역기능 가능성") ? "#f59e0b" : session.report?.includes("역기능") ? "#dc2626" : "#16a34a",
-                            fontWeight: 600
-                          }}>
-                            {session.report || "-"}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm">
+                        <td className="px-0.5 py-1 whitespace-nowrap text-sm">
                           {session.counselor?.organization || "-"} / {session.counselor?.name || "-"}
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap">
+                        <td className="px-0.5 py-1 whitespace-nowrap">
                           <span
-                            className={`px-2 py-1 text-xs rounded-full ${session.status === "completed"
+                            className={`px-2 py-1 text-xs rounded-full ${
+                              session.status === "completed"
                                 ? "bg-green-100 text-green-800"
                                 : "bg-yellow-100 text-yellow-800"
-                              }`}
+                            }`}
                           >
                             {session.status === "completed" ? "완료" : "진행중"}
                           </span>
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm">
-                          {session.score || 0}
+                        <td className="px-0.5 py-1 whitespace-nowrap text-sm font-medium">
+                          {(session as any).familyType || "-"}
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-0.5 py-1 text-sm" style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {session.aiEvaluation || "-"}
+                        </td>
+                        <td className="px-0.5 py-1 whitespace-nowrap text-sm">
+                          {(() => {
+                            const abuse = (session as any).abuse;
+                            if (!abuse) return "-";
+                            const sum = (abuse["1"] || 0) + (abuse["2"] || 0) + (abuse["3"] || 0);
+                            return sum === 3
+                              ? <span className="text-red-600 font-bold">있음</span>
+                              : sum >= 1
+                              ? <span className="text-yellow-600 font-semibold">가능성</span>
+                              : <span className="text-green-600">없음</span>;
+                          })()}
+                        </td>
+                        <td className="px-0.5 py-1 whitespace-nowrap text-sm">
+                          {(() => {
+                            const t = (session as any).tension;
+                            if (!t) return "-";
+                            return t === "높음"
+                              ? <span className="text-red-600 font-bold">{t}</span>
+                              : t === "있음"
+                              ? <span className="text-yellow-600 font-semibold">{t}</span>
+                              : <span className="text-green-600">{t}</span>;
+                          })()}
+                        </td>
+                        <td className="px-0.5 py-1 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(session.createdAt)}
                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm">
-                          {session.receiptNo}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm">
+                        <td className="px-0.5 py-1 whitespace-nowrap text-sm">
                           <Link
                             to={`/admin/sessions/${session.receiptNo}`}
                             className="text-blue-600 hover:underline mr-4"

@@ -44,6 +44,7 @@ interface Props {
   onSelect: () => void;
   onRotate: (angle: number) => void;
   onPositionChange: (position: [number, number, number]) => void;
+  onDragEnd?: () => void;
   onResolvePosition?: (x: number, z: number) => [number, number];
 }
 
@@ -61,6 +62,7 @@ export default function Figure3D({
   onSelect,
   onRotate,
   onPositionChange,
+  onDragEnd,
   onResolvePosition
 }: Props) {
   const { camera, gl, raycaster } = useThree();
@@ -71,6 +73,8 @@ export default function Figure3D({
   const dragPos = useRef<[number, number, number] | null>(null);
   const onPositionChangeRef = useRef(onPositionChange);
   onPositionChangeRef.current = onPositionChange;
+  const onDragEndRef = useRef(onDragEnd);
+  onDragEndRef.current = onDragEnd;
   const onResolvePositionRef = useRef(onResolvePosition);
   onResolvePositionRef.current = onResolvePosition;
 
@@ -207,6 +211,8 @@ export default function Figure3D({
       if (dragPos.current) {
         onPositionChangeRef.current(dragPos.current);
         dragPos.current = null;
+        // 드래그 완료 시 dragCount 증가
+        onDragEndRef.current?.();
       }
     };
 
@@ -277,7 +283,7 @@ export default function Figure3D({
 
       {/* 역할 라벨 (머리 위) */}
       {isMe && (
-        <Html position={[0, dollHeight + poseScale * (renderedPose === 'sit' ? 0.6 : 0.3), 0]} center sprite>
+        <Html position={[0, dollHeight + poseScale * (renderedPose === 'sit' ? 0.9 : 0.3), 0]} center sprite>
           <div style={{
             color: '#333',
             fontSize: 14,

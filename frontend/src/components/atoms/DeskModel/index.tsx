@@ -82,7 +82,7 @@ export default function DeskModel() {
       <mesh
         name="desk-surface"
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0.01, 0]}
+        position={[0, 0.01, 1.0]}
         receiveShadow
       >
         <planeGeometry args={[2.5, 2.5]} />

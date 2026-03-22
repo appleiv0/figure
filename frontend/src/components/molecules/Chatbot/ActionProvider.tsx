@@ -87,11 +87,14 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
     const currentCard = selectedCards[stage1CardIndex];
 
     // Save figure to store
-    const newFigure = {
+    const newFigure: any = {
       figure: currentCard.name,
       message: message,
       relation: "나",
     };
+    if (currentCard.selectedAt) {
+      newFigure.selectedAt = currentCard.selectedAt;
+    }
     setFigure([...figure, newFigure]);
 
     // Save chat messages
@@ -164,11 +167,14 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
     const currentCard = selectedCards[stage2CardIndex];
 
     // Save figure to store
-    const newFigure = {
+    const newFigure: any = {
       figure: currentCard.name,
       message: message,
       relation: "나(소망)",
     };
+    if (currentCard.selectedAt) {
+      newFigure.selectedAt = currentCard.selectedAt;
+    }
     setFigure([...figure, newFigure]);
 
     // Save chat messages
@@ -433,13 +439,15 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
   };
 
   const afterInitMessage6_1 = async (message: string) => {
-    const newFigure = [
-      {
-        figure: selectedCardsNew6[currentIndex].figure,
-        message: message,
-        relation: selectedFamily[currentIndex],
-      },
-    ];
+    const figureObj: any = {
+      figure: selectedCardsNew6[currentIndex].figure,
+      message: message,
+      relation: selectedFamily[currentIndex],
+    };
+    if (selectedCardsNew6[currentIndex].selectedAt) {
+      figureObj.selectedAt = selectedCardsNew6[currentIndex].selectedAt;
+    }
+    const newFigure = [figureObj];
 
     const response1 = await fetchFigure({
       kidName: userInfo.kidname,

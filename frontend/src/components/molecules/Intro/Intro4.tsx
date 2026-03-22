@@ -22,7 +22,7 @@ const Intro4 = ({ handleActivePosition }: Intro4Props) => {
           <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 bg-yellow-200 border-l border-t border-yellow-300 rotate-45" />
         </div>
       </div>
-      <div className="mt-[1.75rem] relative">
+      <div className="mt-[3rem] relative">
         <div className="relative flex flex-col items-center">
           <button
             // className="relative z-10 mt-[6rem] text-[0.9375rem] text-white font-extrabold w-[5.75rem] h-[5.75rem] rounded-[2.875rem] border border-green bg-green flex flex-col items-center justify-center hover:bg-white hover:text-green"

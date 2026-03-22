@@ -10,14 +10,15 @@ import { getItemLocalStorage } from "../../../utils/helper";
 import { DollInstanceData } from "../../../types/figure3d";
 
 const Stage4 = () => {
-  const [activePosition, setActivePosition] = useState<boolean>(false);
+  // phase 0: Intro4, phase 1: 배치만 (가족추가 없음), phase 2: 가족추가 가능
+  const [phase, setPhase] = useState<number>(0);
   const navigator = useNavigate();
   const { setCurrentIndex, setCurrentStep, selectedFamily, selectedFamilyJosa, figure } = useStore() as any;
   const { fetchPosition } = useSetPosition();
   const userInfo = getItemLocalStorage(USER);
 
   const handleActiveFigurePosition = () => {
-    setActivePosition(true);
+    setPhase(1);
   };
 
   const handleNext = async (canvasImage: string, dollInstances: DollInstanceData[]) => {
@@ -72,13 +73,17 @@ const Stage4 = () => {
 
   return (
     <>
-      {!activePosition ? (
+      {phase === 0 ? (
         <>
           <Header />
           <Intro4 handleActivePosition={handleActiveFigurePosition} />
         </>
       ) : (
-        <DeskScene3D onNext={handleNext} />
+        <DeskScene3D
+          onNext={handleNext}
+          phase={phase}
+          onPhaseChange={setPhase}
+        />
       )}
     </>
   );

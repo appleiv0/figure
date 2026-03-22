@@ -79,9 +79,8 @@
   }
   .react-chatbot-kit-chat-btn-send {
     position: absolute;
-    top: 0.5rem;
-    right: 0.625rem;
     bottom: 0.625rem;
+    right: 0.625rem;
     background-image: url("../../assets/images/icons/arrow-up-solid.svg");
     background-repeat: no-repeat;
     background-size: 1.125rem 1.5rem;
@@ -106,10 +105,22 @@
   }
 
   // When input is empty (placeholder shown), disable the button visually
-  .react-chatbot-kit-chat-input:placeholder-shown + .react-chatbot-kit-chat-btn-send {
+  .react-chatbot-kit-chat-input:placeholder-shown + .react-chatbot-kit-chat-btn-send,
+  .react-chatbot-kit-chat-btn-send.disabled {
     background-color: #ccc;
     pointer-events: none;
     cursor: default;
+  }
+
+  // Textarea styling (via ChatbotWrapper)
+  textarea.react-chatbot-kit-chat-input {
+    resize: none;
+    overflow: hidden;
+    min-height: 3rem;
+    max-height: 9.375rem;
+    line-height: 2.25rem;
+    width: 100%;
+    box-sizing: border-box;
   }
   .react-chatbot-kit-chat-btn-send-icon {
     width: 0.9375rem;
@@ -124,7 +135,7 @@
     line-height: 2.25rem;
     border-radius: 0.625rem;
     border: 0.125rem solid #aaa;
-    padding: 0.75rem;
+    padding: 0.75rem 4rem 0.75rem 0.75rem;
     outline: 0;
     &:focus {
       border-color: #5ab63a;

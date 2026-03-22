@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import {
   FigureInterface,
   SelectCardInterface,
@@ -53,7 +52,6 @@ const initialState: State = {
 };
 
 const useStore = create(
-  persist(
     (set) => ({
       ...initialState,
       setAccessToken: (accessToken: string) => set({ accessToken }),
@@ -105,19 +103,12 @@ const useStore = create(
 
       setChooseAnimal: (chooseAnimal: boolean) => set({ chooseAnimal }),
 
-      setCurrentStep: (currentStep: number) => {
-        localStorage.setItem('currentStep', String(currentStep));
-        set({ currentStep });
-      },
+      setCurrentStep: (currentStep: number) => set({ currentStep }),
 
       setMessageUser: (message: string) => set({ message }),
 
       setIsLogout: (isLogout: boolean) => set({ isLogout }),
-    }),
-    {
-      name: "abuse-therapy-store",
-    }
-  )
+    })
 );
 
 export default useStore;

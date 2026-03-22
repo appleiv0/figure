@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
-import Chatbot from "react-chatbot-kit";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { createChatBotMessage } from "react-chatbot-kit";
+import ChatbotWrapper from "../../molecules/Chatbot/ChatbotWrapper";
 import { Animal } from "../../../data";
 import useStore from "../../../store";
 import Icon from "../../atoms/Icon";
@@ -24,7 +24,8 @@ const ChooseAnimal = () => {
   useLayoutEffect(() => {
     setSelectedCards([]);
   }, []);
-  const shuffledAnimal = useMemo(() => [...Animal].sort(() => Math.random() - 0.5), []);
+  // 고정 순서로 동물 표시 (셔플 제거)
+  const orderedAnimal = Animal;
 
   const handleCircleClick = (index: number, name: string, img: string, josa: number) => {
     if (selectedCards.length === 4 && !checkedState[index]) {
@@ -40,7 +41,7 @@ const ChooseAnimal = () => {
             setSelectedCards(updatedSelectedCards);
             return false;
           }
-          const updatedSelectedCards = [...selectedCards, { name, index, img, josa }];
+          const updatedSelectedCards = [...selectedCards, { name, index, img, josa, selectedAt: new Date().toISOString() }];
           setSelectedCards(updatedSelectedCards);
           return true;
         } else {
@@ -191,7 +192,7 @@ const ChooseAnimal = () => {
             {/* Desktop: grid with side progress | Mobile: full-width grid */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-1 md:gap-8">
               <div className="grid grid-cols-6 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 md:col-span-11 gap-1 md:gap-8">
-                {shuffledAnimal.map((animal) => {
+                {orderedAnimal.map((animal) => {
                   return (
                     <div key={animal.index} className={`animal-card`}>
                       <button
@@ -325,7 +326,7 @@ const ChooseAnimal = () => {
 
       {selectChatbot && (
         <div className="container mx-auto">
-          <Chatbot
+          <ChatbotWrapper
             config={getStageConfig() as any}
             actionProvider={ActionProvider}
             messageParser={MessageParser}
