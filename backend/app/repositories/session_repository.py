@@ -6,7 +6,15 @@ from bson import ObjectId
 from pymongo.collection import Collection
 from app.database.mongodb import get_sessions_collection
 import os
+import re
 import libcommon.config.config as config
+
+
+def _sanitize_filename(name: str) -> str:
+    """Remove path separators and dangerous characters from filename."""
+    if not name:
+        return ""
+    return re.sub(r'[/\\<>:"|?*\x00-\x1f]', '', name)
 
 class SessionRepository:
     """Repository for therapy session data operations"""
@@ -103,7 +111,7 @@ class SessionRepository:
         # If deleted from DB, also delete JSON file
         if result.deleted_count > 0 and session:
             try:
-                kid_name = session.get("kid", {}).get("name", "")
+                kid_name = _sanitize_filename(session.get("kid", {}).get("name", ""))
                 json_filename = f"{receipt_no}_{kid_name}.json"
                 json_path = os.path.join(config.THERAPY_RESULT_DIR, json_filename)
                 if os.path.exists(json_path):

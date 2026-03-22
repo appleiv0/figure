@@ -115,6 +115,10 @@ def use_code(req: UseCodeRequest):
         raise HTTPException(status_code=404, detail="존재하지 않는 코드입니다.")
 
     if code_doc.get("used", False):
+        # 같은 세션 이어하기: sessionReceiptNo가 req.receiptNo와 일치하면 허용
+        session_receipt_no = code_doc.get("sessionReceiptNo")
+        if session_receipt_no and req.receiptNo and str(session_receipt_no) == str(req.receiptNo):
+            return UseCodeResponse(success=True, message="이어하기 세션입니다.")
         raise HTTPException(status_code=400, detail="이미 사용된 코드입니다.")
 
     # Check 24-hour expiry

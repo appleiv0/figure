@@ -179,6 +179,8 @@ def get_llm_completion(kidName: str, receiptNo: int, count: int, relation: str):
 
     data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{kidName}.json")
     data_json = read_json(data_json_path)
+    if not data_json:
+        return ""
 
     if count == 0:
         prompt, f_6 = prompt_engineering_1(data_json, relation)
@@ -205,7 +207,7 @@ def get_llm_completion(kidName: str, receiptNo: int, count: int, relation: str):
 
 def get_friendly(kidName: str, positions: dict):
     x_ceter, y_center = positions["centerH"], positions["centerV"]
-    if not positions.get("figures"):
+    if not positions.get("figures") or len(positions["figures"]) == 0:
         return 0, ""
     card_size_x = (
         positions["figures"][0]["position"]["p2"][0] - positions["figures"][0]["position"]["p1"][0]
@@ -279,6 +281,8 @@ def get_friendly(kidName: str, positions: dict):
 def get_score(kidName: str, receiptNo: int):
     data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{kidName}.json")
     data_json = read_json(data_json_path)
+    if not data_json:
+        return 0, ""
 
     score = 0
     message = ""
@@ -376,6 +380,8 @@ def get_reliability(kidName: str, receiptNo: int):
 
     data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{kidName}.json")
     data_json = read_json(data_json_path)
+    if not data_json:
+        return {}
 
     result = {}
 
@@ -900,6 +906,8 @@ def get_report(kidName: str, receiptNo: int):
 
     data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{kidName}.json")
     data_json = read_json(data_json_path)
+    if not data_json:
+        return "기능적입니다.", {}
 
     abuse = data_json["abuse"]
     if abuse["1"] + abuse["2"] + abuse["3"] == 3:

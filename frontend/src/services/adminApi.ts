@@ -182,7 +182,7 @@ export const adminApi = {
   },
 
   // Verify password (public API)
-  verifyPassword: async (email: string, password: string): Promise<{ valid: boolean }> => {
+  verifyPassword: async (email: string, password: string): Promise<{ valid: boolean; passwordChanged?: boolean }> => {
     const response = await axios.post(`${API_BASE}/public/verify-password`, { email, password });
     return response.data;
   },

@@ -76,6 +76,7 @@ const Landing = () => {
       }
     } catch (error) {
       console.error("Google login error:", error);
+      alert("Google 로그인에 실패했습니다. 다시 시도해주세요.");
     }
   };
 
@@ -399,6 +400,7 @@ const Landing = () => {
       {showRegisterModal && (
         <div
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}
+          onClick={() => setShowRegisterModal(false)}
         >
           <div
             style={{ background: "white", borderRadius: "12px", padding: "28px", minWidth: "320px", maxWidth: "400px", width: "100%" }}

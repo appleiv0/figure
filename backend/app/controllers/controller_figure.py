@@ -113,6 +113,9 @@ def set_figure(kidName: str, receiptNo: int, stage: str, figures: list):
         data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{sanitized_name}.json")
         session = read_json(data_json_path)
 
+    if not session:
+        return status_error.BAD_REQUEST, SetFigureRes(score=0)
+
     if stage in ["3", "5", "6"]:
         family_list = [x["relation"] for x in session["figures"][stage]]
         for figure in figures:
@@ -149,6 +152,9 @@ def set_position(kidName: str, receiptNo: int, centerH: int, centerV: int, figur
         sanitized_name = sanitize_filename(kidName)
         data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{sanitized_name}.json")
         session = read_json(data_json_path)
+
+    if not session:
+        return status_error.BAD_REQUEST, SetPostionRes(score=0, message="")
 
     positions_data = {
         "centerH": centerH,
@@ -206,6 +212,9 @@ def llm_completion(kidName: str, receiptNo: int, count: int, relation: str, mess
     if not session:
         # Fallback to JSON file
         session = read_json(data_json_path)
+
+    if not session:
+        return status_error.BAD_REQUEST, LLMCompletionRes(message="")
 
     if relation not in session.get("llmCompletion", {}).keys():
         session.setdefault("llmCompletion", {})[relation] = {"bot": ["", ""], "user": ["", ""]}
@@ -303,6 +312,9 @@ def save_chat(kidName: str, receiptNo: int, role: str, content: str, relation: s
     if not session:
         # Fallback to JSON file
         session = read_json(data_json_path)
+
+    if not session:
+        return status_error.BAD_REQUEST, SaveChatRes(success=False)
 
     chat_entry = {
         "role": role,

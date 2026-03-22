@@ -54,7 +54,8 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
     });
 
     if (!response) {
-      console.error("API Error:", response.statusText);
+      console.error("API Error: No response received");
+      return "";
     }
     return response.message;
   };
@@ -456,7 +457,7 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
       figures: newFigure,
     });
     if (!response1) {
-      console.error("API Error:", response1.statusText);
+      console.error("API Error: No response received");
     }
 
     const messageAPIbot = await handleSendAPI(message);

@@ -746,13 +746,13 @@ const AdminDashboard = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {sessionsLoading ? (
                     <tr>
-                      <td colSpan={12} className="px-6 py-4 text-center">
+                      <td colSpan={13} className="px-6 py-4 text-center">
                         로딩 중...
                       </td>
                     </tr>
                   ) : filteredSessions.length === 0 ? (
                     <tr>
-                      <td colSpan={12} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={13} className="px-6 py-4 text-center text-gray-500">
                         데이터가 없습니다.
                       </td>
                     </tr>

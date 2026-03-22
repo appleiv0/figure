@@ -6,17 +6,15 @@ const MySessions = () => {
   const navigate = useNavigate();
 
   const authRaw = sessionStorage.getItem("counselorAuth");
-  const auth = authRaw ? JSON.parse(authRaw) : null;
-
-  useEffect(() => {
-    if (!auth?.email) {
-      navigate("/");
+  const auth = (() => {
+    try {
+      return authRaw ? JSON.parse(authRaw) : null;
+    } catch {
+      return null;
     }
-  }, []);
+  })();
 
-  if (!auth?.email) return null;
-
-  const isAdmin = !!auth.isAdmin;
+  const isAdmin = !!auth?.isAdmin;
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,8 +40,8 @@ const MySessions = () => {
 
   // Profile edit state
   const [profileEditing, setProfileEditing] = useState(false);
-  const [profileName, setProfileName] = useState(auth.userName || auth.name || "");
-  const [profileOrg, setProfileOrg] = useState(auth.userOrganization || auth.organization || "");
+  const [profileName, setProfileName] = useState(auth?.userName || auth?.name || "");
+  const [profileOrg, setProfileOrg] = useState(auth?.userOrganization || auth?.organization || "");
   const [profileSaving, setProfileSaving] = useState(false);
 
   // My codes state
@@ -51,6 +49,13 @@ const MySessions = () => {
   const [myCodes, setMyCodes] = useState<Array<{ code: string; used: boolean; createdAt: string; usedAt?: string; sessionReceiptNo?: string }>>([]);
   const [codesLoading, setCodesLoading] = useState(false);
   const [codeCopiedIndex, setCodeCopiedIndex] = useState<number | null>(null);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!auth?.email) {
+      navigate("/");
+    }
+  }, []);
 
   const handleProfileSave = async () => {
     if (!profileName.trim() || !profileOrg.trim()) return;
