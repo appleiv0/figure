@@ -5,6 +5,7 @@ import DeskModel from '../../atoms/DeskModel';
 import Figure3D from '../../atoms/Figure3D';
 import { FigureInstance, Figure3DType, FiguresConfig, DollPose, DollInstanceData, DOLL_MODELS } from '../../../types/figure3d';
 import * as THREE from 'three';
+import axios from 'axios';
 
 // gl 인스턴스를 외부 ref에 저장하는 헬퍼 컴포넌트
 function GlCapture({ glRef, cameraRef }: { glRef: React.MutableRefObject<THREE.WebGLRenderer | null>; cameraRef: React.MutableRefObject<THREE.Camera | null> }) {
@@ -99,7 +100,7 @@ function findEmptySpot(instances: FigureInstance[], fig: Figure3DType): { x: num
   return { x: 0, z: 0 };
 }
 
-const FAMILY_ROLES = ['나', '엄마', '아빠', '언니', '누나', '오빠', '형', '남동생', '여동생', '할아버지', '할머니', '삼촌', '이모', '고모', '기타'];
+const FAMILY_ROLES = ['나', '엄마', '아빠', '아들', '딸', '언니', '누나', '오빠', '형', '남동생', '여동생', '할아버지', '할머니', '삼촌', '이모', '고모', '기타'];
 
 interface DeskScene3DProps {
   onNext?: (canvasImage: string, dollInstances: DollInstanceData[]) => void;
@@ -124,10 +125,81 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
   const touchStartTime = useRef(0);
   const instancesRef = useRef<FigureInstance[]>([]);
   instancesRef.current = instances;
+  const autoSaveTimerRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, []);
+
+  const captureCanvas = useCallback(() => {
+    if (!glRef.current) return '';
+    const glCanvas = glRef.current.domElement;
+    const w = glCanvas.width;
+    const h = glCanvas.height;
+    const offscreen = document.createElement('canvas');
+    offscreen.width = w;
+    offscreen.height = h;
+    const ctx = offscreen.getContext('2d');
+    if (ctx && cameraRef.current) {
+      ctx.drawImage(glCanvas, 0, 0);
+      const camera = cameraRef.current as THREE.PerspectiveCamera;
+      instancesRef.current.forEach(inst => {
+        const labelHeight = inst.figureType.size * (inst.pose === 'sit' ? 1.0 : 1.4);
+        const pos3 = new THREE.Vector3(inst.position.x, labelHeight, inst.position.z);
+        pos3.project(camera);
+        const sx = (pos3.x * 0.5 + 0.5) * w;
+        const sy = (-pos3.y * 0.5 + 0.5) * h;
+        const fontSize = Math.round(w / 30);
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.textAlign = 'center';
+        const text = inst.figureType.label;
+        const metrics = ctx.measureText(text);
+        const pw = 6, ph = 4;
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        const rx = sx - metrics.width / 2 - pw;
+        const ry = sy - fontSize / 2 - ph;
+        const rw = metrics.width + pw * 2;
+        const rh = fontSize + ph * 2;
+        ctx.beginPath();
+        if (ctx.roundRect) { ctx.roundRect(rx, ry, rw, rh, 6); } else { ctx.rect(rx, ry, rw, rh); }
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(text, sx, sy + fontSize / 3);
+      });
+      return offscreen.toDataURL('image/png');
+    }
+    if (ctx) {
+      ctx.drawImage(glCanvas, 0, 0);
+      return offscreen.toDataURL('image/png');
+    }
+    return glCanvas.toDataURL('image/png');
+  }, []);
+
+  const autoSaveCanvas = useCallback(() => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(async () => {
+      try {
+        const userStr = sessionStorage.getItem('THERAPY_TOKEN');
+        const user = userStr ? JSON.parse(userStr) : null;
+        const receiptNo = user?.receiptNo;
+        if (!receiptNo) return;
+
+        const canvasImage = captureCanvas();
+        if (!canvasImage) return;
+
+        const apiBase = (import.meta as any).env?.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+        await axios.post(`${apiBase}/public/auto-save-canvas`, { receiptNo, canvasImage });
+      } catch (e) {
+        // Silent fail for auto-save
+      }
+    }, 2000);
+  }, [captureCanvas]);
 
   // Load figures configuration + preload all models
   useEffect(() => {
-    fetch('/figures/figures.json')
+    fetch(`${import.meta.env.BASE_URL}figures/figures.json`)
       .then(res => res.json())
       .then((config: FiguresConfig) => {
         const enabledFigures = config.figures.filter(f => f.enabled);
@@ -215,13 +287,15 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
     setSelectedId(id);
     setShowRolePicker(false);
     setPendingFigure(null);
-  }, [pendingFigure]);
+    autoSaveCanvas();
+  }, [pendingFigure, autoSaveCanvas]);
 
   const handleRemoveFigure = useCallback(() => {
     if (!selectedId) return;
     setInstances(prev => prev.filter(inst => inst.id !== selectedId));
     setSelectedId(null);
-  }, [selectedId]);
+    autoSaveCanvas();
+  }, [selectedId, autoSaveCanvas]);
 
   const handleSelectFigure = (id: string) => {
     setSelectedId(id);
@@ -259,7 +333,8 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
         interactionCount: (inst.interactionCount || 0) + 1,
       } : inst
     ));
-  }, []);
+    autoSaveCanvas();
+  }, [autoSaveCanvas]);
 
   const handleTogglePose = () => {
     if (!selectedId) return;
@@ -273,6 +348,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
           }
         : inst
     ));
+    autoSaveCanvas();
   };
 
   const handleDeselectAll = () => {
@@ -739,7 +815,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
               ? '가족을 선택해서 원하는 위치에 세워보세요.\n인형을 드래그하면 위치를 옮길 수 있습니다.\n화살표를 클릭하면 360도 회전합니다.\n앉음 버튼을 클릭하면 사람을 앉힐 수 있습니다.'
               : '가족을 추가하세요.'}
           </div>
-          <img src="./assets/images/01.png" alt="purum" style={{ width: 56, marginTop: 10 }} />
+          <img src={`${import.meta.env.BASE_URL}assets/images/01.png`} alt="purum" style={{ width: 56, marginTop: 10 }} />
         </div>
       )}
 

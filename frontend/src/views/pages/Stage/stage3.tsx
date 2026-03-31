@@ -77,7 +77,7 @@ const Stage3 = () => {
       {chooseAnimal && (
         <>
           <div className="container mx-auto">
-            {location.pathname === "/stage3" && (
+            {location.pathname.endsWith("/stage3") && (
               <ChatbotWrapper
                 config={config3 as any}
                 actionProvider={ActionProvider}

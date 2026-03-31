@@ -78,13 +78,13 @@ class ValidateCodeResponse(BaseModel):
     organization: Optional[str] = None
     message: Optional[str] = None
     used: Optional[bool] = None
-    sessionReceiptNo: Optional[str] = None
+    sessionReceiptNo: Optional[Any] = None
 
 
 class UseCodeRequest(BaseModel):
     """Request model for using a login code"""
     code: str
-    receiptNo: str
+    receiptNo: Optional[Any] = None
 
 
 class UseCodeResponse(BaseModel):
@@ -161,3 +161,22 @@ class MyCodesResponse(BaseModel):
     """Response model for my codes list"""
     codes: List[CodeItem]
     total: int
+
+
+# --- Evaluation Request Models ---
+
+class RequestEvaluationRequest(BaseModel):
+    """Request model for requesting expert evaluation"""
+    receiptNo: Any
+    requestedBy: str
+
+
+class MarkEvaluationNotifiedRequest(BaseModel):
+    """Request model for marking evaluations as notified"""
+    receiptNos: List[Any]
+
+
+class CheckEvaluationsResponse(BaseModel):
+    """Response model for checking evaluation status"""
+    hasNew: bool
+    sessions: List[Dict[str, Any]] = []

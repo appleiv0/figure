@@ -10,7 +10,7 @@ const Card = ({ imgUrl, name, className }: CardProps) => {
       className={`flex flex-col items-center rounded-[0.625rem] bg-white shadow-lg px-3 pt-2 pb-5 ${className}`}
     >
       <img
-        src={`./assets/images/Animal/` + imgUrl}
+        src={`${import.meta.env.BASE_URL}assets/images/Animal/${imgUrl}`}
         className="max-w-[7.9375rem]"
         alt="a dog"
       />

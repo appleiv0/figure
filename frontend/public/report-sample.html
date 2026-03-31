@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 가족 평가 결과지</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13px;
+      color: #333;
+      background: #fff;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 0;
+      background: #fff;
+    }
+
+    /* ===== TITLE ===== */
+    .main-title {
+      text-align: center;
+      padding: 40px 30px;
+      background: #fff;
+    }
+
+    .main-title h1 {
+      font-size: 52px;
+      font-weight: 400;
+      color: #333;
+      letter-spacing: 2px;
+    }
+
+    /* ===== CONTENT AREA ===== */
+    .content-area {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 30px;
+    }
+
+    /* ===== SECTION BANNERS ===== */
+    .section-banner {
+      color: #fff;
+      font-size: 22px;
+      font-weight: 700;
+      padding: 12px 16px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+    }
+
+    .section-banner.italic {
+      font-style: italic;
+    }
+
+    .section-banner.overview { background: linear-gradient(135deg, #a8b5d6, #8e9ec7); }
+    .section-banner.info { background: linear-gradient(135deg, #7ec4a8, #5fb893); }
+    .section-banner.eval { background: linear-gradient(135deg, #c9a5d4, #b48cc2); }
+    .section-banner.consult { background: linear-gradient(135deg, #e8a87c, #d99565); }
+    .section-banner.result { background: linear-gradient(135deg, #d4a5a0, #c9918c); }
+
+    .section {
+      margin-bottom: 24px;
+    }
+
+    /* ===== OVERVIEW TEXT ===== */
+    .overview-text {
+      font-size: 13px;
+      color: #444;
+      line-height: 1.8;
+      padding: 10px 4px 16px 4px;
+    }
+
+    /* ===== TABLES ===== */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 4px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px 14px;
+      vertical-align: middle;
+      line-height: 1.5;
+    }
+
+    th {
+      background: #f0f0f0;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    td {
+      text-align: left;
+    }
+
+    td.label-cell {
+      background: #f0f0f0;
+      font-weight: bold;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    /* 기본정보 table */
+    .table-info td.col-key {
+      background: #f0f0f0;
+      font-weight: bold;
+      text-align: center;
+      white-space: nowrap;
+      width: 100px;
+    }
+
+    .table-info td.col-val {
+      width: auto;
+    }
+
+    /* ===== DOLL PLACEMENT AREA ===== */
+    .doll-cell-inner {
+      padding: 8px 0;
+    }
+
+    .doll-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .doll-placeholder {
+      border: 1px solid #ccc;
+      height: 200px;
+      background: #f9f9f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #aaa;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .doll-note {
+      font-size: 12px;
+      color: #666;
+    }
+
+    /* ===== PAGE 2 ===== */
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+    }
+
+    /* ===== FOOTER ===== */
+    .main-footer {
+      background: linear-gradient(135deg, #d4a5a0, #c9918c, #b8807a);
+      padding: 18px 30px;
+      margin-top: 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-radius: 4px;
+    }
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .footer-logo img {
+      height: 40px;
+    }
+    .footer-logo-text {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.4;
+    }
+    .footer-logo-text span {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .footer-info {
+      font-size: 11px;
+      color: #fff;
+      line-height: 1.6;
+      text-align: right;
+      flex: 1;
+    }
+    .footer-info strong {
+      font-size: 12px;
+    }
+
+    /* ===== PRINT STYLES ===== */
+    @media print {
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0;
+      }
+
+      .page-break {
+        page-break-before: always;
+        break-before: page;
+      }
+    }
+
+    @media screen {
+      body {
+        background: #d0d0d0;
+        padding: 20px 0;
+      }
+
+      .page {
+        box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+        margin-bottom: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== PAGE 1 ========== -->
+  <div class="page">
+
+    <!-- Title -->
+    <div class="main-title">
+      <h1>AI 가족 평가 결과지</h1>
+    </div>
+
+    <div class="content-area">
+
+      <!-- Overview -->
+      <div class="section">
+        <div class="section-banner overview">개요</div>
+        <p class="overview-text">
+          본 결과지는 아동·청소년의 가족 관계 및 가족 기능을 파악하기 위해 실시된 AI 기반 가족 평가 결과를 정리한 문서입니다.<br>
+          동물 상징 기법과 가족 인형 세우기를 활용하여 내담자가 인식하는 가족 역동, 정서적 거리감, 의사소통 패턴을 탐색하였으며, 상담사의 관찰 내용과 함께 종합적으로 분석되었습니다.
+        </p>
+      </div>
+
+      <!-- 기본정보 -->
+      <div class="section">
+        <div class="section-banner info">기본정보</div>
+        <table class="table-info">
+          <tbody>
+            <tr>
+              <td class="col-key">이름</td>
+              <td class="col-val">김민준</td>
+              <td class="col-key">성별/생년월일</td>
+              <td class="col-val">남 / 2018.05.12</td>
+            </tr>
+            <tr>
+              <td class="col-key">가족기능</td>
+              <td class="col-val">역기능</td>
+              <td class="col-key">상담기관</td>
+              <td class="col-val">명지대학교 상담센터</td>
+            </tr>
+            <tr>
+              <td class="col-key">가족관계</td>
+              <td class="col-val">긴장/갈등 있음</td>
+              <td class="col-key">상담사</td>
+              <td class="col-val">선우현</td>
+            </tr>
+            <tr>
+              <td class="col-key">가족체계유형</td>
+              <td class="col-val">고립형</td>
+              <td class="col-key">검사일</td>
+              <td class="col-val">2026.03.31</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 평가내용 -->
+      <div class="section">
+        <div class="section-banner eval">평가내용</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:22%;">유형</th>
+              <th style="width:26%;">동물</th>
+              <th style="width:18%;">내용/가족</th>
+              <th style="width:34%;">선택이유</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="label-cell">나를 상징하는 동물</td>
+              <td>강아지, 토끼, 나비, 돌고래</td>
+              <td style="text-align:center;">-</td>
+              <td>강아지처럼 활발하고 친근해서</td>
+            </tr>
+            <tr>
+              <td class="label-cell">내가 소망하는 동물</td>
+              <td>독수리, 사자, 호랑이, 코끼리</td>
+              <td style="text-align:center;">-</td>
+              <td>강하고 용감한 동물이 되고 싶어서</td>
+            </tr>
+            <tr>
+              <td class="label-cell">가족을 상징하는 동물</td>
+              <td>곰(엄마), 사자(아빠), 나비(누나)</td>
+              <td>엄마, 아빠, 누나</td>
+              <td>엄마는 따뜻하고, 아빠는 강하고, 누나는 예쁘니까</td>
+            </tr>
+            <tr>
+              <td class="label-cell">가족이 나를 상징하는 동물</td>
+              <td>강아지</td>
+              <td>엄마가 선택</td>
+              <td>장난꾸러기라서</td>
+            </tr>
+            <tr>
+              <td class="label-cell">가족인형 세우기</td>
+              <td colspan="3">
+                <div class="doll-cell-inner">
+                  <div class="doll-title">인형 배치 결과</div>
+                  <div class="doll-placeholder">[인형 배치 스크린샷]</div>
+                  <div class="doll-note">* 실제 세션에서 캡처된 인형 배치 이미지가 이 영역에 표시됩니다</div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- end content-area page 1 -->
+
+  </div><!-- end page 1 -->
+
+
+  <!-- ========== PAGE 2 ========== -->
+  <div class="page page-break">
+
+    <div class="content-area" style="padding-top: 30px;">
+
+      <!-- 상담내용 1 -->
+      <div class="section">
+        <div class="section-banner consult">상담내용</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:22%;">유형</th>
+              <th style="width:39%;">상담사질문</th>
+              <th style="width:39%;">내담자 답변</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="label-cell">내담자 동물상징</td>
+              <td>왜 강아지를 골랐어?</td>
+              <td>강아지처럼 놀기 좋아해서요</td>
+            </tr>
+            <tr>
+              <td class="label-cell">내담자 소망상징</td>
+              <td>왜 독수리가 되고 싶어?</td>
+              <td>하늘을 날 수 있으니까요</td>
+            </tr>
+            <tr>
+              <td class="label-cell">엄마</td>
+              <td>엄마는 왜 곰이야?</td>
+              <td>엄마가 안아주면 따뜻해서요</td>
+            </tr>
+            <tr>
+              <td class="label-cell">아빠</td>
+              <td>아빠는 왜 사자야?</td>
+              <td>아빠는 힘이 세고 무서울 때도 있어서요</td>
+            </tr>
+            <tr>
+              <td class="label-cell">누나</td>
+              <td>누나는 왜 나비야?</td>
+              <td>예쁘고 자유로워 보여서요</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 평가결과 -->
+      <div class="section">
+        <div class="section-banner result">평가결과</div>
+        <table>
+          <tbody>
+            <tr>
+              <td class="label-cell" style="width:120px;">가족기능</td>
+              <td>역기능 - 가족 내 의사소통 패턴에 어려움이 관찰됨</td>
+            </tr>
+            <tr>
+              <td class="label-cell">가족관계</td>
+              <td>엄마와 밀착, 아빠와는 거리감이 있는 관계 패턴</td>
+            </tr>
+            <tr>
+              <td class="label-cell">가족체계유형</td>
+              <td>고립형 - 가족 구성원 간 정서적 교류가 제한적</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- end content-area page 2 -->
+
+    <!-- Footer -->
+    <div class="main-footer">
+      <div class="footer-logo">
+        <img src="/family/aspt-logo.png" alt="ASPT" />
+        <div class="footer-logo-text">
+          한국인형치료연구회
+          <span>AI가족평가</span>
+        </div>
+      </div>
+      <div class="footer-info">
+        <strong>저자 최광현, 선우현</strong><br>
+        한국인형치료연구회의 허락없이 이 결과지의 일부 또는 전부를<br>
+        무단으로 공개, 배포하거나 변형하는 행위를 절대 금합니다.
+      </div>
+    </div>
+
+  </div><!-- end page 2 -->
+
+</body>
+</html>

@@ -24,7 +24,7 @@ const Modal = ({ isShowing, hide, children }: ModalProps) =>
                     onClick={hide}
                     style={{
                       display:
-                        location.pathname === "/stage2" ? "none" : "block",
+                        location.pathname.endsWith("/stage2") ? "none" : "block",
                     }}
                   ></button>
                 </div>

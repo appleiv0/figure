@@ -27,6 +27,9 @@ from libcommon.routes import (
 
 logger = config.init_logger()
 
+# NOTE: These routes duplicate those in app/routers/index.py (under "/" prefix).
+# This figure/index.py router is NOT currently mounted in main.py.
+# The active routes are served from app/routers/index.py.
 router = APIRouter(prefix="/figure", responses=default_responses)
 
 TAGS = ["FigureRouter"]

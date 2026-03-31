@@ -363,19 +363,25 @@ const AdminSessions = () => {
                   상태
                 </th>
                 <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
-                  가족유형
+                  판정 의뢰
                 </th>
                 <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
-                  판정내용
+                  가족체계유형
                 </th>
                 <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
-                  역기능
+                  가족 관계
+                </th>
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                  가족기능
                 </th>
                 <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                   긴장/갈등
                 </th>
                 <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                   신뢰도
+                </th>
+                <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                  가족배치
                 </th>
                 <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                   생성일
@@ -400,7 +406,7 @@ const AdminSessions = () => {
                 </tr>
               ) : (
                 filteredSessions.map((session) => (
-                  <tr key={session.receiptNo} className="hover:bg-gray-50">
+                  <tr key={session.receiptNo} style={{ background: filteredSessions.indexOf(session) % 2 === 0 ? '#ffffff' : '#FFFBF0' }}>
                     <td style={{ padding: "16px", textAlign: "center" }}>
                       <input
                         type="checkbox"
@@ -434,6 +440,13 @@ const AdminSessions = () => {
                       >
                         {session.status === "completed" ? "완료" : "진행중"}
                       </span>
+                    </td>
+                    <td className="px-0.5 py-1 whitespace-nowrap text-sm">
+                      {(session as any).evaluationRequested ? (
+                        (session as any).evaluationCompleted
+                          ? <span style={{color:"#16a34a",fontWeight:600}}>판정완료</span>
+                          : <span style={{color:"#dc2626",fontWeight:700,background:"#fef2f2",padding:"2px 8px",borderRadius:12,fontSize:12}}>의뢰접수</span>
+                      ) : <span style={{color:"#9ca3af"}}>-</span>}
                     </td>
                     <td className="px-0.5 py-1 whitespace-nowrap text-sm font-medium">
                       {(session as any).familyType || "-"}
@@ -473,6 +486,11 @@ const AdminSessions = () => {
                         if (reliability.grade === "낮음") return <span className="text-red-600 font-bold">{reliability.grade}</span>;
                         return <span>{reliability.grade}</span>;
                       })()}
+                    </td>
+                    <td className="px-0.5 py-1 whitespace-nowrap text-sm">
+                      {(session as any).canvasImage
+                        ? <span style={{color:"#16a34a",fontWeight:600}}>있음</span>
+                        : <span style={{color:"#dc2626",fontWeight:700}}>없음</span>}
                     </td>
                     <td className="px-0.5 py-1 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(session.createdAt)}

@@ -127,9 +127,15 @@ export const adminApi = {
     return response.data;
   },
 
-  // Get sessions by counselor email
+  // Get sessions by counselor email (public endpoint - no admin key)
   getMySessions: async (email: string, page = 1, limit = 20): Promise<SessionListResponse> => {
-    const response = await api.get(`/admin/sessions/my?email=${encodeURIComponent(email)}&page=${page}&limit=${limit}`);
+    const response = await axios.get(`${API_BASE}/public/my-sessions?email=${encodeURIComponent(email)}&page=${page}&limit=${limit}`);
+    return response.data;
+  },
+
+  // Get session detail for session owner (public endpoint - no admin key)
+  getMySession: async (receiptNo: string, email: string): Promise<{ session: Session }> => {
+    const response = await axios.get(`${API_BASE}/public/my-session/${receiptNo}?email=${encodeURIComponent(email)}`);
     return response.data;
   },
 
@@ -196,6 +202,24 @@ export const adminApi = {
   // Get my codes
   getMyCodes: async (email: string): Promise<{ codes: Array<{ code: string; used: boolean; createdAt: string; usedAt?: string; sessionReceiptNo?: string }> }> => {
     const response = await api.get(`/admin/my-codes?email=${encodeURIComponent(email)}`);
+    return response.data;
+  },
+
+  // Request expert evaluation (public API)
+  requestEvaluation: async (receiptNo: any, requestedBy: string): Promise<{ success: boolean }> => {
+    const response = await axios.post(`${API_BASE}/public/request-evaluation`, { receiptNo, requestedBy });
+    return response.data;
+  },
+
+  // Check if evaluations arrived (public API)
+  checkEvaluations: async (email: string): Promise<{ hasNew: boolean; sessions: Array<{ receiptNo: any; kidName: string; familyType: string; aiEvaluation: string }> }> => {
+    const response = await axios.get(`${API_BASE}/public/check-evaluations?email=${encodeURIComponent(email)}`);
+    return response.data;
+  },
+
+  // Mark evaluations as notified (public API)
+  markEvaluationNotified: async (receiptNos: any[]): Promise<{ success: boolean }> => {
+    const response = await axios.post(`${API_BASE}/public/mark-evaluation-notified`, { receiptNos });
     return response.data;
   },
 };

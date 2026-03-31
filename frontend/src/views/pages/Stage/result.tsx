@@ -10,7 +10,7 @@ const Result = () => {
         <h2 className="text-[2.5rem] mb-[8.125rem]">검사결과</h2>
         <img
           className="w-[11.25rem] mx-auto mb-[2.1875rem]"
-          src="assets/images/02.png"
+          src={`${import.meta.env.BASE_URL}assets/images/02.png`}
           alt="User"
         />
         <h3 className="text-2xl">{response.message}</h3>

@@ -45,13 +45,13 @@ const ChooseAnimal4Family = (props: any) => {
   };
   const initialAction = () => {
     if (!currentFigure) return;
-    if (location.pathname === "/stage3") {
+    if (location.pathname.endsWith("/stage3")) {
       props.actions.initialAction([...selectedCards, currentFigure]);
       setSelectedCards([...selectedCards, currentFigure]);
-    } else if (location.pathname === "/stage4") {
+    } else if (location.pathname.endsWith("/stage4")) {
       props.actions.initialAction5([...selectedCardsNew, currentFigure]);
       setSelectedCardsNew([...selectedCardsNew, currentFigure]);
-    } else if (location.pathname === "/stage5") {
+    } else if (location.pathname.endsWith("/stage5")) {
       props.actions.initialAction6([...selectedCardsNew6, currentFigure]);
       setSelectedCardsNew6([...selectedCardsNew6, currentFigure]);
     }

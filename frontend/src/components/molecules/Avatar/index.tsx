@@ -5,7 +5,7 @@ const Avatar = ({ kidname }: AvatarProps) => {
   return (
     <div className="relative w-full text-center">
       <img
-        src={`./assets/images/img-${kidname ? "user" : "user-default"}.png`}
+        src={`${import.meta.env.BASE_URL}assets/images/img-${kidname ? "user" : "user-default"}.png`}
         alt="avt"
         className="w-[7.5rem] h-[7.5rem] rounded-full mx-auto block mb-3"
       />

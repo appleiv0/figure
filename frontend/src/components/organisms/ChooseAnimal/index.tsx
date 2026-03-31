@@ -58,7 +58,7 @@ const ChooseAnimal = () => {
   const getStageConfig = () => {
     const card = selectedCards[0];
 
-    if (location.pathname === "/stage1") {
+    if (location.pathname.endsWith("/stage1")) {
       return {
         initialMessages: [
           createChatBotMessage(
@@ -133,10 +133,10 @@ const ChooseAnimal = () => {
           <div className="flex justify-center items-center mb-6 md:mb-14 mr-0 md:mr-10">
             <img
               className="w-[3rem] justify-start items-start mr-2 mt-[2rem]"
-              src="/assets/images/01.png"
+              src={`${import.meta.env.BASE_URL}assets/images/01.png`}
               alt="Intro Image"
             />{" "}
-            {selectedCards.length === 0 && location.pathname === "/stage1" && (
+            {selectedCards.length === 0 && location.pathname.endsWith("/stage1") && (
               <div className=" relative top-5 border border-white w-full max-w-[43rem] bg-[#FFFBE3] rounded-lg">
                 <h1 className="text-center text-2xl font-bold p-2">
                   여기 있는 동물들 중에서{" "}
@@ -146,7 +146,7 @@ const ChooseAnimal = () => {
                 </h1>
               </div>
             )}
-            {selectedCards.length === 0 && location.pathname === "/stage2" && (
+            {selectedCards.length === 0 && location.pathname.endsWith("/stage2") && (
               <div className=" relative top-5 border border-white w-full max-w-[43rem] bg-[#FFFBE3] rounded-lg">
                 <h1 className="text-center text-2xl font-bold p-2">
                   여기 있는 동물들 중에서{" "}

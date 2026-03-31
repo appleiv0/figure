@@ -1,4 +1,5 @@
 import os
+import random
 import re
 import time
 from datetime import datetime, timezone, timedelta
@@ -22,10 +23,10 @@ from app.controllers import chatbot
 
 
 def sanitize_filename(name: str) -> str:
-    """Remove path separators and dangerous characters from filename."""
+    """Remove path separators, dangerous characters, and whitespace from filename."""
     if not name:
         return ""
-    return re.sub(r'[/\\<>:"|?*\x00-\x1f]', '', name)
+    return re.sub(r'[/\\<>:"|?*\x00-\x1f\s]', '', name)
 
 
 card_directions = {
@@ -66,7 +67,10 @@ card_directions = {
 
 def create_receipt_number(counselor: dict, kid: dict, agree: bool, counselor_email: str = None):
     """Create a new therapy session with unique receipt number"""
-    receipt_no = str(int(time.time() * 1000))
+    receipt_no = str(int(time.time() * 1000)) + str(random.randint(100, 999))
+    # Strip whitespace from kid name
+    if "name" in kid:
+        kid["name"] = kid["name"].strip()
     josa = get_josa_en(kid["name"])
 
     # Create session data

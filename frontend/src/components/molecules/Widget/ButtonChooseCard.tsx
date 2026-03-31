@@ -29,6 +29,8 @@ const ButtonStart = () => {
   const currentStep = useStore((state: any) => state.currentStep);
   const selectedFamily = useStore((state: any) => state.selectedFamily);
   const selectedFamilyJosa = useStore((state: any) => state.selectedFamilyJosa);
+  const setSelectedFamily = useStore((state: any) => state.setSelectedFamily);
+  const setSelectedFamilyJosa = useStore((state: any) => state.setSelectedFamilyJosa);
 
   const figure = useStore((state: any) => state.figure);
   const setFigure = useStore((state: any) => state.setFigure);
@@ -38,30 +40,34 @@ const ButtonStart = () => {
 
   const handleNext = () => {
     setCurrentStep(currentStep + 1);
-    if (location.pathname === "/" || location.pathname === "/stage0") {
+    if (location.pathname === "/" || location.pathname.endsWith("/family") || location.pathname.endsWith("/family/") || location.pathname.endsWith("/stage0")) {
       navigator("/stage1");
       setSelectedCards([]);
-    } else if (location.pathname === "/stage1") {
+    } else if (location.pathname.endsWith("/stage1")) {
       navigator("/stage2");
       setSelectedCards([]);
-    } else if (location.pathname === "/stage3") {
+    } else if (location.pathname.endsWith("/stage3")) {
       navigator("/stage4");
       setCurrentIndex(0);
       setSelectedCards([]);
-    } else if (location.pathname === "/stage4") {
+    } else if (location.pathname.endsWith("/stage4")) {
       navigator("/stage5");
       setCurrentIndex(0);
       if (selectedFamily.length > 0) {
-        selectedFamily.pop();
-        selectedFamilyJosa.pop();
+        const newFamily = [...selectedFamily];
+        newFamily.pop();
+        const newJosa = [...selectedFamilyJosa];
+        newJosa.pop();
+        setSelectedFamily(newFamily);
+        setSelectedFamilyJosa(newJosa);
       }
-    } else if (location.pathname === "/stage5") {
+    } else if (location.pathname.endsWith("/stage5")) {
       navigator("/stage6");
     }
   };
 
   const handleStartChat = async () => {
-    if (location.pathname === "/stage1" || location.pathname === "/stage2") {
+    if (location.pathname.endsWith("/stage1") || location.pathname.endsWith("/stage2")) {
       try {
         const response = await fetchFigure({
           kidName: userInfo.kidname,
@@ -71,14 +77,14 @@ const ButtonStart = () => {
         });
 
         if (!response) {
-          console.error("API Error:", response.statusText);
+          console.error("API Error: No response received");
         } else {
           setCurrentStep(currentStep + 1);
-          if (location.pathname === "/stage1") {
+          if (location.pathname.endsWith("/stage1")) {
             navigator("/stage2");
             setSelectedCards([]);
             setFigure([]);
-          } else if (location.pathname === "/stage2") {
+          } else if (location.pathname.endsWith("/stage2")) {
             navigator("/stage3");
           }
         }
@@ -86,12 +92,12 @@ const ButtonStart = () => {
         console.error("Error:", error.message);
       }
     } else if (
-      location.pathname === "/stage3" ||
-      location.pathname === "/stage4"
+      location.pathname.endsWith("/stage3") ||
+      location.pathname.endsWith("/stage4")
     ) {
       try {
         // 백엔드 데이터 스테이지: /stage3→"3", /stage4(소망동물)→"5"
-        const dataStage = location.pathname === "/stage4" ? "5" : `${currentStep}`;
+        const dataStage = location.pathname.endsWith("/stage4") ? "5" : `${currentStep}`;
         const response = await fetchFigure({
           kidName: userInfo.kidname,
           receiptNo: `${userInfo.receiptNo}`,
@@ -100,17 +106,21 @@ const ButtonStart = () => {
         });
 
         if (!response) {
-          console.error("API Error:", response.statusText);
+          console.error("API Error: No response received");
         } else {
           setCurrentStep(currentStep + 1);
-          if (location.pathname === "/stage3") {
+          if (location.pathname.endsWith("/stage3")) {
             setCurrentIndex(0);
             if (selectedFamily.length > 0) {
-              selectedFamily.pop();
-              selectedFamilyJosa.pop();
+              const newFamily = [...selectedFamily];
+              newFamily.pop();
+              const newJosa = [...selectedFamilyJosa];
+              newJosa.pop();
+              setSelectedFamily(newFamily);
+              setSelectedFamilyJosa(newJosa);
             }
             navigator("/stage4");
-          } else if (location.pathname === "/stage4") {
+          } else if (location.pathname.endsWith("/stage4")) {
             navigator("/stage5");
             setFigure([]);
             setCurrentIndex(0);
@@ -130,10 +140,10 @@ const ButtonStart = () => {
           className="text-2xl font-bold ml-auto flex gap-2 items-center border border-primary bg-primary hover:bg-grey-100 hover:text-greenDark text-white px-3 py-4 rounded-md cursor-pointer select-none"
           onClick={() => {
             if (
-              location.pathname === "/stage1" ||
-              location.pathname === "/stage2" ||
-              location.pathname === "/stage3" ||
-              location.pathname === "/stage4"
+              location.pathname.endsWith("/stage1") ||
+              location.pathname.endsWith("/stage2") ||
+              location.pathname.endsWith("/stage3") ||
+              location.pathname.endsWith("/stage4")
             ) {
               handleStartChat();
             } else {

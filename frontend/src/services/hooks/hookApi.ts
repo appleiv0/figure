@@ -77,7 +77,6 @@ const _addLoadingTime = (startTime: any, setLoading: any) => {
   const countDownTime = loadingTime > 200 ? loadingTime : 200;
   const timing = setTimeout(() => {
     setLoading(false);
-    clearTimeout(timing);
   }, countDownTime);
 };
 

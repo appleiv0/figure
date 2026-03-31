@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import * as XLSX from "xlsx";
 import { adminApi, Statistics, Session, SessionListResponse } from "../../../services/adminApi";
 import { exportSessionsToExcel } from "../../../utils/excelExport";
 
@@ -28,7 +29,13 @@ const AdminDashboard = () => {
   const [creditModal, setCreditModal] = useState<{ email: string; credits: number } | null>(null);
   const [creditInput, setCreditInput] = useState("");
 
-  const SUPER_USERS = ["appleiv@gmail.com"];
+  // Codes Tab State
+  const [codeGenEmail, setCodeGenEmail] = useState("");
+  const [codeGenCount, setCodeGenCount] = useState(1);
+  const [codeGenLoading, setCodeGenLoading] = useState(false);
+  const [generatedCodes, setGeneratedCodes] = useState<Array<{ code: string; email: string; name: string; organization: string; createdAt: string }>>([]);
+
+  const SUPER_USERS = ["appleiv@gmail.com", "a33351702@gmail.com", "beratung@hansei.ac.kr"];
 
   // Search State
   const [searchName, setSearchName] = useState("");
@@ -47,12 +54,13 @@ const AdminDashboard = () => {
     const hash = window.location.hash.replace("#", "");
     if (hash === "sessions") return "sessions";
     if (hash === "users") return "users";
+    if (hash === "codes") return "codes";
     return "dashboard";
   };
 
-  const [activeTab, setActiveTabState] = useState<"dashboard" | "sessions" | "users">(getTabFromHash);
+  const [activeTab, setActiveTabState] = useState<"dashboard" | "sessions" | "users" | "codes" | "evaluations">(getTabFromHash);
 
-  const setActiveTab = (tab: "dashboard" | "sessions" | "users") => {
+  const setActiveTab = (tab: "dashboard" | "sessions" | "users" | "codes") => {
     window.location.hash = tab;
     setActiveTabState(tab);
   };
@@ -122,14 +130,31 @@ const AdminDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, activeTab, page, pageSize]);
 
-  // Fetch users when switching to users tab
+  // Fetch users when switching to users or codes tab
   useEffect(() => {
-    if (isAuthenticated && activeTab === "users") {
+    if (isAuthenticated && (activeTab === "users" || activeTab === "codes")) {
       setUsersLoading(true);
       adminApi.getUsers()
         .then(data => setUsers(data.users))
         .catch(err => console.error(err))
         .finally(() => setUsersLoading(false));
+    }
+  }, [isAuthenticated, activeTab]);
+
+  // Fetch evaluation requests
+  const [evalRequests, setEvalRequests] = useState<any[]>([]);
+  const [evalLoading, setEvalLoading] = useState(false);
+  useEffect(() => {
+    if (isAuthenticated && activeTab === "evaluations") {
+      setEvalLoading(true);
+      adminApi.getSessions(1, 100)
+        .then(data => {
+          const pending = data.sessions.filter((s: any) => s.evaluationRequested && !s.evaluationCompleted);
+          const completed = data.sessions.filter((s: any) => s.evaluationRequested && s.evaluationCompleted);
+          setEvalRequests([...pending, ...completed]);
+        })
+        .catch(err => console.error(err))
+        .finally(() => setEvalLoading(false));
     }
   }, [isAuthenticated, activeTab]);
 
@@ -382,15 +407,59 @@ const AdminDashboard = () => {
                 {sidebarOpen && '사용량 관리'}
               </button>
             </li>
+            <li>
+              <button
+                onClick={() => setActiveTab("codes")}
+                className={`w-full text-left ${sidebarOpen ? 'px-3 py-2' : 'p-2 justify-center'} rounded-lg flex items-center gap-2 transition-colors text-sm ${activeTab === "codes"
+                    ? "bg-blue-50 text-blue-700 font-medium"
+                    : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                title="코드 관리"
+              >
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                </svg>
+                {sidebarOpen && '코드 관리'}
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setActiveTab("evaluations")}
+                className={`w-full text-left ${sidebarOpen ? 'px-3 py-2' : 'p-2 justify-center'} rounded-lg flex items-center gap-2 transition-colors text-sm ${activeTab === "evaluations"
+                    ? "bg-red-50 text-red-700 font-medium"
+                    : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                title="판정 의뢰"
+              >
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                {sidebarOpen && '판정 의뢰'}
+              </button>
+            </li>
           </ul>
         </nav>
         <div className={`absolute bottom-0 ${sidebarOpen ? 'w-52' : 'w-12'} p-2 border-t`}>
-          <Link to="/" className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1" title="메인으로">
+          <Link to="/" className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 mb-2" title="메인으로">
             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             {sidebarOpen && '메인'}
           </Link>
+          <button
+            onClick={() => {
+              sessionStorage.removeItem("adminAuth");
+              sessionStorage.removeItem("counselorAuth");
+              navigate("/");
+            }}
+            className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 w-full"
+            title="로그아웃"
+          >
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            {sidebarOpen && '로그아웃'}
+          </button>
         </div>
       </aside>
 
@@ -724,16 +793,25 @@ const AdminDashboard = () => {
                       상태
                     </th>
                     <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
-                      가족유형
+                      판정 의뢰
                     </th>
                     <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
-                      판정내용
+                      가족체계유형
                     </th>
                     <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
-                      역기능
+                      가족 관계
+                    </th>
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                      가족기능
                     </th>
                     <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                       긴장/갈등
+                    </th>
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                      신뢰도
+                    </th>
+                    <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                      가족배치
                     </th>
                     <th className="px-0.5 py-1 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                       생성일
@@ -757,8 +835,8 @@ const AdminDashboard = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredSessions.map((session) => (
-                      <tr key={session.receiptNo} className="hover:bg-gray-50">
+                    filteredSessions.map((session, idx) => (
+                      <tr key={session.receiptNo} style={{ background: idx % 2 === 0 ? '#ffffff' : '#FFFBF0' }}>
                         <td style={{ padding: "16px", textAlign: "center" }}>
                           <input
                             type="checkbox"
@@ -793,6 +871,13 @@ const AdminDashboard = () => {
                             {session.status === "completed" ? "완료" : "진행중"}
                           </span>
                         </td>
+                        <td className="px-0.5 py-1 whitespace-nowrap text-sm">
+                          {(session as any).evaluationRequested ? (
+                            (session as any).evaluationCompleted
+                              ? <span style={{color:"#16a34a",fontWeight:600}}>판정완료</span>
+                              : <span style={{color:"#dc2626",fontWeight:700,background:"#fef2f2",padding:"2px 8px",borderRadius:12,fontSize:12}}>의뢰접수</span>
+                          ) : <span style={{color:"#9ca3af"}}>-</span>}
+                        </td>
                         <td className="px-0.5 py-1 whitespace-nowrap text-sm font-medium">
                           {(session as any).familyType || "-"}
                         </td>
@@ -821,6 +906,21 @@ const AdminDashboard = () => {
                               ? <span className="text-yellow-600 font-semibold">{t}</span>
                               : <span className="text-green-600">{t}</span>;
                           })()}
+                        </td>
+                        <td className="px-0.5 py-1 whitespace-nowrap text-sm">
+                          {(() => {
+                            const reliability = (session as any).reliability;
+                            if (!reliability?.grade) return <span style={{color:'#9ca3af'}}>-</span>;
+                            if (reliability.grade === "높음") return <span style={{color:'#16a34a'}}>{reliability.grade}</span>;
+                            if (reliability.grade === "보통") return <span style={{color:'#ca8a04'}}>{reliability.grade}</span>;
+                            if (reliability.grade === "낮음") return <span style={{color:'#dc2626',fontWeight:'bold'}}>{reliability.grade}</span>;
+                            return <span>{reliability.grade}</span>;
+                          })()}
+                        </td>
+                        <td className="px-0.5 py-1 whitespace-nowrap text-sm">
+                          {(session as any).canvasImage
+                            ? <span style={{color:"#16a34a",fontWeight:600}}>있음</span>
+                            : <span style={{color:"#dc2626",fontWeight:700}}>없음</span>}
                         </td>
                         <td className="px-0.5 py-1 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(session.createdAt)}
@@ -906,6 +1006,251 @@ const AdminDashboard = () => {
               </div>
             )}
           </>
+        )}
+        {activeTab === "codes" && (
+          <>
+            <h2 className="text-2xl font-bold mb-6">코드 관리</h2>
+
+            {/* Code Generation Section */}
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              <h3 className="text-lg font-semibold mb-4">일회용 코드 생성</h3>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: "12px", flexWrap: "wrap" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "13px", color: "#6b7280", marginBottom: "4px" }}>사용자 선택</label>
+                  <select
+                    value={codeGenEmail}
+                    onChange={(e) => setCodeGenEmail(e.target.value)}
+                    style={{ border: "1px solid #d1d5db", borderRadius: "6px", padding: "8px 12px", fontSize: "14px", minWidth: "240px" }}
+                    disabled={usersLoading}
+                  >
+                    <option value="">{usersLoading ? "로딩 중..." : "사용자를 선택하세요"}</option>
+                    {users.map(u => (
+                      <option key={u.email} value={u.email}>
+                        {u.name ? `${u.name} (${u.email})` : u.email}
+                        {u.organization ? ` - ${u.organization}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "13px", color: "#6b7280", marginBottom: "4px" }}>생성 수량</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={codeGenCount}
+                    onChange={(e) => setCodeGenCount(Math.min(100, Math.max(1, parseInt(e.target.value) || 1)))}
+                    style={{ border: "1px solid #d1d5db", borderRadius: "6px", padding: "8px 12px", fontSize: "14px", width: "80px" }}
+                  />
+                </div>
+                <button
+                  disabled={!codeGenEmail || codeGenLoading}
+                  onClick={async () => {
+                    if (!codeGenEmail) return;
+                    const selectedUser = users.find(u => u.email === codeGenEmail);
+                    setCodeGenLoading(true);
+                    try {
+                      const results: Array<{ code: string; email: string; name: string; organization: string; createdAt: string }> = [];
+                      for (let i = 0; i < codeGenCount; i++) {
+                        const res = await adminApi.generateCode(
+                          codeGenEmail,
+                          selectedUser?.name || "",
+                          selectedUser?.organization || ""
+                        );
+                        results.push({
+                          code: res.code,
+                          email: codeGenEmail,
+                          name: selectedUser?.name || "",
+                          organization: selectedUser?.organization || "",
+                          createdAt: new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }),
+                        });
+                      }
+                      setGeneratedCodes(prev => [...results, ...prev]);
+                    } catch (err) {
+                      alert("코드 생성에 실패했습니다.");
+                      console.error(err);
+                    } finally {
+                      setCodeGenLoading(false);
+                    }
+                  }}
+                  style={{
+                    padding: "8px 20px",
+                    backgroundColor: !codeGenEmail || codeGenLoading ? "#9ca3af" : "#2563eb",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: !codeGenEmail || codeGenLoading ? "not-allowed" : "pointer",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                  }}
+                >
+                  {codeGenLoading ? "생성 중..." : "생성"}
+                </button>
+              </div>
+            </div>
+
+            {/* Generated Codes Table */}
+            {generatedCodes.length > 0 && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                  <h3 className="text-lg font-semibold">생성된 코드 ({generatedCodes.length}개)</h3>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={() => {
+                        const text = generatedCodes.map(c => c.code).join("\n");
+                        navigator.clipboard.writeText(text).then(() => alert("전체 코드가 복사되었습니다."));
+                      }}
+                      style={{
+                        padding: "8px 16px",
+                        backgroundColor: "#059669",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      전체 복사
+                    </button>
+                    <button
+                      onClick={() => {
+                        const wsData = [
+                          ["번호", "코드", "이메일", "이름", "소속", "생성일시"],
+                          ...generatedCodes.map((c, i) => [i + 1, c.code, c.email, c.name, c.organization, c.createdAt]),
+                        ];
+                        const ws = XLSX.utils.aoa_to_sheet(wsData);
+                        const wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, ws, "일회용코드");
+                        const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+                        XLSX.writeFile(wb, `일회용코드_${today}.xlsx`);
+                      }}
+                      style={{
+                        padding: "8px 16px",
+                        backgroundColor: "#7c3aed",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      엑셀 내보내기
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm("생성된 코드 목록을 모두 지우시겠습니까?")) setGeneratedCodes([]);
+                      }}
+                      style={{
+                        padding: "8px 16px",
+                        backgroundColor: "white",
+                        color: "#6b7280",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                      }}
+                    >
+                      목록 지우기
+                    </button>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">번호</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">코드</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">이메일</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">이름</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">소속</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">생성일시</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">복사</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {generatedCodes.map((c, i) => (
+                        <tr key={i} className="hover:bg-gray-50">
+                          <td className="px-4 py-2 text-sm text-gray-500">{i + 1}</td>
+                          <td className="px-4 py-2 text-sm font-mono font-semibold text-blue-700">{c.code}</td>
+                          <td className="px-4 py-2 text-sm">{c.email}</td>
+                          <td className="px-4 py-2 text-sm">{c.name || "-"}</td>
+                          <td className="px-4 py-2 text-sm">{c.organization || "-"}</td>
+                          <td className="px-4 py-2 text-sm text-gray-500">{c.createdAt}</td>
+                          <td className="px-4 py-2 text-sm">
+                            <button
+                              onClick={() => navigator.clipboard.writeText(c.code).then(() => alert("복사되었습니다."))}
+                              style={{
+                                padding: "4px 10px",
+                                backgroundColor: "#eff6ff",
+                                color: "#2563eb",
+                                border: "1px solid #bfdbfe",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "12px",
+                              }}
+                            >
+                              복사
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === "evaluations" && (
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>판정 의뢰 목록</h2>
+            {evalLoading ? (
+              <p style={{ textAlign: "center", padding: 40, color: "#888" }}>로딩 중...</p>
+            ) : evalRequests.length === 0 ? (
+              <p style={{ textAlign: "center", padding: 40, color: "#888" }}>판정 의뢰가 없습니다.</p>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: "#f9fafb", borderBottom: "2px solid #e5e7eb" }}>
+                      <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: "#6b7280" }}>접수번호</th>
+                      <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: "#6b7280" }}>아동명</th>
+                      <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: "#6b7280" }}>기관/상담사</th>
+                      <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: "#6b7280" }}>의뢰 상태</th>
+                      <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: "#6b7280" }}>가족체계유형</th>
+                      <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600, color: "#6b7280" }}>관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {evalRequests.map((s: any, idx: number) => (
+                      <tr key={s.receiptNo} style={{ background: idx % 2 === 0 ? "#fff" : "#FFFBF0", borderBottom: "1px solid #e5e7eb" }}>
+                        <td style={{ padding: "10px 12px" }}>{s.receiptNo}</td>
+                        <td style={{ padding: "10px 12px", fontWeight: 600 }}>{s.kid?.name || "-"}</td>
+                        <td style={{ padding: "10px 12px" }}>{s.counselor?.organization || "-"} / {s.counselor?.name || "-"}</td>
+                        <td style={{ padding: "10px 12px" }}>
+                          {s.evaluationCompleted
+                            ? <span style={{ color: "#16a34a", fontWeight: 700 }}>판정완료</span>
+                            : <span style={{ color: "#dc2626", fontWeight: 700, background: "#fef2f2", padding: "3px 10px", borderRadius: 12, fontSize: 12 }}>의뢰접수</span>}
+                        </td>
+                        <td style={{ padding: "10px 12px" }}>{s.familyType || "-"}</td>
+                        <td style={{ padding: "10px 12px" }}>
+                          <Link
+                            to={`/admin/sessions/${s.receiptNo}`}
+                            style={{ color: "#2563eb", textDecoration: "underline", fontSize: 13 }}
+                          >
+                            {s.evaluationCompleted ? "결과보기" : "판정하기"}
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         )}
       </main>
     </div>

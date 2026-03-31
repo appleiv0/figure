@@ -129,7 +129,7 @@ const InforUser: React.FC = () => {
         },
         kid: {
           birth: birthDate,
-          name: formData.kidname,
+          name: formData.kidname.trim(),
           sex: formData.gender,
         },
         agree: true,

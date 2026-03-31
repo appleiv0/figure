@@ -1,3 +1,4 @@
+import { useLocation } from "react-router-dom";
 import { createChatBotMessage } from "react-chatbot-kit";
 import ChatbotWrapper from "../../../components/molecules/Chatbot/ChatbotWrapper";
 import ActionProvider from "../../../components/molecules/Chatbot/ActionProvider";
@@ -11,6 +12,7 @@ import useStore from "../../../store";
 import ButtonEnd from "../../../components/molecules/Widget/ButtonEnd";
 
 const Stage6 = () => {
+  const location = useLocation();
   const chooseAnimal = useStore((state: any) => state.chooseAnimal);
   const setChooseAnimal = useStore((state: any) => state.setChooseAnimal);
   const selectedFamily = useStore((state: any) => state.selectedFamily);
@@ -81,7 +83,7 @@ const Stage6 = () => {
       {chooseAnimal && (
         <>
           <div className="container mx-auto">
-            {location.pathname === "/stage5" && (
+            {location.pathname.endsWith("/stage5") && (
               <ChatbotWrapper
                 config={config6 as any}
                 actionProvider={ActionProvider}

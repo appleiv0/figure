@@ -31,7 +31,7 @@ const Home = () => {
       <div className="text-center font-bold px-5 mx-auto max-w-[52rem]">
         <img
           className="w-[9.25rem] h-[9.25rem] mx-auto rounded-full"
-          src="/assets/images/user.png"
+          src={`${import.meta.env.BASE_URL}assets/images/user.png`}
           alt="User"
         />
         <h1 className="text-3xl mt-8 font-extrabold">{userInfo.kidname}</h1>

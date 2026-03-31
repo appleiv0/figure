@@ -126,15 +126,26 @@ const Landing = () => {
         // 이미 사용된 코드이고 세션이 있으면 → 이어하기
         if (result.used && result.sessionReceiptNo) {
           try {
-            const sessionData = await adminApi.getSession(result.sessionReceiptNo);
+            const sessionData = await adminApi.getMySession(String(result.sessionReceiptNo), result.counselorEmail || "");
             const session = sessionData.session;
 
             if (session && session.status !== "completed") {
+              // 받침 체크로 endWord 생성
+              const kidname = session.kid?.name || "";
+              const lastChar = kidname.charAt(kidname.length - 1);
+              const hasBatchim = lastChar && ((lastChar.charCodeAt(0) - 0xAC00) % 28 !== 0);
+              const endWord = {
+                kwaVSwa: hasBatchim ? "과" : "와",
+                liVSka: hasBatchim ? "이" : "가",
+                eunVSneun: hasBatchim ? "은" : "는",
+              };
+
               // 세션 정보 저장
               setItemLocalStorage(USER, {
-                kidname: session.kid?.name || "",
+                kidname,
                 selectedDate: session.kid?.birth || "",
                 receiptNo: session.receiptNo,
+                endWord,
               });
 
               // currentStep 설정 및 해당 스테이지로 이동
@@ -207,7 +218,7 @@ const Landing = () => {
                 <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-[#E8F5E9] rotate-45" />
               </div>
               <img
-                src="/assets/images/01.png"
+                src={`${import.meta.env.BASE_URL}assets/images/01.png`}
                 alt="푸름이"
                 className="w-24 h-24 md:w-32 md:h-32 rounded-full"
               />

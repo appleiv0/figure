@@ -11,10 +11,10 @@ from openai import OpenAI
 
 
 def _sanitize(name: str) -> str:
-    """Remove characters unsafe for filenames."""
+    """Remove path separators, dangerous characters, and whitespace from filename."""
     if not name:
         return ""
-    return re.sub(r'[\\/*?:"<>|]', '_', name)
+    return re.sub(r'[/\\<>:"|?*\x00-\x1f\s]', '', name)
 
 client = OpenAI(api_key=CFG.OPENAI_API_KEY)
 

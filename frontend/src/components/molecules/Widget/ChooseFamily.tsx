@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Icon from "../../../components/atoms/Icon";
 import { USER } from "../../../constants/common.constant";
 import { chooseFamily } from "../../../data";
@@ -19,6 +19,7 @@ const ChooseFamily = () => {
 
   const hidden = useStore((state: any) => state.hidden);
   const navigator = useNavigate();
+  const location = useLocation();
   const userInfo = getItemLocalStorage(USER);
 
   const { fetchFigure } = useSetFigure();
@@ -87,7 +88,7 @@ const ChooseFamily = () => {
   };
 
   const handleStartChat = async () => {
-    if (location.pathname === "/stage1" || location.pathname === "/stage2") {
+    if (location.pathname.endsWith("/stage1") || location.pathname.endsWith("/stage2")) {
       try {
         const response = await fetchFigure({
           kidName: userInfo.kidname,
@@ -97,10 +98,10 @@ const ChooseFamily = () => {
         });
 
         if (!response) {
-          console.error("API Error:", response.statusText);
+          console.error("API Error: No response received");
         } else {
           setCurrentStep(currentStep + 1);
-          if (location.pathname === "/stage2") {
+          if (location.pathname.endsWith("/stage2")) {
             navigator("/stage3");
             setSelectedCards([]);
             setFigure([]);

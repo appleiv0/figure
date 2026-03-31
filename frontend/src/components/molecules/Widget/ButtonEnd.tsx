@@ -75,7 +75,7 @@ const ButtonEnd = () => {
   return (
     <>
       <div className="react-chatbot-kit-chat-bot-message-container flex gap-2">
-        {location.pathname === "/stage5" && (
+        {location.pathname.endsWith("/stage5") && (
           <button
             type="button"
             className="text-2xl font-bold ml-auto flex items-center gap-2 border border-primary bg-primary hover:bg-grey-100 hover:text-[#2C9608] text-white px-3 py-4 rounded-md cursor-pointer select-none"
@@ -90,7 +90,7 @@ const ButtonEnd = () => {
             />
           </button>
         )}
-        {location.pathname === "/ending" && (
+        {location.pathname.endsWith("/ending") && (
           <button
             type="button"
             className="text-2xl font-bold ml-auto flex items-center gap-2 border border-primary bg-primary hover:bg-grey-100 hover:text-[#2C9608] text-white px-3 py-4 rounded-md cursor-pointer select-none"
@@ -105,7 +105,7 @@ const ButtonEnd = () => {
             />
           </button>
         )}
-        {location.pathname === "/result" && (
+        {location.pathname.endsWith("/result") && (
           <button
             type="button"
             className="text-2xl font-bold flex items-center gap-2 border border-primary bg-primary hover:bg-grey-100 hover:text-[#2C9608] text-white px-3 py-4 rounded-md cursor-pointer select-none"

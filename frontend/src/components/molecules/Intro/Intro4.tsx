@@ -11,7 +11,7 @@ const Intro4 = ({ handleActivePosition }: Intro4Props) => {
       <div>
         <img
           className="w-[3.5rem] md:w-[4.5rem] flex justify-center mx-auto items-center mt-[1.5rem] md:mt-[2rem]"
-          src="./assets/images/01.png"
+          src={`${import.meta.env.BASE_URL}assets/images/01.png`}
         />
         <div className="relative mx-auto mt-6 md:mt-8 max-w-[22rem] px-4">
           <div className="bg-yellow-200 border border-yellow-300 rounded-2xl p-4 text-center text-lg md:text-2xl font-bold leading-relaxed">

@@ -22,7 +22,7 @@ const Header = () => {
   }, [location]);
 
   const handleBack = () => {
-    const idx = stageOrder.indexOf(location.pathname);
+    const idx = stageOrder.findIndex(s => location.pathname.endsWith(s));
     if (idx > 0) {
       const prevStep = currentStep > 0 ? currentStep - 1 : 0;
       setCurrentStep(prevStep);
@@ -62,7 +62,7 @@ const Header = () => {
               r="4.5"
               transform="rotate(-90 4.5 4.5)"
               fill={
-                currentPage === "/stage1" || currentPage === "/"
+                currentPage.endsWith("/stage1") || currentPage === "/"
                   ? "#2EB500"
                   : "#DDDDDD"
               }
@@ -72,35 +72,35 @@ const Header = () => {
               cy="4.5"
               r="4.5"
               transform="rotate(-90 17.5 4.5)"
-              fill={currentPage === "/stage2" ? "#2EB500" : "#DDDDDD"}
+              fill={currentPage.endsWith("/stage2") ? "#2EB500" : "#DDDDDD"}
             />
             <circle
               cx="31.5"
               cy="4.5"
               r="4.5"
               transform="rotate(-90 31.5 4.5)"
-              fill={currentPage === "/stage3" ? "#2EB500" : "#DDDDDD"}
+              fill={currentPage.endsWith("/stage3") ? "#2EB500" : "#DDDDDD"}
             />
             <circle
               cx="44.5"
               cy="4.5"
               r="4.5"
               transform="rotate(-90 44.5 4.5)"
-              fill={currentPage === "/stage4" ? "#2EB500" : "#DDDDDD"}
+              fill={currentPage.endsWith("/stage4") ? "#2EB500" : "#DDDDDD"}
             />
             <circle
               cx="57.5"
               cy="4.5"
               r="4.5"
               transform="rotate(-90 57.5 4.5)"
-              fill={currentPage === "/stage5" ? "#2EB500" : "#DDDDDD"}
+              fill={currentPage.endsWith("/stage5") ? "#2EB500" : "#DDDDDD"}
             />
             <circle
               cx="70.5"
               cy="4.5"
               r="4.5"
               transform="rotate(-90 70.5 4.5)"
-              fill={currentPage === "/stage6" ? "#2EB500" : "#DDDDDD"}
+              fill={currentPage.endsWith("/stage6") ? "#2EB500" : "#DDDDDD"}
             />
           </svg>
         </div>

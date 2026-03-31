@@ -13,7 +13,7 @@ const Intro = ({ children, handleChooseAnimal }: IntroTypes) => {
     <div className="container mx-auto px-4 md:px-0">
       <img
         className="w-[3.5rem] md:w-[4.5rem] flex justify-center mx-auto items-center mt-[1.5rem] md:mt-[2rem]"
-        src="/assets/images/01.png"
+        src={`${import.meta.env.BASE_URL}assets/images/01.png`}
       />
       <h1 className="text-center text-xl md:text-3xl font-extrabold mt-6 md:mt-8 mb-6 md:mb-10">
         [ 진행 방법 ]

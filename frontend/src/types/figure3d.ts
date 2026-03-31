@@ -4,46 +4,48 @@ export type FigureVariant = 1 | 2;
 
 export type DollPose = 'stand' | 'sit';
 
+const B = import.meta.env.BASE_URL || '/';
+
 export const DOLL_MODELS: Record<string, Record<DollPose, string>> = {
   adult_male: {
-    stand: '/figures/male_stand_s3.glb',
-    sit: '/figures/male_sit_s4.glb',
+    stand: `${B}figures/male_stand_s3.glb`,
+    sit: `${B}figures/male_sit_s4.glb`,
   },
   adult_female: {
-    stand: '/figures/mom_stand_s2.glb',
-    sit: '/figures/mom_sit_s2.glb',
+    stand: `${B}figures/mom_stand_s2.glb`,
+    sit: `${B}figures/mom_sit_s2.glb`,
   },
   child_male: {
-    stand: '/figures/boy_stand_s5.glb',
-    sit: '/figures/boy_sit_s8.glb',
+    stand: `${B}figures/boy_stand_s5.glb`,
+    sit: `${B}figures/boy_sit_s8.glb`,
   },
   child_female: {
-    stand: '/figures/girl_stand_s0.glb',
-    sit: '/figures/girl_sit_s0.glb',
+    stand: `${B}figures/girl_stand_s0.glb`,
+    sit: `${B}figures/girl_sit_s0.glb`,
   },
   infant: {
-    stand: '/figures/baby_stand_new.glb',
-    sit: '/figures/baby_sit_new.glb',
+    stand: `${B}figures/baby_stand_new.glb`,
+    sit: `${B}figures/baby_sit_new.glb`,
   },
   baby: {
-    stand: '/figures/baby_stand_new.glb',
-    sit: '/figures/baby_sit_new.glb',
+    stand: `${B}figures/baby_stand_new.glb`,
+    sit: `${B}figures/baby_sit_new.glb`,
   },
   grand_fa: {
-    stand: '/figures/Grandfa_stand_s2.glb',
-    sit: '/figures/Grandfa_sit_s5.glb',
+    stand: `${B}figures/Grandfa_stand_s2.glb`,
+    sit: `${B}figures/Grandfa_sit_s5.glb`,
   },
   grand_ma: {
-    stand: '/figures/Granma_stand_s0.glb',
-    sit: '/figures/Grandma_sit_s9.glb',
+    stand: `${B}figures/Granma_stand_s0.glb`,
+    sit: `${B}figures/Grandma_sit_s9.glb`,
   },
   teenager_male: {
-    stand: '/figures/Teenager_boy_stand_s0.glb',
-    sit: '/figures/Teenager_boy_sit_s0.glb',
+    stand: `${B}figures/Teenager_boy_stand_s0.glb`,
+    sit: `${B}figures/Teenager_boy_sit_s0.glb`,
   },
   teenager_female: {
-    stand: '/figures/Teenager_girl_stand_s0.glb',
-    sit: '/figures/Teenager_girl_sit_s0.glb',
+    stand: `${B}figures/Teenager_girl_stand_s0.glb`,
+    sit: `${B}figures/Teenager_girl_sit_s0.glb`,
   },
 };
 

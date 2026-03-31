@@ -31,6 +31,8 @@ DEFAULT_CREDITS = 10
 
 
 ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY", "change-this-in-production")
+if ADMIN_API_KEY == "change-this-in-production":
+    print("WARNING: Using default admin API key. Set ADMIN_API_KEY environment variable for production.")
 
 
 async def verify_admin_key(request: Request, x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key")):
@@ -66,16 +68,23 @@ def serialize_session(session: dict) -> dict:
     if "_id" in session:
         session["_id"] = str(session["_id"])
 
-    # Convert datetime objects to ISO format strings
+    # Convert datetime objects to ISO format strings (UTC → KST)
     for key in ["createdAt", "updatedAt", "_migrated_at"]:
         if key in session and isinstance(session[key], datetime):
-            session[key] = session[key].isoformat()
+            dt = session[key]
+            if dt.tzinfo is None:
+                # MongoDB returns UTC without tzinfo - convert to KST
+                dt = dt.replace(tzinfo=timezone.utc).astimezone(KST)
+            session[key] = dt.isoformat()
 
     # Handle chatHistory timestamps
     if "chatHistory" in session:
         for entry in session["chatHistory"]:
             if "timestamp" in entry and isinstance(entry["timestamp"], datetime):
-                entry["timestamp"] = entry["timestamp"].isoformat()
+                dt = entry["timestamp"]
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc).astimezone(KST)
+                entry["timestamp"] = dt.isoformat()
 
     return session
 
@@ -328,6 +337,9 @@ def save_evaluation(receipt_no: str, body: dict = Body(...)):
     update_data = {"aiEvaluation": text}
     if family_type is not None:
         update_data["familyType"] = family_type
+    # Mark evaluation as completed when admin saves familyType/aiEvaluation
+    update_data["evaluationCompleted"] = True
+    update_data["evaluationCompletedAt"] = datetime.now(KST)
     success = session_repository.update_session(receipt_no, update_data)
     return {
         "success": success,
@@ -507,7 +519,7 @@ def get_credits(email: str = Query(..., description="Counselor email")):
     return CreditResponse(email=email, credits=user.get("credits", DEFAULT_CREDITS))
 
 
-SUPER_USERS = ["appleiv@gmail.com"]
+SUPER_USERS = ["appleiv@gmail.com", "a33351702@gmail.com", "beratung@hansei.ac.kr"]
 
 
 @router.post(

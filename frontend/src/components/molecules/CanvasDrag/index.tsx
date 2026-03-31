@@ -24,8 +24,8 @@ const CanvasDrag = ({ handleActiveChat }: CanvasDragProps) => {
   const groups = useRef<any>([]);
   const selectedCards = useStore((state: any) => state.selectedCards);
   const [images, setImages] = useState<any>([]);
-  const [iconFlip] = useImage("./assets/images/icons/icon-flip.svg");
-  const [iconCheck] = useImage("./assets/images/icons/icon-check.svg");
+  const [iconFlip] = useImage(`${import.meta.env.BASE_URL}assets/images/icons/icon-flip.svg`);
+  const [iconCheck] = useImage(`${import.meta.env.BASE_URL}assets/images/icons/icon-check.svg`);
   const [positions, setPositions] = useState<any>([]);
   const [cursor, setCursor] = useState("default");
   const [activeIndex, setActiveIndex] = useState(-1);

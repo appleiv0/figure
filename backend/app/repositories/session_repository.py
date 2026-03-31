@@ -11,10 +11,10 @@ import libcommon.config.config as config
 
 
 def _sanitize_filename(name: str) -> str:
-    """Remove path separators and dangerous characters from filename."""
+    """Remove path separators, dangerous characters, and whitespace from filename."""
     if not name:
         return ""
-    return re.sub(r'[/\\<>:"|?*\x00-\x1f]', '', name)
+    return re.sub(r'[/\\<>:"|?*\x00-\x1f\s]', '', name)
 
 class SessionRepository:
     """Repository for therapy session data operations"""

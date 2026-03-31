@@ -8,16 +8,16 @@ import "./sass/main.scss";
 import { Router } from "./routes";
 
 // 이전 세션 캐시 정리
-localStorage.removeItem("abuse-therapy-store");
-localStorage.removeItem("currentStep");
-localStorage.removeItem("THERAPY_TOKEN");
+sessionStorage.removeItem("abuse-therapy-store");
+sessionStorage.removeItem("currentStep");
+sessionStorage.removeItem("THERAPY_TOKEN");
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <GoogleOAuthProvider clientId={googleClientId}>
-      <HistoryRouter history={history}>
+      <HistoryRouter history={history} basename={import.meta.env.BASE_URL.replace(/\/$/, '') || undefined}>
         <AuthProvider>
           <Router />
         </AuthProvider>

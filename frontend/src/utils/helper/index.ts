@@ -5,27 +5,27 @@ export const isLogin = () => !!getItemLocalStorage(USER);
 
 // -----------------Get/set/remove item localstorage-----------------------
 export const setItemLocalStorage = (key: string, value: any) =>
-  typeof localStorage !== "undefined" && key && value
-    ? localStorage.setItem(key, JSON.stringify(value))
+  typeof sessionStorage !== "undefined" && key && value
+    ? sessionStorage.setItem(key, JSON.stringify(value))
     : null;
 
 export const getItemLocalStorage = (key: string | null) =>
-  typeof localStorage !== "undefined" && key
-    ? JSON.parse(localStorage.getItem(key) as string)
+  typeof sessionStorage !== "undefined" && key
+    ? JSON.parse(sessionStorage.getItem(key) as string)
     : null;
 
 export const removeItemLocalStorage = (
   key: string | null,
   options?: { removeAll?: boolean }
 ) => {
-  if (typeof localStorage === "undefined") {
+  if (typeof sessionStorage === "undefined") {
     return false;
   }
   const { removeAll } = options || { removeAll: false };
 
   if (removeAll) {
-    // Remove all item in localstorage
-    localStorage.clear();
+    // Remove all item in sessionStorage
+    sessionStorage.clear();
     return true;
   }
 
@@ -33,7 +33,7 @@ export const removeItemLocalStorage = (
     return false;
   }
 
-  localStorage.removeItem(key);
+  sessionStorage.removeItem(key);
   return true;
 };
 

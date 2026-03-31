@@ -8,13 +8,13 @@ const ButtonStart = () => {
   const setSelectedCards = useStore((state: any) => state.setSelectedCards);
 
   const handleNext = () => {
-    if (location.pathname === "/") {
+    if (location.pathname === "/" || location.pathname.endsWith("/family") || location.pathname.endsWith("/family/")) {
       navigator("/stage1");
       setSelectedCards([]);
-    } else if (location.pathname === "/stage1") {
+    } else if (location.pathname.endsWith("/stage1")) {
       navigator("/stage2");
       setSelectedCards([]);
-    } else if (location.pathname === "/stage3") {
+    } else if (location.pathname.endsWith("/stage3")) {
       navigator("/stage6");
     }
   };
