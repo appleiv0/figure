@@ -165,7 +165,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
       ctx.drawImage(glCanvas, 0, 0);
       const camera = cameraRef.current as THREE.PerspectiveCamera;
       instancesRef.current.forEach(inst => {
-        const labelHeight = inst.figureType.size * (inst.pose === 'sit' ? 1.0 : 1.4);
+        const labelHeight = inst.figureType.size * (inst.pose === 'sit' ? 1.6 : 2.15);
         const pos3 = new THREE.Vector3(inst.position.x, labelHeight, inst.position.z);
         pos3.project(camera);
         const sx = (pos3.x * 0.5 + 0.5) * w;
@@ -400,7 +400,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
           const camera = cameraRef.current as THREE.PerspectiveCamera;
           // 각 인형 위에 라벨 그리기
           instancesRef.current.forEach(inst => {
-            const labelHeight = inst.figureType.size * (inst.pose === 'sit' ? 1.0 : 1.4);
+            const labelHeight = inst.figureType.size * (inst.pose === 'sit' ? 1.6 : 2.15);
             const pos3 = new THREE.Vector3(inst.position.x, labelHeight, inst.position.z);
             pos3.project(camera);
             const sx = (pos3.x * 0.5 + 0.5) * w;
@@ -552,7 +552,6 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
               scale={instance.figureType.size * 0.9}
               selected={instance.selected && !showRolePicker}
               pose={instance.pose}
-              isMe={!showRolePicker}
               onSelect={() => handleSelectFigure(instance.id)}
               onRotate={(angle) => handleRotate(instance.id, angle)}
               onPositionChange={(position) => handlePositionChange(instance.id, position)}

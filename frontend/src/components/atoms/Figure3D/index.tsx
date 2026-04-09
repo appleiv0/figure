@@ -40,7 +40,6 @@ interface Props {
   selected: boolean;
   pose?: DollPose;
   material?: MaterialSettings;
-  isMe?: boolean;
   onSelect: () => void;
   onRotate: (angle: number) => void;
   onPositionChange: (position: [number, number, number]) => void;
@@ -58,7 +57,6 @@ export default function Figure3D({
   selected,
   pose = 'stand',
   material = DEFAULT_MATERIAL,
-  isMe = false,
   onSelect,
   onRotate,
   onPositionChange,
@@ -282,19 +280,20 @@ export default function Figure3D({
         </group>
       </group>
 
-      {/* 역할 라벨 (머리 위) */}
-      {isMe && (
-        <Html position={[0, dollHeight + poseScale * (renderedPose === 'sit' ? 0.9 : 0.3), 0]} center sprite>
-          <div style={{
-            color: '#333',
-            fontSize: 14,
-            fontWeight: 'bold',
-            fontFamily: 'sans-serif',
-            whiteSpace: 'nowrap',
-            textShadow: '0 0 4px rgba(255,255,255,0.8)',
-          }}>{figureType.label}</div>
-        </Html>
-      )}
+      {/* 역할 라벨 (머리 바로 위) */}
+      <Html position={[0, dollHeight + poseScale * 0.05, 0]} center sprite>
+        <div style={{
+          color: '#fff',
+          fontSize: 13,
+          fontWeight: 'bold',
+          fontFamily: 'sans-serif',
+          whiteSpace: 'nowrap',
+          background: 'rgba(0,0,0,0.5)',
+          padding: '2px 8px',
+          borderRadius: 4,
+          textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+        }}>{figureType.label}</div>
+      </Html>
 
       {/* 회전 화살표 (회전 안 함, 항상 좌우 고정) */}
       {selected && (
