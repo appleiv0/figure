@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import Intro4 from "../../../components/molecules/Intro/Intro4";
 import Header from "../../../components/organisms/Header";
 import DeskScene3D from "../../../components/organisms/DeskScene3D";
@@ -13,7 +14,7 @@ const Stage4 = () => {
   // phase 0: Intro4, phase 1: 배치만 (가족추가 없음), phase 2: 가족추가 가능
   const [phase, setPhase] = useState<number>(0);
   const navigator = useNavigate();
-  const { setCurrentIndex, setCurrentStep, selectedFamily, selectedFamilyJosa, figure } = useStore() as any;
+  const { setCurrentIndex, setCurrentStep, selectedFamily: _selectedFamily, selectedFamilyJosa: _selectedFamilyJosa, figure } = useStore() as any;
   const { fetchPosition } = useSetPosition();
   const userInfo = getItemLocalStorage(USER);
 
@@ -61,14 +62,50 @@ const Stage4 = () => {
         canvasImage,
         dollInstances,
       };
-      await fetchPosition(data);
+      const result = await fetchPosition(data);
+      if (!result) {
+        alert("인형 배치 데이터 저장에 실패했습니다. 다시 시도해주세요.");
+        return;
+      }
     } catch (error: any) {
       console.error("Position save error:", error.message);
+      alert("인형 배치 데이터 저장에 실패했습니다. 다시 시도해주세요.");
+      return;
     }
 
     setCurrentIndex(0);
-    navigator("/ending");
-    setTimeout(() => setCurrentStep(7), 100);
+    setCurrentStep(7);
+
+    // Save step to backend for resume capability (fire and forget)
+    try {
+      const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+      axios.post(`${apiBase}/public/save-step`, { receiptNo: userInfo?.receiptNo, currentStep: 7 });
+    } catch {}
+
+    // Check if results should be shown
+    try {
+      const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+      const settingsRes = await axios.get(`${apiBase}/public/settings/show-result`);
+      if (settingsRes.data?.showResultToUser) {
+        // 결과 페이지로 가기 전에 리포트 데이터를 먼저 가져옴
+        try {
+          const reportRes = await axios.post(`${apiBase}/getReport`, {
+            kidName: userInfo?.kidname,
+            receiptNo: `${userInfo?.receiptNo}`,
+          });
+          if (reportRes.data) {
+            (useStore.getState() as any).setResponse(reportRes.data);
+          }
+        } catch (e) {
+          console.error("Report fetch error:", e);
+        }
+        navigator("/result");
+      } else {
+        navigator("/ending");
+      }
+    } catch {
+      navigator("/ending");
+    }
   };
 
   return (

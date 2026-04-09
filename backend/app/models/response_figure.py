@@ -13,6 +13,8 @@ class ExamRes(BaseModel):
 class ReceiptNoRes(BaseModel):
     receiptNo: int
     endWord: dict
+    loginCode: str = ""
+    sessionToken: str = ""
 
 
 class SetFigureRes(BaseModel):

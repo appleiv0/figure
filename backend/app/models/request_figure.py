@@ -23,6 +23,7 @@ class ReceiptNoReq(BaseModel):
 class SetFigureReq(BaseModel):
     kidName: str = Field(default=None, examples=["victor"])
     receiptNo: int = Field(default=None, examples=[1])
+    sessionToken: str = Field(default="", examples=["abc123"])
     stage: str = Field(default=None, examples=["1"])
     figures: list = Field(
         default=None,
@@ -39,6 +40,7 @@ class SetFigureReq(BaseModel):
 class SetPostionReq(BaseModel):
     kidName: str = Field(default=None, examples=["victor"])
     receiptNo: int = Field(default=None, examples=[1])
+    sessionToken: str = Field(default="", examples=["abc123"])
     centerH: int = Field(default=None, examples=[600])
     centerV: int = Field(default=None, examples=[400])
     figures: list = Field(
@@ -88,6 +90,7 @@ class SetPostionReq(BaseModel):
 class LLMCompletionReq(BaseModel):
     kidName: str = Field(default=None, examples=["victor"])
     receiptNo: int = Field(default=None, examples=[1])
+    sessionToken: str = Field(default="", examples=["abc123"])
     count: int = Field(default=0, examples=[0])
     relation: str = Field(default="", examples=["아빠"])
     message: str = Field(default="", examples=["아빠는 나랑 잘 놀아줘요."])
@@ -96,10 +99,12 @@ class LLMCompletionReq(BaseModel):
 class GetReportReq(BaseModel):
     kidName: str = Field(default=None, examples=["victor"])
     receiptNo: int = Field(default=None, examples=[1])
+    sessionToken: str = Field(default="", examples=["abc123"])
 
 class SaveChatReq(BaseModel):
     kidName: str = Field(default=None, examples=["victor"])
     receiptNo: int = Field(default=None, examples=[1])
+    sessionToken: str = Field(default="", examples=["abc123"])
     role: str = Field(default="user", examples=["user", "bot"])
     content: str = Field(default="", examples=["안녕하세요"])
     relation: Optional[str] = Field(default=None, examples=["아빠"])

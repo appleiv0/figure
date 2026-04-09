@@ -1,4 +1,6 @@
 import axios from "axios";
+import { USER } from "../../constants/common.constant";
+import { getItemLocalStorage } from "../helper";
 
 const timeOut = 30000;
 
@@ -13,6 +15,11 @@ export const restTransport = () => {
   };
 
   const post = async (url: string, data?: any, config = {}) => {
+    // Auto-attach sessionToken to therapy API requests
+    const userInfo = getItemLocalStorage(USER);
+    if (userInfo?.sessionToken && data && typeof data === "object") {
+      data = { ...data, sessionToken: userInfo.sessionToken };
+    }
     return await client.post(url, data, config);
   };
 

@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { createChatBotMessage } from "react-chatbot-kit";
+import { useLocation } from "react-router-dom";
 import ChatbotWrapper from "../../../components/molecules/Chatbot/ChatbotWrapper";
 import ActionProvider from "../../../components/molecules/Chatbot/ActionProvider";
 import MessageParser from "../../../components/molecules/Chatbot/MessageParser";
@@ -10,23 +12,28 @@ import Header from "../../../components/organisms/Header";
 import useStore from "../../../store";
 
 const Stage3 = () => {
-  const chooseAnimal = useStore((state: any) => state.chooseAnimal);
-  const setChooseAnimal = useStore((state: any) => state.setChooseAnimal);
+  const location = useLocation();
+  const [showContent, setShowContent] = useState(false);
   const selectedFamily = useStore((state: any) => state.selectedFamily);
   const selectedFamilyJosa = useStore((state: any) => state.selectedFamilyJosa);
-  const selectedCards = useStore((state: any) => state.selectedCards);
+  const setFigure = useStore((state: any) => state.setFigure);
   const botName = selectedFamily[0];
 
+  useEffect(() => {
+    setFigure([]);
+  }, []);
+
   const handleChooseAnimal = () => {
-    setChooseAnimal(true);
+    setShowContent(true);
   };
 
   const selectedFamilyWidgets = selectedFamily.map(
     (family: any, index: number) => ({
       widgetName: `SelectedCard4Family_${family}`,
-      widgetFunc: (props: any) => (
-        <SelectedCard4Family {...props} selected={selectedCards[index]} />
-      ),
+      widgetFunc: (props: any) => {
+        const currentCards = (useStore.getState() as any).selectedCards;
+        return <SelectedCard4Family {...props} selected={currentCards[index]} />;
+      },
     })
   );
 
@@ -58,7 +65,7 @@ const Stage3 = () => {
   return (
     <>
       <Header />
-      {!chooseAnimal && (
+      {!showContent && (
         <Intro
           children={
             <>
@@ -74,7 +81,7 @@ const Stage3 = () => {
           handleChooseAnimal={handleChooseAnimal}
         />
       )}
-      {chooseAnimal && (
+      {showContent && (
         <>
           <div className="container mx-auto">
             {location.pathname.endsWith("/stage3") && (

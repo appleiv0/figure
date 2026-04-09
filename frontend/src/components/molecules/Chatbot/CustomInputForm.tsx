@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 
-const CustomInputForm = ({ setState, actionProvider, messageParser }: any) => {
+const CustomInputForm = ({ setState: _setState, actionProvider: _actionProvider, messageParser }: any) => {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const submittingRef = useRef(false);
 
   const adjustHeight = () => {
     const textarea = textareaRef.current;
@@ -18,12 +19,14 @@ const CustomInputForm = ({ setState, actionProvider, messageParser }: any) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || submittingRef.current) return;
+    submittingRef.current = true;
     messageParser.parse(input);
     setInput("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
+    setTimeout(() => { submittingRef.current = false; }, 1000);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

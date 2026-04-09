@@ -114,9 +114,11 @@ const ChooseFamily = () => {
   };
 
   const handleClick = () => {
-    setSelectedFamily([...selectedFamily, userInfo.kidname]);
-    setSelectedFamilyJosa([...selectedFamilyJosa, 0]);
-
+    // 중복 방지: 이미 kid name이 있으면 추가하지 않음
+    if (!selectedFamily.includes(userInfo.kidname)) {
+      setSelectedFamily([...selectedFamily, userInfo.kidname]);
+      setSelectedFamilyJosa([...selectedFamilyJosa, 0]);
+    }
     handleStartChat();
   };
 

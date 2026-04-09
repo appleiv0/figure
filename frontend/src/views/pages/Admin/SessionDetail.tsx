@@ -1,8 +1,7 @@
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { adminApi, Session } from "../../../services/adminApi";
 import { formatLLMConversation } from "../../../utils/pdfReport";
-import DeskScene3D from "../../../components/organisms/DeskScene3D";
 import { DollInstanceData } from "../../../types/figure3d";
 
 const AdminSessionDetail = () => {
@@ -14,7 +13,16 @@ const AdminSessionDetail = () => {
   const [familyType, setFamilyType] = useState("");
   const [evalSaving, setEvalSaving] = useState(false);
   const [evalSaved, setEvalSaved] = useState(false);
+  const [aiInterpretation, setAiInterpretation] = useState<string>("");
+  const [therapistInterpretation, setTherapistInterpretation] = useState<string>("");
+  const [generatingInterpretation, setGeneratingInterpretation] = useState(false);
+  const [savingInterpretation, setSavingInterpretation] = useState(false);
   const isAdmin = sessionStorage.getItem("adminAuth") === "true";
+
+  // Check authorization for AI interpretation
+  const counselorAuth = sessionStorage.getItem("counselorAuth");
+  const counselorEmail = counselorAuth ? JSON.parse(counselorAuth).email : "";
+  const isAuthorizedForInterpretation = counselorEmail === "appleiv@gmail.com";
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -33,12 +41,51 @@ const AdminSessionDetail = () => {
     fetchSession();
   }, [receiptNo]);
 
+  // Load existing interpretations
+  useEffect(() => {
+    if (!receiptNo || !isAuthorizedForInterpretation) return;
+    const loadInterpretation = async () => {
+      try {
+        const data = await adminApi.getInterpretation(receiptNo);
+        if (data.aiInterpretation) setAiInterpretation(data.aiInterpretation);
+        if (data.therapistInterpretation) setTherapistInterpretation(data.therapistInterpretation);
+      } catch {}
+    };
+    loadInterpretation();
+  }, [receiptNo, isAuthorizedForInterpretation]);
+
+  const handleGenerateInterpretation = async () => {
+    if (!receiptNo) return;
+    setGeneratingInterpretation(true);
+    try {
+      const result = await adminApi.generateInterpretation(receiptNo);
+      setAiInterpretation(result.interpretation);
+    } catch (err) {
+      alert("AI 해석 생성에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setGeneratingInterpretation(false);
+    }
+  };
+
+  const handleSaveTherapistInterpretation = async () => {
+    if (!receiptNo) return;
+    setSavingInterpretation(true);
+    try {
+      await adminApi.saveTherapistInterpretation(receiptNo, therapistInterpretation);
+      alert("치료사 의견이 저장되었습니다.");
+    } catch (err) {
+      alert("저장에 실패했습니다.");
+    } finally {
+      setSavingInterpretation(false);
+    }
+  };
+
   const handleOpenReport = () => {
     if (!session) return;
 
     const data = session as any;
     const kidName = data.kid?.name || "아동";
-    const age = data.kid?.birth ? calculateAge(data.kid.birth) : "-";
+    const age = data.kid?.birth ? calculateAge(data.kid.birth) : "-"; void age;
     const sex = data.kid?.sex === "Female" ? "여" : data.kid?.sex === "Male" ? "남" : "-";
     const testDate = formatDateStr(data.date);
     const meFigures = data.figures?.["1"] || [];
@@ -50,7 +97,7 @@ const AdminSessionDetail = () => {
     const myFamilyFigure = allFamilyFigures.find(
       (f: any) => f.relation === "나" || f.relation === kidName || f.relation.includes(kidName)
     );
-    const wishedFamilyFigures = data.figures?.["5"] || [];
+    const wishedFamilyFigures = data.figures?.["5"] || []; void wishedFamilyFigures;
     const familyThinkOfMe = data.figures?.["6"] || [];
     const llmConversations = formatLLMConversation(data.llmCompletion, data.chatHistory);
 
@@ -59,7 +106,7 @@ const AdminSessionDetail = () => {
       const abuse = data.abuse;
       if (!abuse) return "-";
       const sum = (abuse["1"] || 0) + (abuse["2"] || 0) + (abuse["3"] || 0);
-      return sum === 3 ? "있음" : sum >= 1 ? "가능성" : "없음";
+      return sum === 3 ? "역기능 있음" : sum >= 1 ? "역기능 가능성" : "역기능 없음";
     })();
 
     // Tension label
@@ -284,6 +331,28 @@ const AdminSessionDetail = () => {
           </tr>
         </table>
 
+        ${aiInterpretation ? `
+        <!-- AI 임상 해석 -->
+        <div style="background:linear-gradient(135deg,#64b5f6,#42a5f5);border-radius:8px;padding:10px 20px;margin-bottom:12px;">
+          <span style="font-size:22px;font-weight:700;color:#fff;">AI 임상 해석</span>
+        </div>
+        <div style="padding:15px;background:#f0f7ff;border:1px solid #bdd7ee;border-radius:8px;margin-bottom:12px;">
+          <p style="font-size:11px;color:#666;font-style:italic;margin-bottom:12px;">※ AI 자동 생성 해석입니다. 치료사가 검토 후 활용하세요.</p>
+          <div style="font-size:13px;line-height:1.8;color:#333;white-space:pre-wrap;">${aiInterpretation}</div>
+        </div>
+        ${therapistInterpretation ? `
+        <div style="padding:15px;background:#f0fff0;border:1px solid #b2dfb2;border-radius:8px;margin-bottom:24px;">
+          <h4 style="font-size:14px;font-weight:bold;color:#2e7d32;margin-bottom:8px;">치료사 의견</h4>
+          <div style="font-size:13px;line-height:1.8;color:#333;white-space:pre-wrap;">${therapistInterpretation}</div>
+        </div>
+        ` : `
+        <div style="padding:15px;background:#f0fff0;border:1px solid #b2dfb2;border-radius:8px;margin-bottom:24px;">
+          <h4 style="font-size:14px;font-weight:bold;color:#2e7d32;margin-bottom:8px;">치료사 의견:</h4>
+          <div style="min-height:80px;border:1px dashed #ccc;border-radius:4px;padding:8px;"></div>
+        </div>
+        `}
+        ` : ''}
+
         <!-- Footer -->
         <div style="background:linear-gradient(135deg,#d4a5a0,#c9918c,#b8807a);padding:18px 30px;display:flex;align-items:center;gap:16px;border-radius:4px;margin-top:32px;">
           <div style="display:flex;align-items:center;gap:10px;">
@@ -313,13 +382,13 @@ const AdminSessionDetail = () => {
           <title>AI 가족 평가 결과지 - ${kidName}</title>
           <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
           <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+            html, body, *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; forced-color-adjust: none !important; }
             body { font-family: 'Noto Sans KR', sans-serif; background: #e0e0e0; }
             @media print {
               @page { size: A4; margin: 0; }
               body { margin: 0; background: #fff; }
               .no-print { display: none !important; }
-              * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+              html, body, *, *::before, *::after { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; forced-color-adjust: none !important; }
             }
           </style>
         </head>
@@ -397,6 +466,12 @@ const AdminSessionDetail = () => {
               <span className="text-gray-500">접수번호:</span>
               <span className="ml-2 font-medium">{session.receiptNo}</span>
             </div>
+            {session.loginCode && (
+            <div>
+              <span className="text-gray-500">쿠폰번호:</span>
+              <span className="ml-2 font-medium text-blue-600">{session.loginCode}</span>
+            </div>
+            )}
             <div>
               <span className="text-gray-500">상태:</span>
               <span
@@ -423,7 +498,7 @@ const AdminSessionDetail = () => {
             <div>
               <span className="text-gray-500">가족기능:</span>
               <span className={`ml-2 font-bold ${(() => { const abuse = (session as any).abuse; if (!abuse) return ""; const sum = (abuse["1"] || 0) + (abuse["2"] || 0) + (abuse["3"] || 0); return sum === 3 ? "text-red-600" : sum >= 1 ? "text-yellow-600" : "text-green-600"; })()}`}>
-                {(() => { const abuse = (session as any).abuse; if (!abuse) return "-"; const sum = (abuse["1"] || 0) + (abuse["2"] || 0) + (abuse["3"] || 0); return sum === 3 ? "있음" : sum >= 1 ? "가능성" : "없음"; })()}
+                {(() => { const abuse = (session as any).abuse; if (!abuse) return "-"; const sum = (abuse["1"] || 0) + (abuse["2"] || 0) + (abuse["3"] || 0); return sum === 3 ? "역기능 있음" : sum >= 1 ? "역기능 가능성" : "역기능 없음"; })()}
               </span>
             </div>
             <div>
@@ -729,6 +804,84 @@ const AdminSessionDetail = () => {
             </div>
           ))}
         </div>}
+
+        {/* AI 임상 해석 섹션 - appleiv@gmail.com만 표시 */}
+        {isAuthorizedForInterpretation && (
+          <div style={{ marginTop: 32, padding: 24, background: '#f0f7ff', borderRadius: 12, border: '1px solid #bdd7ee' }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: '#1565c0' }}>
+              AI 임상 해석
+            </h3>
+
+            <p style={{ fontSize: 12, color: '#666', marginBottom: 16, fontStyle: 'italic' }}>
+              ※ AI 자동 생성 해석입니다. 치료사가 검토 후 수정하세요.
+            </p>
+
+            {/* AI Interpretation display */}
+            {aiInterpretation ? (
+              <div style={{ background: 'white', padding: 16, borderRadius: 8, marginBottom: 16, whiteSpace: 'pre-wrap', lineHeight: 1.8, fontSize: 14 }}>
+                {aiInterpretation}
+              </div>
+            ) : (
+              <p style={{ color: '#999', marginBottom: 16 }}>AI 해석이 아직 생성되지 않았습니다.</p>
+            )}
+
+            {/* Generate / Regenerate button */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+              <button
+                onClick={handleGenerateInterpretation}
+                disabled={generatingInterpretation}
+                style={{
+                  padding: '10px 20px',
+                  background: generatingInterpretation ? '#ccc' : '#1565c0',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 8,
+                  cursor: generatingInterpretation ? 'not-allowed' : 'pointer',
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
+              >
+                {generatingInterpretation ? 'AI 해석 생성 중...' : aiInterpretation ? 'AI 해석 재생성' : 'AI 임상 해석 생성'}
+              </button>
+            </div>
+
+            {/* Therapist interpretation textarea */}
+            <h4 style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, color: '#333' }}>치료사 의견</h4>
+            <textarea
+              value={therapistInterpretation}
+              onChange={(e) => setTherapistInterpretation(e.target.value)}
+              placeholder="치료사 의견을 입력하세요..."
+              style={{
+                width: '100%',
+                minHeight: 120,
+                padding: 12,
+                border: '1px solid #ddd',
+                borderRadius: 8,
+                fontSize: 14,
+                lineHeight: 1.6,
+                resize: 'vertical',
+                boxSizing: 'border-box',
+              }}
+            />
+            <button
+              onClick={handleSaveTherapistInterpretation}
+              disabled={savingInterpretation}
+              style={{
+                marginTop: 8,
+                padding: '8px 16px',
+                background: '#4caf50',
+                color: 'white',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              {savingInterpretation ? '저장 중...' : '치료사 의견 저장'}
+            </button>
+          </div>
+        )}
 
         {/* Chat History - 관리자만 */}
         {isAdmin && (session as any).chatHistory && (session as any).chatHistory.length > 0 && (

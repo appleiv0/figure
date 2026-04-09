@@ -23,6 +23,7 @@ from app.models.admin_models import (
     CodeItem,
 )
 from app.controllers import controller_figure
+from app.controllers.controller_interpretation import generate_interpretation
 import libcommon.config.status_error as status_error
 from libcommon.routes import response, default_responses
 
@@ -35,14 +36,51 @@ if ADMIN_API_KEY == "change-this-in-production":
     print("WARNING: Using default admin API key. Set ADMIN_API_KEY environment variable for production.")
 
 
-async def verify_admin_key(request: Request, x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key")):
-    """Verify admin API key from header."""
+def _generate_counselor_admin_token(email: str) -> str:
+    """Generate an HMAC token for counselor admin access."""
+    import hmac, hashlib
+    import app.config.app_config as CFG
+    return hmac.new(
+        CFG.SESSION_SECRET.encode(),
+        f"admin:{email}".encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+
+def _verify_counselor_admin_token(email: str, token: str) -> bool:
+    """Verify a counselor admin token."""
+    import hmac
+    expected = _generate_counselor_admin_token(email)
+    return hmac.compare_digest(expected, token)
+
+
+async def verify_admin_key(
+    request: Request,
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    x_counselor_email: Optional[str] = Header(None, alias="X-Counselor-Email"),
+    x_counselor_token: Optional[str] = Header(None, alias="X-Counselor-Token"),
+):
+    """Verify admin access via API key or counselor token."""
     if request.method == "OPTIONS":
         return None
-    
-    if x_admin_key != ADMIN_API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid admin key")
-    return x_admin_key
+
+    # Option 1: Static admin API key (for server-to-server)
+    if x_admin_key and x_admin_key == ADMIN_API_KEY:
+        return x_admin_key
+
+    # Option 2: Counselor token (for frontend)
+    if x_counselor_email and x_counselor_token:
+        if _verify_counselor_admin_token(x_counselor_email, x_counselor_token):
+            # Verify the counselor is a super user
+            from app.database.mongodb import get_db
+            db = get_db()
+            settings = db["app_settings"].find_one({"key": "super_users"})
+            super_users = settings.get("emails", []) if settings else []
+            if x_counselor_email in super_users:
+                return x_counselor_token
+        raise HTTPException(status_code=401, detail="Invalid counselor token or not a super user")
+
+    raise HTTPException(status_code=401, detail="Authentication required")
 
 
 router = APIRouter(
@@ -347,6 +385,59 @@ def save_evaluation(receipt_no: str, body: dict = Body(...)):
     }
 
 
+@router.post(
+    "/sessions/{receipt_no}/interpretation",
+    description="Generate AI clinical interpretation for a session",
+    response_class=JSONResponse,
+)
+async def generate_session_interpretation(receipt_no: str):
+    """Generate AI interpretation using Claude API"""
+    session = session_repository.find_by_receipt_no(receipt_no)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    interpretation = await generate_interpretation(session)
+    if not interpretation:
+        raise HTTPException(status_code=500, detail="AI 해석 생성에 실패했습니다")
+
+    session_repository.update_session(receipt_no, {"aiInterpretation": interpretation})
+    return {"interpretation": interpretation}
+
+
+@router.put(
+    "/sessions/{receipt_no}/interpretation",
+    description="Save therapist interpretation for a session",
+    response_class=JSONResponse,
+)
+async def save_therapist_interpretation(receipt_no: str, body: dict = Body(...)):
+    """Save therapist-written interpretation"""
+    session = session_repository.find_by_receipt_no(receipt_no)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    session_repository.update_session(receipt_no, {
+        "therapistInterpretation": body.get("interpretation", "")
+    })
+    return {"success": True}
+
+
+@router.get(
+    "/sessions/{receipt_no}/interpretation",
+    description="Get AI and therapist interpretations for a session",
+    response_class=JSONResponse,
+)
+async def get_interpretation(receipt_no: str):
+    """Get both AI and therapist interpretations"""
+    session = session_repository.find_by_receipt_no(receipt_no)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return {
+        "aiInterpretation": session.get("aiInterpretation"),
+        "therapistInterpretation": session.get("therapistInterpretation")
+    }
+
+
 @router.get(
     "/users",
     description="Get user usage statistics (merged from sessions + users collection)",
@@ -385,10 +476,12 @@ def get_user_usage():
             "sessionCount": r["count"],
             "lastUsed": last_used,
             "credits": None,
+            "registered": False,
         }
 
     # Step 2: fetch all users from users collection
     all_users = list(users_col.find({}, {"_id": 0, "email": 1, "name": 1, "organization": 1, "credits": 1}))
+    registered_emails = set(u.get("email") for u in all_users if u.get("email"))
 
     # Step 3: merge - users collection data takes priority for name/organization/credits
     for u in all_users:
@@ -398,6 +491,7 @@ def get_user_usage():
         if email in session_map:
             # update name/org from users collection if available
             session_map[email]["credits"] = u.get("credits", DEFAULT_CREDITS)
+            session_map[email]["registered"] = True
             if u.get("name"):
                 session_map[email]["name"] = u["name"]
             if u.get("organization"):
@@ -411,7 +505,13 @@ def get_user_usage():
                 "sessionCount": 0,
                 "lastUsed": None,
                 "credits": u.get("credits", DEFAULT_CREDITS),
+                "registered": True,
             }
+
+    # Mark registered status for session-only users
+    for email in session_map:
+        if "registered" not in session_map[email]:
+            session_map[email]["registered"] = email in registered_emails
 
     # Step 4: sort by lastUsed desc (None goes to bottom)
     users = sorted(
@@ -458,6 +558,82 @@ def recalculate_all_scores():
         "failCount": fail_count,
         "errors": errors[:10]
     }
+
+
+@router.get("/settings", response_class=JSONResponse)
+def get_settings():
+    """Get app settings"""
+    from app.database.mongodb import get_database
+    db = get_database()
+    settings = db["app_settings"].find_one({"_id": "global"})
+    if not settings:
+        # Default settings
+        settings = {"_id": "global", "showResultToUser": True}
+        db["app_settings"].insert_one(settings)
+    return {"showResultToUser": settings.get("showResultToUser", True)}
+
+
+@router.put("/settings", response_class=JSONResponse)
+def update_settings(req: dict = Body(...)):
+    """Update app settings"""
+    from app.database.mongodb import get_database
+    db = get_database()
+    update_data = {}
+    if "showResultToUser" in req:
+        update_data["showResultToUser"] = bool(req["showResultToUser"])
+    if update_data:
+        db["app_settings"].update_one(
+            {"_id": "global"},
+            {"$set": update_data},
+            upsert=True
+        )
+    return {"success": True, **update_data}
+
+
+@router.get("/super-users", response_class=JSONResponse)
+def get_super_users():
+    """Get list of super users"""
+    from app.database.mongodb import get_database
+    db = get_database()
+    settings = db["app_settings"].find_one({"_id": "global"})
+    default_super_users = ["appleiv@gmail.com", "a33351702@gmail.com", "beratung@hansei.ac.kr", "kaft2960@gmail.com"]
+    if not settings or "superUsers" not in settings:
+        # Initialize with defaults
+        db["app_settings"].update_one(
+            {"_id": "global"},
+            {"$set": {"superUsers": default_super_users}},
+            upsert=True
+        )
+        return {"superUsers": default_super_users}
+    return {"superUsers": settings.get("superUsers", default_super_users)}
+
+
+@router.put("/super-users", response_class=JSONResponse)
+def update_super_users(req: dict = Body(...)):
+    """Add or remove a super user"""
+    from app.database.mongodb import get_database
+    db = get_database()
+    email = req.get("email", "").strip().lower()
+    action = req.get("action", "")  # "add" or "remove"
+
+    if not email or action not in ("add", "remove"):
+        raise HTTPException(status_code=400, detail="email and action (add/remove) required")
+
+    settings = db["app_settings"].find_one({"_id": "global"})
+    default_super_users = ["appleiv@gmail.com", "a33351702@gmail.com", "beratung@hansei.ac.kr", "kaft2960@gmail.com"]
+    current = settings.get("superUsers", default_super_users) if settings else default_super_users
+
+    if action == "add" and email not in current:
+        current.append(email)
+    elif action == "remove" and email in current:
+        current.remove(email)
+
+    db["app_settings"].update_one(
+        {"_id": "global"},
+        {"$set": {"superUsers": current}},
+        upsert=True
+    )
+    return {"success": True, "superUsers": current}
 
 
 @router.get(
@@ -617,6 +793,83 @@ def reset_password(body: dict = Body(...)):
         {"$set": {"password": "1234", "passwordChanged": False, "updatedAt": datetime.now(KST)}}
     )
     return {"success": True, "message": "비밀번호가 초기화되었습니다."}
+
+
+@router.post(
+    "/users",
+    description="Admin creates a new allowed user",
+    response_class=JSONResponse,
+)
+def admin_create_user(body: dict = Body(...)):
+    """Admin creates a new allowed user"""
+    email = body.get("email", "").strip().lower()
+    name = body.get("name", "").strip()
+    organization = body.get("organization", "").strip()
+
+    if not email:
+        raise HTTPException(status_code=400, detail="이메일은 필수입니다")
+
+    collection = get_users_collection()
+    existing = collection.find_one({"email": email})
+    if existing:
+        raise HTTPException(status_code=409, detail="이미 등록된 사용자입니다")
+
+    now = datetime.now(KST)
+    new_user = {
+        "email": email,
+        "name": name,
+        "organization": organization,
+        "credits": DEFAULT_CREDITS,
+        "createdAt": now,
+        "updatedAt": now,
+    }
+    collection.insert_one(new_user)
+    return {"success": True, "email": email, "name": name, "organization": organization}
+
+
+@router.post(
+    "/users/delete",
+    description="Admin deletes a user",
+    response_class=JSONResponse,
+)
+def admin_delete_user(body: dict = Body(...)):
+    """Admin deletes a user (login access only, sessions preserved)"""
+    email = body.get("email", "").strip()
+    if not email:
+        raise HTTPException(status_code=400, detail="이메일은 필수입니다")
+    collection = get_users_collection()
+    result = collection.delete_one({"email": email})
+    return {"success": True, "deleted": result.deleted_count}
+
+
+@router.put(
+    "/users/update",
+    description="Admin updates user info",
+    response_class=JSONResponse,
+)
+def admin_update_user(body: dict = Body(...)):
+    """Admin updates user info"""
+    email = body.get("email", "").strip()
+    if not email:
+        raise HTTPException(status_code=400, detail="이메일은 필수입니다")
+    collection = get_users_collection()
+    existing = collection.find_one({"email": email})
+    if not existing:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+
+    update = {}
+    if "name" in body:
+        update["name"] = body["name"]
+    if "organization" in body:
+        update["organization"] = body["organization"]
+    if "credits" in body:
+        update["credits"] = body["credits"]
+
+    if update:
+        update["updatedAt"] = datetime.now(KST)
+        collection.update_one({"email": email}, {"$set": update})
+
+    return {"success": True}
 
 
 @router.get(

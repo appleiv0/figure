@@ -31,6 +31,7 @@ from app.models.response_figure import (
 import app.controllers.controller_figure as controller_figure
 from app.routers.admin import router as admin_router
 from app.routers.public import router as public_router
+from app.utils.session_token import verify_session_token
 
 
 logger = config.init_logger()
@@ -139,10 +140,12 @@ def create_receipt_number(res: JSONResponse, req: ReceiptNoReq):
     response_model=SetFigureRes,
 )
 def set_figure(res: JSONResponse, req: SetFigureReq):
-    status_error, ret = controller_figure.set_figure(
+    if req.sessionToken and not verify_session_token(str(req.receiptNo), req.sessionToken):
+        return response(res, status_error.FORBIDDEN)
+    err, ret = controller_figure.set_figure(
         req.kidName, req.receiptNo, req.stage, req.figures
     )
-    return response(res, status_error, ret)
+    return response(res, err, ret)
 
 
 @router.post(
@@ -161,11 +164,13 @@ def set_figure(res: JSONResponse, req: SetFigureReq):
     response_model=SetPostionRes,
 )
 def set_position(res: JSONResponse, req: SetPostionReq):
-    status_error, ret = controller_figure.set_position(
+    if req.sessionToken and not verify_session_token(str(req.receiptNo), req.sessionToken):
+        return response(res, status_error.FORBIDDEN)
+    err, ret = controller_figure.set_position(
         req.kidName, req.receiptNo, req.centerH, req.centerV, req.figures,
         canvas_image=req.canvasImage, doll_instances=req.dollInstances
     )
-    return response(res, status_error, ret)
+    return response(res, err, ret)
 
 
 @router.post(
@@ -178,11 +183,13 @@ def set_position(res: JSONResponse, req: SetPostionReq):
     response_class=JSONResponse,
     response_model=LLMCompletionRes,
 )
-def llm_completion(res: JSONResponse, req: LLMCompletionReq):
-    status_error, ret = controller_figure.llm_completion(
+async def llm_completion(res: JSONResponse, req: LLMCompletionReq):
+    if req.sessionToken and not verify_session_token(str(req.receiptNo), req.sessionToken):
+        return response(res, status_error.FORBIDDEN)
+    err, ret = await controller_figure.llm_completion(
         req.kidName, req.receiptNo, req.count, req.relation, req.message
     )
-    return response(res, status_error, ret)
+    return response(res, err, ret)
 
 
 @router.post(
@@ -198,8 +205,10 @@ def llm_completion(res: JSONResponse, req: LLMCompletionReq):
     response_model=GetReportRes,
 )
 def get_Report(res: JSONResponse, req: GetReportReq):
-    status_error, ret = controller_figure.get_Report(req.kidName, req.receiptNo)
-    return response(res, status_error, ret)
+    if req.sessionToken and not verify_session_token(str(req.receiptNo), req.sessionToken):
+        return response(res, status_error.FORBIDDEN)
+    err, ret = controller_figure.get_Report(req.kidName, req.receiptNo)
+    return response(res, err, ret)
 
 
 @router.post(
@@ -213,8 +222,10 @@ def get_Report(res: JSONResponse, req: GetReportReq):
     response_model=SaveChatRes,
 )
 def save_chat(res: JSONResponse, req: SaveChatReq):
-    status_error, ret = controller_figure.save_chat(
+    if req.sessionToken and not verify_session_token(str(req.receiptNo), req.sessionToken):
+        return response(res, status_error.FORBIDDEN)
+    err, ret = controller_figure.save_chat(
         req.kidName, req.receiptNo, req.role, req.content, req.relation
     )
-    return response(res, status_error, ret)
+    return response(res, err, ret)
 

@@ -75,7 +75,7 @@ const handleError = (errors: any, setError: any) => {
 const _addLoadingTime = (startTime: any, setLoading: any) => {
   const loadingTime = new Date().getTime() - startTime;
   const countDownTime = loadingTime > 200 ? loadingTime : 200;
-  const timing = setTimeout(() => {
+  setTimeout(() => {
     setLoading(false);
   }, countDownTime);
 };

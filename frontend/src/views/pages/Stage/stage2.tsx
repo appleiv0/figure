@@ -1,21 +1,27 @@
+import { useState, useEffect } from "react";
 import Intro from "../../../components/molecules/Intro/Intro";
 import ChooseAnimal from "../../../components/organisms/ChooseAnimal";
 import Header from "../../../components/organisms/Header";
-
 import useStore from "../../../store";
 
 const Stage2 = () => {
-  const chooseAnimal = useStore((state: any) => state.chooseAnimal);
-  const setChooseAnimal = useStore((state: any) => state.setChooseAnimal);
+  const [showContent, setShowContent] = useState(false);
+  const [mountKey, setMountKey] = useState(0);
+  const setFigure = useStore((state: any) => state.setFigure);
+
+  useEffect(() => {
+    setFigure([]);
+  }, []);
 
   const handleChooseAnimal = () => {
-    setChooseAnimal(false);
+    setMountKey(prev => prev + 1);
+    setShowContent(true);
   };
 
   return (
     <>
       <Header />
-      {chooseAnimal && (
+      {!showContent && (
         <Intro
           children={
             <>
@@ -32,7 +38,7 @@ const Stage2 = () => {
           handleChooseAnimal={handleChooseAnimal}
         />
       )}
-      {!chooseAnimal && <ChooseAnimal />}
+      {showContent && <ChooseAnimal key={mountKey} />}
     </>
   );
 };

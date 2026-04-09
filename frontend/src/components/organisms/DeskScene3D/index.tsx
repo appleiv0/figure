@@ -6,6 +6,8 @@ import Figure3D from '../../atoms/Figure3D';
 import { FigureInstance, Figure3DType, FiguresConfig, DollPose, DollInstanceData, DOLL_MODELS } from '../../../types/figure3d';
 import * as THREE from 'three';
 import axios from 'axios';
+import { getItemLocalStorage } from '../../../utils/helper';
+import { USER } from '../../../constants/common.constant';
 
 // gl 인스턴스를 외부 ref에 저장하는 헬퍼 컴포넌트
 function GlCapture({ glRef, cameraRef }: { glRef: React.MutableRefObject<THREE.WebGLRenderer | null>; cameraRef: React.MutableRefObject<THREE.Camera | null> }) {
@@ -76,31 +78,41 @@ function getSpawnRadius(fig: Figure3DType): number {
   return fig.size * 0.45;
 }
 
-// 빈 자리 찾기 (스폰용)
+// 빈 자리 찾기 (스폰용) - 기존 인형들보다 앞쪽(+Z, 카메라 가까이)에 배치
 function findEmptySpot(instances: FigureInstance[], fig: Figure3DType): { x: number; z: number } {
   const radius = getSpawnRadius(fig);
-  // 중앙부터 나선형으로 탐색
-  for (let r = 0; r <= 3; r += 0.2) {
-    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
-      const x = r * Math.cos(angle);
-      const z = r * Math.sin(angle);
-      let collides = false;
-      for (const inst of instances) {
-        const otherRadius = getSpawnRadius(inst.figureType);
-        const dx = x - inst.position.x;
-        const dz = z - inst.position.z;
-        if (Math.sqrt(dx * dx + dz * dz) < radius + otherRadius) {
-          collides = true;
-          break;
+  if (instances.length === 0) return { x: 0, z: 0 };
+
+  // 기존 인형 중 가장 앞쪽(+Z) 위치 찾기
+  const maxZ = Math.max(...instances.map(inst => inst.position.z));
+  const startZ = maxZ + radius * 2;
+
+  // 앞쪽부터 좌우로 빈 자리 탐색
+  for (let dz = 0; dz <= 3; dz += 0.2) {
+    for (let dx = 0; dx <= 3; dx += 0.2) {
+      const candidates = dx === 0 ? [{ x: 0, z: startZ + dz }] : [
+        { x: dx, z: startZ + dz },
+        { x: -dx, z: startZ + dz },
+      ];
+      for (const pos of candidates) {
+        let collides = false;
+        for (const inst of instances) {
+          const otherRadius = getSpawnRadius(inst.figureType);
+          const ddx = pos.x - inst.position.x;
+          const ddz = pos.z - inst.position.z;
+          if (Math.sqrt(ddx * ddx + ddz * ddz) < radius + otherRadius) {
+            collides = true;
+            break;
+          }
         }
+        if (!collides) return pos;
       }
-      if (!collides) return { x, z };
     }
   }
-  return { x: 0, z: 0 };
+  return { x: 0, z: startZ };
 }
 
-const FAMILY_ROLES = ['나', '엄마', '아빠', '아들', '딸', '언니', '누나', '오빠', '형', '남동생', '여동생', '할아버지', '할머니', '삼촌', '이모', '고모', '기타'];
+const FAMILY_ROLES = ['나', '엄마', '아빠', '남편', '아내', '아들', '딸', '언니', '누나', '오빠', '형', '남동생', '여동생', '할아버지', '할머니', '삼촌', '이모', '고모', '기타'];
 
 interface DeskScene3DProps {
   onNext?: (canvasImage: string, dollInstances: DollInstanceData[]) => void;
@@ -113,6 +125,7 @@ interface DeskScene3DProps {
 export default function DeskScene3D({ onNext, initialDollInstances, readOnly, phase = 2, onPhaseChange }: DeskScene3DProps = {}) {
   const [figures, setFigures] = useState<Figure3DType[]>([]);
   const [instances, setInstances] = useState<FigureInstance[]>([]);
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showDollPicker, setShowDollPicker] = useState(false);
   const [showRolePicker, setShowRolePicker] = useState(false);
@@ -131,6 +144,12 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const captureCanvas = useCallback(() => {
@@ -181,15 +200,14 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(async () => {
       try {
-        const userStr = sessionStorage.getItem('THERAPY_TOKEN');
-        const user = userStr ? JSON.parse(userStr) : null;
+        const user = getItemLocalStorage(USER);
         const receiptNo = user?.receiptNo;
         if (!receiptNo) return;
 
         const canvasImage = captureCanvas();
         if (!canvasImage) return;
 
-        const apiBase = (import.meta as any).env?.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+        const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
         await axios.post(`${apiBase}/public/auto-save-canvas`, { receiptNo, canvasImage });
       } catch (e) {
         // Silent fail for auto-save
@@ -233,7 +251,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
         dollModel: doll.dollModel,
       },
       position: { ...doll.position },
-      rotation: doll.rotation,
+      rotation: doll.rotation ?? 0,
       selected: false,
       pose: doll.pose as DollPose,
       dragCount: doll.dragCount || 0,
@@ -316,14 +334,14 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
     ));
   };
 
-  const handlePositionChange = (id: string, position: [number, number, number]) => {
+  const handlePositionChange = useCallback((id: string, position: [number, number, number]) => {
     setInstances(prev => {
       const [resolvedX, resolvedZ] = resolveCollision(id, position[0], position[2], prev);
       return prev.map(inst =>
         inst.id === id ? { ...inst, position: { x: resolvedX, y: position[1], z: resolvedZ } } : inst
       );
     });
-  };
+  }, []);
 
   const handleDragEnd = useCallback((id: string) => {
     setInstances(prev => prev.map(inst =>
@@ -358,6 +376,10 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
 
   const handleComplete = useCallback(() => {
     if (!onNext) return;
+    if (instancesRef.current.length === 0) {
+      alert("가족 인형을 최소 1개 이상 배치해 주세요.");
+      return;
+    }
     // 선택 해제 후 스크린샷 캡처
     setSelectedId(null);
     setInstances(prev => prev.map(inst => ({ ...inst, selected: false })));
@@ -415,7 +437,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
         dollModel: inst.figureType.dollModel || 'adult_male',
         label: inst.figureType.label,
         pose: inst.pose,
-        rotation: inst.rotation,
+        rotation: inst.rotation ?? 0,
         position: { ...inst.position },
         size: inst.figureType.size,
         dragCount: inst.dragCount || 0,
@@ -437,7 +459,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const handleTouchStart = (e: TouchEvent) => {
+    const handleTouchStart = (_e: TouchEvent) => {
       if (!selectedId) return;
       touchStartTime.current = Date.now();
       touchDragEnabled.current = false;
@@ -479,11 +501,11 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
       canvas.removeEventListener('touchend', handleTouchEnd);
       canvas.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [selectedId]);
+  }, [selectedId, handlePositionChange, handleDragEnd]);
 
   return (
     <div style={{ width: '100dvw', height: '100dvh', background: '#1a1a1a', display: 'flex', justifyContent: 'center' }}>
-    <div ref={canvasRef} style={{ width: '100%', maxWidth: window.innerWidth >= 768 ? 430 : undefined, height: '100dvh', background: '#f0ebe3', touchAction: 'none', position: 'relative' }}>
+    <div ref={canvasRef} style={{ width: '100%', maxWidth: isDesktop ? 430 : undefined, height: '100dvh', background: '#f0ebe3', touchAction: 'none', position: 'relative' }}>
       <Canvas
         shadows
         dpr={[1, 2]}
@@ -848,16 +870,18 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
           ) : (
             <button
               onClick={handleComplete}
+              disabled={instances.length === 0}
               style={{
                 padding: '10px 28px',
                 fontSize: 16,
                 fontWeight: 'bold',
-                background: '#2EB500',
+                background: instances.length === 0 ? '#aaa' : '#2EB500',
                 color: 'white',
                 border: '2px solid white',
                 borderRadius: 10,
-                cursor: 'pointer',
+                cursor: instances.length === 0 ? 'not-allowed' : 'pointer',
                 fontFamily: 'sans-serif',
+                opacity: instances.length === 0 ? 0.6 : 1,
               }}
             >
               검사완료

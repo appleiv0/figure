@@ -174,6 +174,7 @@ export default function Figure3D({
     });
   }, [model, material.roughness, material.metalness, material.envMapIntensity, material.emissiveIntensity]);
 
+
   const calcHit = (clientX: number, clientY: number) => {
     const rect = gl.domElement.getBoundingClientRect();
     mouseVec.current.set(

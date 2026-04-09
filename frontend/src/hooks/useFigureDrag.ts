@@ -3,7 +3,7 @@ import { useCallback, useRef } from 'react';
 import * as THREE from 'three';
 
 export function useFigureDrag(onDrag: (position: { x: number; y: number; z: number }) => void) {
-  const { camera, scene } = useThree();
+  const { camera } = useThree();
   const raycaster = useRef(new THREE.Raycaster());
   const isDragging = useRef(false);
 

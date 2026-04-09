@@ -152,14 +152,32 @@ const InforUser: React.FC = () => {
           }
         }
 
+        // 자동 생성된 세션 코드를 counselorAuth에 저장 (이어하기용)
+        const sessionCode = response.loginCode || counselorAuth.loginCode || "";
+        if (sessionCode) {
+          const updatedAuth = { ...counselorAuth, loginCode: sessionCode };
+          sessionStorage.setItem("counselorAuth", JSON.stringify(updatedAuth));
+        }
+
         // 새 검사 시작: 이전 세션 상태 초기화
-        useStore.getState().setCurrentStep(0);
+        const store = useStore.getState() as any;
+        store.setCurrentStep(0);
+        store.setSelectedFamily([]);
+        store.setSelectedFamilyJosa([]);
         setItemLocalStorage(USER, {
           kidname: formData.kidname,
           selectedDate: formData.selectedDate,
           receiptNo: response.receiptNo,
           endWord: response.endWord,
+          loginCode: sessionCode,
+          sessionToken: response.sessionToken || "",
         });
+
+        // 세션 코드 안내
+        if (sessionCode && !counselorAuth.loginCode) {
+          alert(`검사 코드: ${sessionCode}\n이 코드로 나중에 검사를 이어할 수 있습니다.`);
+        }
+
         navigator("/information");
       }
     } catch (error: any) {

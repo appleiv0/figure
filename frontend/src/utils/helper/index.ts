@@ -9,10 +9,15 @@ export const setItemLocalStorage = (key: string, value: any) =>
     ? sessionStorage.setItem(key, JSON.stringify(value))
     : null;
 
-export const getItemLocalStorage = (key: string | null) =>
-  typeof sessionStorage !== "undefined" && key
-    ? JSON.parse(sessionStorage.getItem(key) as string)
-    : null;
+export const getItemLocalStorage = (key: string | null) => {
+  if (typeof sessionStorage === "undefined" || !key) return null;
+  try {
+    const item = sessionStorage.getItem(key);
+    return item ? JSON.parse(item) : null;
+  } catch {
+    return null;
+  }
+};
 
 export const removeItemLocalStorage = (
   key: string | null,

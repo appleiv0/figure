@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import { adminApi } from "../../../services/adminApi";
 import { setItemLocalStorage } from "../../../utils/helper";
 import { USER } from "../../../constants/common.constant";
@@ -13,31 +14,30 @@ const Landing = () => {
   const [loginCode, setLoginCode] = useState("");
   const [codeValidating, setCodeValidating] = useState(false);
   const [codeError, setCodeError] = useState("");
-
-  // 신규 사용자 모달 상태
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
-  const [modalEmail, setModalEmail] = useState("");
-  const [modalPicture, setModalPicture] = useState("");
-  const [modalIsAdmin, setModalIsAdmin] = useState(false);
-  const [modalName, setModalName] = useState("");
-  const [modalOrg, setModalOrg] = useState("");
-  const [modalSubmitting, setModalSubmitting] = useState(false);
+  const [superUsers, setSuperUsers] = useState<string[]>([]);
 
   const navigate = useNavigate();
 
   const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || "").split(",").map((e: string) => e.trim().toLowerCase());
 
+  useEffect(() => {
+    adminApi.getPublicSuperUsers()
+      .then(data => setSuperUsers(data.superUsers.map((e: string) => e.toLowerCase())))
+      .catch(() => {});
+  }, []);
+
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
       const decoded: any = jwtDecode(credentialResponse.credential);
       const email: string = decoded.email || "";
-      const isAdmin = adminEmails.includes(email.toLowerCase());
+      const isAdmin = adminEmails.includes(email.toLowerCase()) || superUsers.includes(email.toLowerCase());
 
       let userInfo: any = null;
       try {
         userInfo = await adminApi.getUserInfo(email);
       } catch {
         // API 실패 시 기존 사용자로 간주하고 진행
+        userInfo = { exists: true };
       }
 
       if (userInfo && userInfo.exists) {
@@ -53,26 +53,10 @@ const Landing = () => {
           sessionStorage.setItem("adminAuth", "true");
         }
         navigate("/register");
-      } else if (userInfo && !userInfo.exists) {
-        // 신규 사용자 → 이름/소속 입력 모달 표시
-        setModalEmail(email);
-        setModalPicture(decoded.picture || "");
-        setModalIsAdmin(isAdmin);
-        setModalName(decoded.name || "");
-        setModalOrg("");
-        setShowRegisterModal(true);
       } else {
-        // API 실패 fallback → 바로 진행
-        sessionStorage.setItem("counselorAuth", JSON.stringify({
-          email,
-          name: decoded.name,
-          picture: decoded.picture,
-          isAdmin,
-        }));
-        if (isAdmin) {
-          sessionStorage.setItem("adminAuth", "true");
-        }
-        navigate("/register");
+        // 미등록 사용자 또는 API 실패 → 차단
+        alert("등록되지 않은 사용자입니다. 관리자에게 문의하세요.");
+        return;
       }
     } catch (error) {
       console.error("Google login error:", error);
@@ -80,30 +64,6 @@ const Landing = () => {
     }
   };
 
-  const handleModalSubmit = async () => {
-    if (!modalName.trim() || !modalOrg.trim()) return;
-    setModalSubmitting(true);
-    try {
-      const result = await adminApi.registerUser(modalEmail, modalName.trim(), modalOrg.trim());
-      sessionStorage.setItem("counselorAuth", JSON.stringify({
-        email: modalEmail,
-        name: result.name,
-        picture: modalPicture,
-        isAdmin: modalIsAdmin,
-        userName: result.name,
-        userOrganization: result.organization,
-      }));
-      if (modalIsAdmin) {
-        sessionStorage.setItem("adminAuth", "true");
-      }
-      setShowRegisterModal(false);
-      navigate("/register");
-    } catch (error) {
-      console.error("Register user error:", error);
-    } finally {
-      setModalSubmitting(false);
-    }
-  };
 
   const handleCodeSubmit = async () => {
     if (!loginCode || loginCode.length < 6) {
@@ -129,7 +89,7 @@ const Landing = () => {
             const sessionData = await adminApi.getMySession(String(result.sessionReceiptNo), result.counselorEmail || "");
             const session = sessionData.session;
 
-            if (session && session.status !== "completed") {
+            if (session) {
               // 받침 체크로 endWord 생성
               const kidname = session.kid?.name || "";
               const lastChar = kidname.charAt(kidname.length - 1);
@@ -146,17 +106,59 @@ const Landing = () => {
                 selectedDate: session.kid?.birth || "",
                 receiptNo: session.receiptNo,
                 endWord,
+                sessionToken: sessionData.sessionToken || "",
               });
 
-              // currentStep 설정 및 해당 스테이지로 이동
-              const step = session.currentStep ?? 0;
-              useStore.getState().setCurrentStep(step);
+              // Infer step from session data
+              const figures = session.figures || {};
+              const hasCanvas = !!session.canvasImage;
+              const hasPositions = !!(session.positions?.figures);
+              let step = session.currentStep ?? 0;
 
-              if (step === 0) {
-                navigate("/information");
-              } else {
-                navigate(`/stage${step}`);
+              // If no saved step, infer from data
+              if (!session.currentStep && session.currentStep !== 0) {
+                if (hasPositions || hasCanvas) step = 7;
+                else if (figures["6"]?.length > 0) step = 6;
+                else if (figures["5"]?.length > 0) step = 5;
+                else if (figures["3"]?.length > 0) step = 4;
+                else if (figures["2"]?.length > 0) step = 3;
+                else if (figures["1"]?.length > 0) step = 2;
+                else step = 0;
               }
+
+              // For completed sessions: allow redo from doll placement
+              if (session.status === "completed") {
+                // Save step=6 to backend for redo
+                try {
+                  const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+                  await axios.post(`${apiBase}/public/save-step`, { receiptNo: session.receiptNo, currentStep: 6 });
+                } catch {}
+                step = 6; // Go to doll placement stage
+              }
+
+              (useStore.getState() as any).setCurrentStep(step);
+
+              // 스토어 업데이트가 반영된 후 네비게이션
+              setTimeout(async () => {
+                if (step === 0) {
+                  navigate("/information");
+                } else if (step >= 7) {
+                  // Check showResultToUser setting
+                  try {
+                    const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+                    const settingsRes = await axios.get(`${apiBase}/public/settings/show-result`);
+                    if (settingsRes.data?.showResultToUser) {
+                      navigate("/result");
+                    } else {
+                      navigate("/ending");
+                    }
+                  } catch {
+                    navigate("/ending");
+                  }
+                } else {
+                  navigate(`/stage${step}`);
+                }
+              }, 100);
               return;
             }
           } catch (sessionErr) {
@@ -166,6 +168,7 @@ const Landing = () => {
         }
 
         // 미사용 코드 또는 세션 조회 실패 → 신규 등록
+        sessionStorage.removeItem("THERAPY_TOKEN"); // 새 검사 시작 시 초기화
         navigate("/register");
       } else {
         setCodeError(result.message || "유효하지 않은 코드입니다.");
@@ -407,61 +410,6 @@ const Landing = () => {
         </div>
       </div>
 
-      {/* 신규 사용자 등록 모달 */}
-      {showRegisterModal && (
-        <div
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}
-          onClick={() => setShowRegisterModal(false)}
-        >
-          <div
-            style={{ background: "white", borderRadius: "12px", padding: "28px", minWidth: "320px", maxWidth: "400px", width: "100%" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "20px", color: "#111827" }}>상담사 정보 등록</h3>
-
-            <div style={{ marginBottom: "14px" }}>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>이름</label>
-              <input
-                type="text"
-                value={modalName}
-                onChange={(e) => setModalName(e.target.value)}
-                placeholder="이름을 입력해주세요"
-                style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }}
-              />
-            </div>
-
-            <div style={{ marginBottom: "24px" }}>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>소속(상담기관)</label>
-              <input
-                type="text"
-                value={modalOrg}
-                onChange={(e) => setModalOrg(e.target.value)}
-                placeholder="소속 기관명을 입력해주세요"
-                onKeyDown={(e) => e.key === "Enter" && !modalSubmitting && modalName.trim() && modalOrg.trim() && handleModalSubmit()}
-                style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }}
-              />
-            </div>
-
-            <button
-              onClick={handleModalSubmit}
-              disabled={!modalName.trim() || !modalOrg.trim() || modalSubmitting}
-              style={{
-                width: "100%",
-                padding: "12px",
-                backgroundColor: !modalName.trim() || !modalOrg.trim() || modalSubmitting ? "#9ca3af" : "#00838F",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "15px",
-                fontWeight: 600,
-                cursor: !modalName.trim() || !modalOrg.trim() || modalSubmitting ? "not-allowed" : "pointer",
-              }}
-            >
-              {modalSubmitting ? "등록 중..." : "확인"}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

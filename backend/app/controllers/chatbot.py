@@ -6,8 +6,9 @@ from libcommon.utils.jsonUtils import make_json, read_json
 import app.config.app_config as CFG
 from app.controllers import chatbot_template
 from libcommon.utils.chatUtils import get_josa
+from app.repositories.session_repository import session_repository
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 
 def _sanitize(name: str) -> str:
@@ -16,7 +17,7 @@ def _sanitize(name: str) -> str:
         return ""
     return re.sub(r'[/\\<>:"|?*\x00-\x1f\s]', '', name)
 
-client = OpenAI(api_key=CFG.OPENAI_API_KEY)
+client = AsyncOpenAI(api_key=CFG.OPENAI_API_KEY)
 
 abuser = [
     "코끼리",
@@ -50,20 +51,18 @@ hope_positive = ["새", "돌고래", "나비", "새끼팬더", "말", "강아지
 kid_relation = ["형", "누나", "동생", "언니", "오빠"]
 
 
-def request_chatgpt_1(prompt: dict):
-    chat_completion = client.chat.completions.create(
+async def request_chatgpt_1(prompt: dict):
+    chat_completion = await client.chat.completions.create(
         messages=prompt, model="gpt-3.5-turbo", max_tokens=200, temperature=0.2
     )
-    # print(chat_completion)
     completion = chat_completion.choices[0].message.content
     return completion
 
 
-def request_chatgpt_2(prompt: dict):
-    chat_completion = client.chat.completions.create(
+async def request_chatgpt_2(prompt: dict):
+    chat_completion = await client.chat.completions.create(
         messages=prompt, model="gpt-3.5-turbo", max_tokens=200, temperature=0
     )
-    # print(chat_completion)
     completion = chat_completion.choices[0].message.content
     return completion
 
@@ -182,29 +181,29 @@ def prompt_engineering_1(data_json: dict, relation: str):
     return prompt, f_6
 
 
-def get_llm_completion(kidName: str, receiptNo: int, count: int, relation: str):
+async def get_llm_completion(kidName: str, receiptNo: int, count: int, relation: str):
     ## 가족 구성원 학대 여부에 따른 prompt 정의
 
-    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{_sanitize(kidName)}.json")
-    data_json = read_json(data_json_path)
+    receipt_no_str = str(receiptNo)
+    data_json = session_repository.find_by_receipt_no(receipt_no_str)
     if not data_json:
         return ""
 
     if count == 0:
         prompt, f_6 = prompt_engineering_1(data_json, relation)
         ## LLM 호출
-        chat_completion = request_chatgpt_1(prompt)
+        chat_completion = await request_chatgpt_1(prompt)
 
         completion = f"그렇구나. 그래서 {relation}{get_josa(relation)['이/가']} 너를 {f_6}{get_josa(f_6)['로/으로']} 보고 있구나.\n{chat_completion}"
         data_json["llmCompletion"][relation]["bot"][count] = completion
-        make_json(data_json_path, data_json)
+        session_repository.update_llm_completion(receipt_no_str, relation, data_json["llmCompletion"][relation])
     elif count == 1:
         prompt, f_3 = prompt_engineering_2(data_json, relation)
-        completion = request_chatgpt_2(prompt)
+        completion = await request_chatgpt_2(prompt)
         completion = f"{completion}\n{f_3}에게 어떤 말을 하고싶을까?"
 
         data_json["llmCompletion"][relation]["bot"][count] = completion
-        make_json(data_json_path, data_json)
+        session_repository.update_llm_completion(receipt_no_str, relation, data_json["llmCompletion"][relation])
     else:
         f_3 = prompt_engineering_3(data_json, relation)
         completion = f"그렇구나. {f_3}에게 그렇게 말해주고 싶구나."
@@ -287,8 +286,8 @@ def get_friendly(kidName: str, positions: dict):
 
 
 def get_score(kidName: str, receiptNo: int):
-    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{_sanitize(kidName)}.json")
-    data_json = read_json(data_json_path)
+    receipt_no_str = str(receiptNo)
+    data_json = session_repository.find_by_receipt_no(receipt_no_str)
     if not data_json:
         return 0, ""
 
@@ -366,7 +365,12 @@ def get_score(kidName: str, receiptNo: int):
         data_json["abuse"]["4"] = score_4
 
     data_json["score"] = score
-    make_json(data_json_path, data_json)
+    session_repository.update_session(receipt_no_str, {
+        "score": score,
+        "abuse": data_json["abuse"],
+        "friendly_message": data_json.get("friendly_message", ""),
+        "tension": data_json.get("tension", "없음"),
+    })
 
     return score, message
 
@@ -386,8 +390,8 @@ def get_reliability(kidName: str, receiptNo: int):
     """
     from datetime import datetime
 
-    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{_sanitize(kidName)}.json")
-    data_json = read_json(data_json_path)
+    receipt_no_str = str(receiptNo)
+    data_json = session_repository.find_by_receipt_no(receipt_no_str)
     if not data_json:
         return {}
 
@@ -912,8 +916,8 @@ def get_report(kidName: str, receiptNo: int):
     """
     message = "기능적입니다."
 
-    data_json_path = os.path.join(CFG.THERAPY_RESULT_DIR, f"{receiptNo}_{_sanitize(kidName)}.json")
-    data_json = read_json(data_json_path)
+    receipt_no_str = str(receiptNo)
+    data_json = session_repository.find_by_receipt_no(receipt_no_str)
     if not data_json:
         return "기능적입니다.", {}
 
@@ -940,6 +944,10 @@ def get_report(kidName: str, receiptNo: int):
         data_json["llmCompletion"],
     )
 
-    make_json(data_json_path, data_json)
+    session_repository.update_session(receipt_no_str, {
+        "report": data_json.get("report", ""),
+        "tension": data_json.get("tension", ""),
+        "scripts": data_json.get("scripts", {}),
+    })
 
     return message, data_json

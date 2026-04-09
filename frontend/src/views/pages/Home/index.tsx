@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import SubmitButton from "../../../components/atoms/Form/Button/SubmitButton";
 import Icon from "../../../components/atoms/Icon";
 import { USER } from "../../../constants/common.constant";
@@ -9,6 +9,8 @@ import { getItemLocalStorage } from "../../../utils/helper";
 const Home = () => {
   const userInfo = getItemLocalStorage(USER);
   const navigator = useNavigate();
+
+  if (!userInfo) return <Navigate to="/login" replace />;
 
   const selectedDate = userInfo.selectedDate
     ? dayjs(userInfo.selectedDate)

@@ -15,6 +15,7 @@ const Header = () => {
   const setSelectedCards = useStore((state: any) => state.setSelectedCards);
   const setSelectedCardsNew = useStore((state: any) => state.setSelectedCardsNew);
   const setSelectedCardsNew6 = useStore((state: any) => state.setSelectedCardsNew6);
+  const setChooseAnimal = useStore((state: any) => state.setChooseAnimal);
   const setFigure = useStore((state: any) => state.setFigure);
 
   useEffect(() => {
@@ -28,6 +29,10 @@ const Header = () => {
       setCurrentStep(prevStep);
       setCurrentIndex(0);
       setFigure([]);
+      setChooseAnimal(false);
+      setSelectedCards([]);
+      setSelectedCardsNew([]);
+      setSelectedCardsNew6([]);
       navigator(stageOrder[idx - 1]);
     } else {
       navigator("/");

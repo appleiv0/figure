@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { createChatBotMessage } from "react-chatbot-kit";
+import { useLocation } from "react-router-dom";
 import ChatbotWrapper from "../../../components/molecules/Chatbot/ChatbotWrapper";
 import ActionProvider from "../../../components/molecules/Chatbot/ActionProvider";
 import MessageParser from "../../../components/molecules/Chatbot/MessageParser";
@@ -10,26 +12,31 @@ import Header from "../../../components/organisms/Header";
 import useStore from "../../../store";
 
 const Stage5 = () => {
-  const chooseAnimal = useStore((state: any) => state.chooseAnimal);
-  const setChooseAnimal = useStore((state: any) => state.setChooseAnimal);
+  const location = useLocation();
+  const [showContent, setShowContent] = useState(false);
   const selectedFamily = useStore((state: any) => state.selectedFamily);
   const selectedCards = useStore((state: any) => state.selectedCards);
-  const selectedCardsNew = useStore((state: any) => state.selectedCardsNew);
   const selectedFamilyJosa = useStore((state: any) => state.selectedFamilyJosa);
+  const setFigure = useStore((state: any) => state.setFigure);
 
   const botName = selectedFamily[0];
-  const prevFigure = selectedCards[0].figure;
+  const prevFigure = selectedCards?.[0]?.figure || "";
+
+  useEffect(() => {
+    setFigure([]);
+  }, []);
 
   const handleChooseAnimal = () => {
-    setChooseAnimal(false);
+    setShowContent(true);
   };
 
   const selectedFamilyWidgets = selectedFamily.map(
     (family: any, index: number) => ({
       widgetName: `SelectedCard4Family_${family}`,
-      widgetFunc: (props: any) => (
-        <SelectedCard4Family {...props} selected={selectedCardsNew[index]} />
-      ),
+      widgetFunc: (props: any) => {
+        const currentCardsNew = (useStore.getState() as any).selectedCardsNew;
+        return <SelectedCard4Family {...props} selected={currentCardsNew[index]} />;
+      },
     })
   );
 
@@ -39,7 +46,7 @@ const Stage5 = () => {
         `먼저 ${botName}${
           selectedFamilyJosa[0] === 1 ? "은" : "는"
         } ${prevFigure}${
-          selectedCards[0].josa === 1 ? "이었" : "였"
+          selectedCards?.[0]?.josa === 1 ? "이었" : "였"
         }는데, 이번에는 ${botName}${
           selectedFamilyJosa[0] === 1 ? "이" : "가"
         } 어떤 동물이 되었으면 좋겠는지 골라보자.`,
@@ -64,7 +71,7 @@ const Stage5 = () => {
   return (
     <>
       <Header />
-      {chooseAnimal && (
+      {!showContent && (
         <Intro
           children={
             <>
@@ -80,7 +87,7 @@ const Stage5 = () => {
           handleChooseAnimal={handleChooseAnimal}
         />
       )}
-      {!chooseAnimal && (
+      {showContent && (
         <>
           <div className="container mx-auto">
             {location.pathname.endsWith("/stage4") && (

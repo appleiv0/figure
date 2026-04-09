@@ -40,6 +40,8 @@ def get_josa_en(kstr):
 
 
 def get_josa(kstr):
+    if not kstr:
+        return {"은/는": "는", "이/가": "가", "을/를": "를", "과/와": "와", "라/이라": "라", "랑/이랑": "랑", "가/이가": "가", "였/이었": "였", "yeoutVSiyeout": "였", "koVSrako": "라고", "로/으로": "로"}
     k = kstr[-1]
     josa = {}
     if "가" <= k <= "힣":

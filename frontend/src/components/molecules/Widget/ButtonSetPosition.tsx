@@ -6,15 +6,19 @@ const ButtonStart = () => {
   const navigator = useNavigate();
   const location = useLocation();
   const setSelectedCards = useStore((state: any) => state.setSelectedCards);
+  const setCurrentStep = useStore((state: any) => state.setCurrentStep);
 
   const handleNext = () => {
     if (location.pathname === "/" || location.pathname.endsWith("/family") || location.pathname.endsWith("/family/")) {
+      setCurrentStep(1);
       navigator("/stage1");
       setSelectedCards([]);
     } else if (location.pathname.endsWith("/stage1")) {
+      setCurrentStep(2);
       navigator("/stage2");
       setSelectedCards([]);
     } else if (location.pathname.endsWith("/stage3")) {
+      setCurrentStep(6);
       navigator("/stage6");
     }
   };

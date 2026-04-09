@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { USER } from "../../../constants/common.constant";
 import { useSetFigure } from "../../../services/hooks/hookFigures";
 import useStore from "../../../store";
@@ -38,8 +39,18 @@ const ButtonStart = () => {
   const { fetchFigure } = useSetFigure();
   const userInfo = getItemLocalStorage(USER);
 
+  const saveStep = async (step: number) => {
+    try {
+      if (userInfo?.receiptNo) {
+        const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+        await axios.post(`${apiBase}/public/save-step`, { receiptNo: userInfo.receiptNo, currentStep: step });
+      }
+    } catch {}
+  };
+
   const handleNext = () => {
     setCurrentStep(currentStep + 1);
+    saveStep(currentStep + 1);
     if (location.pathname === "/" || location.pathname.endsWith("/family") || location.pathname.endsWith("/family/") || location.pathname.endsWith("/stage0")) {
       navigator("/stage1");
       setSelectedCards([]);
@@ -53,13 +64,10 @@ const ButtonStart = () => {
     } else if (location.pathname.endsWith("/stage4")) {
       navigator("/stage5");
       setCurrentIndex(0);
-      if (selectedFamily.length > 0) {
-        const newFamily = [...selectedFamily];
-        newFamily.pop();
-        const newJosa = [...selectedFamilyJosa];
-        newJosa.pop();
-        setSelectedFamily(newFamily);
-        setSelectedFamilyJosa(newJosa);
+      if (selectedFamily.length > 0 && userInfo?.kidname) {
+        const kidname = userInfo.kidname;
+        setSelectedFamily(selectedFamily.filter((name: string) => name !== kidname));
+        setSelectedFamilyJosa(selectedFamilyJosa.filter((_: any, i: number) => selectedFamily[i] !== kidname));
       }
     } else if (location.pathname.endsWith("/stage5")) {
       navigator("/stage6");
@@ -80,6 +88,7 @@ const ButtonStart = () => {
           console.error("API Error: No response received");
         } else {
           setCurrentStep(currentStep + 1);
+          saveStep(currentStep + 1);
           if (location.pathname.endsWith("/stage1")) {
             navigator("/stage2");
             setSelectedCards([]);
@@ -109,15 +118,13 @@ const ButtonStart = () => {
           console.error("API Error: No response received");
         } else {
           setCurrentStep(currentStep + 1);
+          saveStep(currentStep + 1);
           if (location.pathname.endsWith("/stage3")) {
             setCurrentIndex(0);
-            if (selectedFamily.length > 0) {
-              const newFamily = [...selectedFamily];
-              newFamily.pop();
-              const newJosa = [...selectedFamilyJosa];
-              newJosa.pop();
-              setSelectedFamily(newFamily);
-              setSelectedFamilyJosa(newJosa);
+            if (selectedFamily.length > 0 && userInfo?.kidname) {
+              const kidname = userInfo.kidname;
+              setSelectedFamily(selectedFamily.filter((name: string) => name !== kidname));
+              setSelectedFamilyJosa(selectedFamilyJosa.filter((_: any, i: number) => selectedFamily[i] !== kidname));
             }
             navigator("/stage4");
           } else if (location.pathname.endsWith("/stage4")) {

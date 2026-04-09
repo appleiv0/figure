@@ -4,6 +4,7 @@ import useStore from "../store";
 import Layout from "../views/layout";
 import Home from "../views/pages/Home";
 import Landing from "../views/pages/Landing";
+import MarketingLanding from "../views/pages/MarketingLanding";
 import Register from "../views/pages/Register";
 import Ending from "../views/pages/Stage/ending";
 import Stage0 from "../views/pages/Stage/stage0";
@@ -20,6 +21,13 @@ import AdminSessionDetail from "../views/pages/Admin/SessionDetail";
 import MySessions from "../views/pages/MySessions";
 import Test3D from "../views/pages/Test3D";
 import SeedCompare from "../views/pages/Test3D/SeedCompare";
+import BoardGame from "../views/pages/BoardGame";
+
+const RequireSession = ({ children }: { children: React.ReactElement }) => {
+  const token = sessionStorage.getItem('THERAPY_TOKEN');
+  if (!token) return <Navigate to="/login" replace />;
+  return children;
+};
 
 export const Router = () => {
   const currentStep = useStore((state: any) => state.currentStep);
@@ -29,7 +37,8 @@ export const Router = () => {
       path: "/",
       element: <Layout />,
       children: [
-        { path: "/", element: <Landing /> },
+        { path: "/", element: <MarketingLanding /> },
+        { path: "/login", element: <Landing /> },
         { path: "/register", element: <Register /> },
         {
           path: "/information",
@@ -100,11 +109,11 @@ export const Router = () => {
         },
         {
           path: "/ending",
-          element: <Ending />,
+          element: <RequireSession><Ending /></RequireSession>,
         },
         {
           path: "/result",
-          element: <Result />,
+          element: <RequireSession><Result /></RequireSession>,
         },
         {
           path: "/my-sessions",
@@ -129,6 +138,10 @@ export const Router = () => {
         {
           path: "/seeds",
           element: <SeedCompare />,
+        },
+        {
+          path: "/boardgame",
+          element: <BoardGame />,
         },
         {
           path: "*",

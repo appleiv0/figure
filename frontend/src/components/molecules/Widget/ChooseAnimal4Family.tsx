@@ -45,15 +45,22 @@ const ChooseAnimal4Family = (props: any) => {
   };
   const initialAction = () => {
     if (!currentFigure) return;
+    const idx = (useStore.getState() as any).currentIndex;
     if (location.pathname.endsWith("/stage3")) {
-      props.actions.initialAction([...selectedCards, currentFigure]);
-      setSelectedCards([...selectedCards, currentFigure]);
+      const newCards = [...selectedCards];
+      if (idx < newCards.length) { newCards[idx] = currentFigure; } else { newCards.push(currentFigure); }
+      setSelectedCards(newCards);
+      setTimeout(() => props.actions.initialAction(newCards), 0);
     } else if (location.pathname.endsWith("/stage4")) {
-      props.actions.initialAction5([...selectedCardsNew, currentFigure]);
-      setSelectedCardsNew([...selectedCardsNew, currentFigure]);
+      const newCards = [...selectedCardsNew];
+      if (idx < newCards.length) { newCards[idx] = currentFigure; } else { newCards.push(currentFigure); }
+      setSelectedCardsNew(newCards);
+      setTimeout(() => props.actions.initialAction5(newCards), 0);
     } else if (location.pathname.endsWith("/stage5")) {
-      props.actions.initialAction6([...selectedCardsNew6, currentFigure]);
-      setSelectedCardsNew6([...selectedCardsNew6, currentFigure]);
+      const newCards = [...selectedCardsNew6];
+      if (idx < newCards.length) { newCards[idx] = currentFigure; } else { newCards.push(currentFigure); }
+      setSelectedCardsNew6(newCards);
+      setTimeout(() => props.actions.initialAction6(newCards), 0);
     }
     setIsShow(false);
   };

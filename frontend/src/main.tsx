@@ -7,11 +7,6 @@ import { history } from "./routes/history";
 import "./sass/main.scss";
 import { Router } from "./routes";
 
-// 이전 세션 캐시 정리
-sessionStorage.removeItem("abuse-therapy-store");
-sessionStorage.removeItem("currentStep");
-sessionStorage.removeItem("THERAPY_TOKEN");
-
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

@@ -15,7 +15,7 @@ const Stage0 = () => {
     initialMessages: [
       createChatBotMessage(`안녕? 내 이름은 푸름이야.`, {}),
       createChatBotMessage(
-        `나는 ${userInfo?.kidname}${userInfo?.endWord.kwaVSwa} 함께 동물들을 가지고 ${userInfo?.kidname}의 이야기를 들어보려고 해.`,
+        `나는 ${userInfo?.kidname}${userInfo?.endWord?.kwaVSwa} 함께 동물들을 가지고 ${userInfo?.kidname}의 이야기를 들어보려고 해.`,
         { widget: "ButtonChooseCard" }
       ),
     ],

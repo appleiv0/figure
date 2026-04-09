@@ -1,4 +1,5 @@
 const SelectedCard4Family = ({ selected }: any) => {
+  if (!selected) return null;
   return (
     <div className="react-chatbot-kit-chat-bot-message-container flex gap-2">
       <div

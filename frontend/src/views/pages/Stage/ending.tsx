@@ -10,7 +10,7 @@ const Ending = () => {
   useEffect(() => {
     const completeSession = async () => {
       try {
-        const apiBase = (import.meta as any).env?.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+        const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
         await axios.post(`${apiBase}/public/complete-session`, { receiptNo: userInfo.receiptNo });
       } catch (e) {
         console.error("Failed to complete session:", e);

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import {
   FigureInterface,
   SelectCardInterface,
@@ -52,6 +53,7 @@ const initialState: State = {
 };
 
 const useStore = create(
+  persist(
     (set) => ({
       ...initialState,
       setAccessToken: (accessToken: string) => set({ accessToken }),
@@ -108,7 +110,34 @@ const useStore = create(
       setMessageUser: (message: string) => set({ message }),
 
       setIsLogout: (isLogout: boolean) => set({ isLogout }),
-    })
+    }),
+    {
+      name: 'abuse-therapy-store',
+      storage: {
+        getItem: (name: string) => {
+          const str = sessionStorage.getItem(name);
+          return str ? JSON.parse(str) : null;
+        },
+        setItem: (name: string, value: unknown) => {
+          sessionStorage.setItem(name, JSON.stringify(value));
+        },
+        removeItem: (name: string) => {
+          sessionStorage.removeItem(name);
+        },
+      },
+      partialize: (state: any) => ({
+        currentStep: state.currentStep,
+        selectedFamily: state.selectedFamily,
+        selectedFamilyJosa: state.selectedFamilyJosa,
+        response: state.response,
+        selectedCards: state.selectedCards,
+        selectedCardsNew: state.selectedCardsNew,
+        selectedCardsNew6: state.selectedCardsNew6,
+        figure: state.figure,
+        currentIndex: state.currentIndex,
+      }),
+    }
+  )
 );
 
 export default useStore;

@@ -24,7 +24,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     (currentPath.startsWith("/stage0") && currentPath !== "/")
   ) {
     isInvalied = !accessToken;
-    navigatePath = "/";
+    navigatePath = "/login";
   }
 
   const value: AuthContextType = {};

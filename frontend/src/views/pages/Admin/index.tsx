@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { adminApi, Statistics, Session, SessionListResponse } from "../../../services/adminApi";
 import { exportSessionsToExcel } from "../../../utils/excelExport";
@@ -29,13 +29,28 @@ const AdminDashboard = () => {
   const [creditModal, setCreditModal] = useState<{ email: string; credits: number } | null>(null);
   const [creditInput, setCreditInput] = useState("");
 
+  // Add User Modal State
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserOrg, setNewUserOrg] = useState("");
+  const [addUserLoading, setAddUserLoading] = useState(false);
+
   // Codes Tab State
+  const [codeGenOrg, setCodeGenOrg] = useState("");
   const [codeGenEmail, setCodeGenEmail] = useState("");
   const [codeGenCount, setCodeGenCount] = useState(1);
   const [codeGenLoading, setCodeGenLoading] = useState(false);
   const [generatedCodes, setGeneratedCodes] = useState<Array<{ code: string; email: string; name: string; organization: string; createdAt: string }>>([]);
 
-  const SUPER_USERS = ["appleiv@gmail.com", "a33351702@gmail.com", "beratung@hansei.ac.kr"];
+  // Show Result Toggle State
+  const [showResult, setShowResult] = useState(true);
+  const [showResultLoading, setShowResultLoading] = useState(false);
+
+  const [superUsers, setSuperUsers] = useState<string[]>(["appleiv@gmail.com", "a33351702@gmail.com", "beratung@hansei.ac.kr", "kaft2960@gmail.com"]);
+  const currentAuth = JSON.parse(sessionStorage.getItem("counselorAuth") || "{}");
+  const currentUserEmail = currentAuth.email || "";
+  const isSuperUserLoggedIn = superUsers.includes(currentUserEmail);
 
   // Search State
   const [searchName, setSearchName] = useState("");
@@ -58,9 +73,11 @@ const AdminDashboard = () => {
     return "dashboard";
   };
 
-  const [activeTab, setActiveTabState] = useState<"dashboard" | "sessions" | "users" | "codes" | "evaluations">(getTabFromHash);
+  const [activeTab, setActiveTabState] = useState<"dashboard" | "sessions" | "users" | "codes" | "evaluations" | "settings">(getTabFromHash);
 
-  const setActiveTab = (tab: "dashboard" | "sessions" | "users" | "codes") => {
+  const navigate = useNavigate();
+
+  const setActiveTab = (tab: "dashboard" | "sessions" | "users" | "codes" | "evaluations" | "settings") => {
     window.location.hash = tab;
     setActiveTabState(tab);
   };
@@ -72,6 +89,14 @@ const AdminDashboard = () => {
       setIsAuthenticated(true);
     }
   }, []);
+
+  // Load showResult setting on auth
+  useEffect(() => {
+    if (isAuthenticated) {
+      adminApi.getSettings().then(data => setShowResult(data.showResultToUser)).catch(() => {});
+      adminApi.getSuperUsers().then(data => setSuperUsers(data.superUsers)).catch(() => {});
+    }
+  }, [isAuthenticated]);
 
   // Listen for hash changes
   useEffect(() => {
@@ -135,7 +160,7 @@ const AdminDashboard = () => {
     if (isAuthenticated && (activeTab === "users" || activeTab === "codes")) {
       setUsersLoading(true);
       adminApi.getUsers()
-        .then(data => setUsers(data.users))
+        .then(data => setUsers(data.users.filter((u: any) => u.registered !== false)))
         .catch(err => console.error(err))
         .finally(() => setUsersLoading(false));
     }
@@ -160,7 +185,7 @@ const AdminDashboard = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const envPassword = import.meta.env.VITE_ADMIN_PASSWORD || "1234";
+    const envPassword = import.meta.env.VITE_ADMIN_PASSWORD || "";
     if (passwordInput === envPassword) {
       sessionStorage.setItem("adminAuth", "true");
       setIsAuthenticated(true);
@@ -303,6 +328,23 @@ const AdminDashboard = () => {
     setPage(1);
   };
 
+  const handleAddUser = async () => {
+    if (!newUserEmail.trim()) return;
+    setAddUserLoading(true);
+    try {
+      await adminApi.createUser(newUserEmail.trim(), newUserName.trim(), newUserOrg.trim());
+      setShowAddUserModal(false);
+      // Refresh users list
+      const data = await adminApi.getUsers();
+      setUsers(data.users.filter((u: any) => u.registered !== false));
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || "사용자 등록에 실패했습니다.";
+      alert(msg);
+    } finally {
+      setAddUserLoading(false);
+    }
+  };
+
   const handleCreditSave = async () => {
     if (!creditModal || !creditInput) return;
     try {
@@ -310,7 +352,7 @@ const AdminDashboard = () => {
       setCreditModal(null);
       // Refresh users list
       const data = await adminApi.getUsers();
-      setUsers(data.users);
+      setUsers(data.users.filter((u: any) => u.registered !== false));
     } catch (err) {
       alert("크레딧 변경에 실패했습니다.");
     }
@@ -392,6 +434,7 @@ const AdminDashboard = () => {
                 {sidebarOpen && '세션 목록'}
               </button>
             </li>
+            {isSuperUserLoggedIn && (
             <li>
               <button
                 onClick={() => setActiveTab("users")}
@@ -399,14 +442,15 @@ const AdminDashboard = () => {
                     ? "bg-blue-50 text-blue-700 font-medium"
                     : "text-gray-600 hover:bg-gray-50"
                   }`}
-                title="사용량 관리"
+                title="사용자 관리"
               >
                 <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
-                {sidebarOpen && '사용량 관리'}
+                {sidebarOpen && '사용자 관리'}
               </button>
             </li>
+            )}
             <li>
               <button
                 onClick={() => setActiveTab("codes")}
@@ -437,6 +481,22 @@ const AdminDashboard = () => {
                 {sidebarOpen && '판정 의뢰'}
               </button>
             </li>
+            <li>
+              <button
+                onClick={() => setActiveTab("settings")}
+                className={`w-full text-left ${sidebarOpen ? 'px-3 py-2' : 'p-2 justify-center'} rounded-lg flex items-center gap-2 transition-colors text-sm ${activeTab === "settings"
+                    ? "bg-blue-50 text-blue-700 font-medium"
+                    : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                title="설정"
+              >
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {sidebarOpen && '설정'}
+              </button>
+            </li>
           </ul>
         </nav>
         <div className={`absolute bottom-0 ${sidebarOpen ? 'w-52' : 'w-12'} p-2 border-t`}>
@@ -450,7 +510,7 @@ const AdminDashboard = () => {
             onClick={() => {
               sessionStorage.removeItem("adminAuth");
               sessionStorage.removeItem("counselorAuth");
-              navigate("/");
+              navigate("/login");
             }}
             className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 w-full"
             title="로그아웃"
@@ -475,6 +535,7 @@ const AdminDashboard = () => {
               <div className="text-center text-red-500 py-8">{error}</div>
             ) : (
               <>
+
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                   <div className="bg-white rounded-lg shadow p-6">
@@ -516,17 +577,35 @@ const AdminDashboard = () => {
 
         {activeTab === "users" && (
           <>
-            <h2 className="text-2xl font-bold mb-6">사용량 관리</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+              <h2 className="text-2xl font-bold">사용자 관리</h2>
+              <button
+                onClick={() => { setShowAddUserModal(true); setNewUserEmail(""); setNewUserName(""); setNewUserOrg(""); }}
+                style={{
+                  padding: "8px 20px",
+                  backgroundColor: "#2563eb",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                }}
+              >
+                새 사용자 등록
+              </button>
+            </div>
             <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <p className="text-gray-600 text-sm mb-4">Google 로그인 사용자별 검사 사용량을 관리합니다.</p>
+              <p className="text-gray-600 text-sm mb-4">등록된 사용자만 Google 로그인이 가능합니다.</p>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">이메일</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">이름</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">소속</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">사용 횟수</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">제한</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">크레딧</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">최근 로그인</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">관리</th>
                     </tr>
@@ -534,35 +613,79 @@ const AdminDashboard = () => {
                   <tbody className="divide-y divide-gray-200">
                     {usersLoading ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">로딩 중...</td>
+                        <td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-sm">로딩 중...</td>
                       </tr>
                     ) : users.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">등록된 사용자가 없습니다.</td>
+                        <td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-sm">등록된 사용자가 없습니다.</td>
                       </tr>
                     ) : (
                       users.map(user => {
-                        const isSuperUser = SUPER_USERS.includes(user.email);
+                        const isSuperUser = superUsers.includes(user.email);
                         return (
                         <tr key={user.email} className="hover:bg-gray-50">
-                          <td className="px-4 py-2 text-sm">{user.email}{isSuperUser && <span className="ml-1 text-xs text-purple-600 font-bold">(슈퍼)</span>}</td>
+                          <td className="px-4 py-2 text-sm">
+                            {user.email}
+                            {isSuperUser && <span className="ml-1 text-xs text-purple-600 font-bold">(슈퍼)</span>}
+                            {!(user as any).registered && !isSuperUser && <span className="ml-1 text-xs text-orange-500 font-bold">(미등록)</span>}
+                          </td>
                           <td className="px-4 py-2 text-sm">{user.name || "-"}</td>
+                          <td className="px-4 py-2 text-sm">{(user as any).organization || "-"}</td>
                           <td className="px-4 py-2 text-sm font-semibold">{user.sessionCount}</td>
                           <td className="px-4 py-2 text-sm text-gray-500">
-                            {isSuperUser ? <span className="font-bold">-</span> : `${(user as any).credits ?? 10}회`}
+                            {isSuperUser ? <span className="font-bold">무제한</span> : `${(user as any).credits ?? 10}회`}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-500">
                             {user.lastUsed ? new Date(user.lastUsed).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) : "-"}
                           </td>
                           <td className="px-4 py-2 text-sm">
-                            {!isSuperUser && (
-                              <button
-                                className="text-blue-600 hover:underline text-xs"
-                                onClick={() => { setCreditModal({ email: user.email, credits: (user as any).credits ?? 10 }); setCreditInput(String((user as any).credits ?? 10)); }}
-                              >
-                                제한 변경
-                              </button>
-                            )}
+                            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                              {isSuperUserLoggedIn && user.email !== currentUserEmail && (
+                                <button
+                                  className={`px-2 py-1 rounded text-xs font-bold ${
+                                    isSuperUser
+                                      ? "bg-yellow-500 text-white"
+                                      : "bg-gray-200 text-gray-600"
+                                  }`}
+                                  onClick={async () => {
+                                    const action = isSuperUser ? "remove" : "add";
+                                    try {
+                                      const result = await adminApi.updateSuperUser(user.email, action);
+                                      setSuperUsers(result.superUsers);
+                                    } catch (e) {
+                                      alert("슈퍼 유저 변경에 실패했습니다.");
+                                    }
+                                  }}
+                                >
+                                  {isSuperUser ? "★ 슈퍼유저" : "일반유저"}
+                                </button>
+                              )}
+                              {!isSuperUser && (
+                                <button
+                                  className="text-blue-600 hover:underline text-xs"
+                                  onClick={() => { setCreditModal({ email: user.email, credits: (user as any).credits ?? 10 }); setCreditInput(String((user as any).credits ?? 10)); }}
+                                >
+                                  크레딧
+                                </button>
+                              )}
+                              {!isSuperUser && (
+                                <button
+                                  className="text-red-600 hover:underline text-xs"
+                                  onClick={async () => {
+                                    if (!confirm(`${user.email} 사용자를 삭제하시겠습니까?\n삭제된 사용자는 더 이상 로그인할 수 없습니다.`)) return;
+                                    try {
+                                      await adminApi.deleteUser(user.email);
+                                      const data = await adminApi.getUsers();
+                                      setUsers(data.users.filter((u: any) => u.registered !== false));
+                                    } catch (err) {
+                                      alert("사용자 삭제에 실패했습니다.");
+                                    }
+                                  }}
+                                >
+                                  삭제
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                         );
@@ -573,8 +696,8 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-xs text-gray-400">슈퍼유저 ({SUPER_USERS.join(", ")})는 사용량 제한 없음 (- 표시)</p>
-              <p className="text-xs text-gray-400">제한 변경 클릭 시 해당 사용자의 남은 크레딧을 수정할 수 있습니다.</p>
+              <p className="text-xs text-gray-400">슈퍼유저 ({superUsers.join(", ")})는 삭제 불가, 크레딧 무제한</p>
+              <p className="text-xs text-gray-400">새 사용자를 등록하면 Google 로그인 시 접근이 허용됩니다.</p>
             </div>
 
             {/* 크레딧 변경 모달 */}
@@ -584,10 +707,10 @@ const AdminDashboard = () => {
                 onClick={() => setCreditModal(null)}
               >
                 <div style={{ background: "white", borderRadius: "12px", padding: "24px", minWidth: "320px" }} onClick={(e) => e.stopPropagation()}>
-                  <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "8px" }}>사용량 제한 변경</h3>
+                  <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "8px" }}>크레딧 변경</h3>
                   <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "16px" }}>{creditModal.email}</p>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
-                    <label style={{ fontSize: "14px", color: "#374151" }}>남은 크레딧:</label>
+                    <label style={{ fontSize: "14px", color: "#374151" }}>크레딧:</label>
                     <input
                       type="number"
                       value={creditInput}
@@ -610,6 +733,92 @@ const AdminDashboard = () => {
                       style={{ padding: "8px 16px", borderRadius: "6px", border: "none", background: "#2563eb", color: "white", cursor: "pointer", fontSize: "14px" }}
                     >
                       저장
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 새 사용자 등록 모달 */}
+            {showAddUserModal && (
+              <div
+                style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}
+                onClick={() => setShowAddUserModal(false)}
+              >
+                <div style={{ background: "white", borderRadius: "12px", padding: "28px", minWidth: "360px", maxWidth: "440px", width: "100%" }} onClick={(e) => e.stopPropagation()}>
+                  <h3 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "20px", color: "#111827" }}>새 사용자 등록</h3>
+
+                  <div style={{ marginBottom: "14px" }}>
+                    <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>이메일 *</label>
+                    <input
+                      type="email"
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      placeholder="user@example.com"
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }}
+                      autoFocus
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: "14px" }}>
+                    <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>이름</label>
+                    <input
+                      type="text"
+                      value={newUserName}
+                      onChange={(e) => setNewUserName(e.target.value)}
+                      placeholder="이름을 입력해주세요"
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: "24px" }}>
+                    <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "6px" }}>소속(상담기관)</label>
+                    <input
+                      type="text"
+                      value={newUserOrg}
+                      onChange={(e) => setNewUserOrg(e.target.value)}
+                      placeholder="소속 기관명을 입력해주세요"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !addUserLoading && newUserEmail.trim()) {
+                          handleAddUser();
+                        }
+                      }}
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }}
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={() => setShowAddUserModal(false)}
+                      style={{
+                        flex: 1,
+                        padding: "12px",
+                        background: "white",
+                        color: "#6b7280",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={handleAddUser}
+                      disabled={!newUserEmail.trim() || addUserLoading}
+                      style={{
+                        flex: 1,
+                        padding: "12px",
+                        backgroundColor: !newUserEmail.trim() || addUserLoading ? "#9ca3af" : "#2563eb",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "15px",
+                        fontWeight: 600,
+                        cursor: !newUserEmail.trim() || addUserLoading ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      {addUserLoading ? "등록 중..." : "등록"}
                     </button>
                   </div>
                 </div>
@@ -890,10 +1099,10 @@ const AdminDashboard = () => {
                             if (!abuse) return "-";
                             const sum = (abuse["1"] || 0) + (abuse["2"] || 0) + (abuse["3"] || 0);
                             return sum === 3
-                              ? <span className="text-red-600 font-bold">있음</span>
+                              ? <span className="text-red-600 font-bold">역기능 있음</span>
                               : sum >= 1
-                              ? <span className="text-yellow-600 font-semibold">가능성</span>
-                              : <span className="text-green-600">없음</span>;
+                              ? <span className="text-yellow-600 font-semibold">역기능 가능성</span>
+                              : <span className="text-green-600">역기능 없음</span>;
                           })()}
                         </td>
                         <td className="px-0.5 py-1 whitespace-nowrap text-sm">
@@ -1016,20 +1225,36 @@ const AdminDashboard = () => {
               <h3 className="text-lg font-semibold mb-4">일회용 코드 생성</h3>
               <div style={{ display: "flex", alignItems: "flex-end", gap: "12px", flexWrap: "wrap" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "13px", color: "#6b7280", marginBottom: "4px" }}>사용자 선택</label>
+                  <label style={{ display: "block", fontSize: "13px", color: "#6b7280", marginBottom: "4px" }}>소속</label>
+                  <select
+                    value={codeGenOrg}
+                    onChange={(e) => { setCodeGenOrg(e.target.value); setCodeGenEmail(""); }}
+                    style={{ border: "1px solid #d1d5db", borderRadius: "6px", padding: "8px 12px", fontSize: "14px", minWidth: "180px" }}
+                    disabled={usersLoading}
+                  >
+                    <option value="">{usersLoading ? "로딩 중..." : "소속을 선택하세요"}</option>
+                    {[...new Set(users.map(u => u.organization).filter(org => !!org))].sort().map(org => (
+                      <option key={org} value={org}>{org}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "13px", color: "#6b7280", marginBottom: "4px" }}>상담사</label>
                   <select
                     value={codeGenEmail}
                     onChange={(e) => setCodeGenEmail(e.target.value)}
-                    style={{ border: "1px solid #d1d5db", borderRadius: "6px", padding: "8px 12px", fontSize: "14px", minWidth: "240px" }}
-                    disabled={usersLoading}
+                    style={{ border: "1px solid #d1d5db", borderRadius: "6px", padding: "8px 12px", fontSize: "14px", minWidth: "220px" }}
+                    disabled={usersLoading || !codeGenOrg}
                   >
-                    <option value="">{usersLoading ? "로딩 중..." : "사용자를 선택하세요"}</option>
-                    {users.map(u => (
-                      <option key={u.email} value={u.email}>
-                        {u.name ? `${u.name} (${u.email})` : u.email}
-                        {u.organization ? ` - ${u.organization}` : ""}
-                      </option>
-                    ))}
+                    <option value="">상담사를 선택하세요</option>
+                    {users
+                      .filter(u => u.organization === codeGenOrg)
+                      .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                      .map(u => (
+                        <option key={u.email} value={u.email}>
+                          {u.name} ({u.email})
+                        </option>
+                      ))}
                   </select>
                 </div>
                 <div>
@@ -1250,6 +1475,46 @@ const AdminDashboard = () => {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === "settings" && (
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>설정</h2>
+            <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <div>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>검사결과 보여주기</h3>
+                  <p style={{ fontSize: 13, color: "#6b7280", margin: "4px 0 0" }}>검사 종료 시 내담자에게 결과를 보여줍니다</p>
+                </div>
+                <button
+                  onClick={async () => {
+                    setShowResultLoading(true);
+                    try {
+                      const newVal = !showResult;
+                      await adminApi.updateSettings({ showResultToUser: newVal });
+                      setShowResult(newVal);
+                    } catch (e) { alert("설정 변경 실패"); }
+                    finally { setShowResultLoading(false); }
+                  }}
+                  disabled={showResultLoading}
+                  style={{
+                    padding: "8px 24px",
+                    borderRadius: 20,
+                    border: "none",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    fontSize: 14,
+                    background: showResult ? "#16a34a" : "#dc2626",
+                    color: "#fff",
+                    opacity: showResultLoading ? 0.6 : 1,
+                    minWidth: 70,
+                  }}
+                >
+                  {showResult ? "ON" : "OFF"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </main>

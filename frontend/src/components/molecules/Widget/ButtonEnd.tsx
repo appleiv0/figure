@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { USER } from "../../../constants/common.constant";
 import { useGetReport } from "../../../services/hooks/hookChatbot";
 import { getItemLocalStorage } from "../../../utils/helper";
@@ -10,6 +10,7 @@ const ButtonEnd = () => {
   const { fetchReport } = useGetReport();
   const userInfo = getItemLocalStorage(USER);
   const navigator = useNavigate();
+  const location = useLocation();
   const setResponse = useStore((state: any) => state.setResponse);
   const response = useStore((state: any) => state.response);
   const setCurrentStep = useStore((state: any) => state.setCurrentStep);
@@ -23,11 +24,14 @@ const ButtonEnd = () => {
 
       if (response) {
         setResponse(response);
+        navigator("/result");
+      } else {
+        alert("결과를 불러오는데 실패했습니다. 다시 시도해주세요.");
       }
     } catch (error: any) {
       console.error("Error:", error.message);
+      alert("결과를 불러오는데 실패했습니다. 다시 시도해주세요.");
     }
-    navigator("/result");
   };
 
   const handleNext = () => {
@@ -54,16 +58,74 @@ const ButtonEnd = () => {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>진단보고서 - ${kidName}</title>
           <style>
+            html, body, *, *::before, *::after {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+              forced-color-adjust: none !important;
+            }
+            @page {
+              size: A4;
+              margin: 10mm;
+            }
             @media print {
-              body { margin: 0; }
-              .no-print { display: none; }
+              html, body { margin: 0; }
+              .no-print { display: none !important; }
+              html, body, *, *::before, *::after {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                forced-color-adjust: none !important;
+              }
+              td[style*="background"], th[style*="background"], div[style*="background"] {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
             }
           </style>
         </head>
         <body>
           <div class="no-print" style="padding: 10px; text-align: right; background: #f5f5f5; border-bottom: 1px solid #ddd;">
-            <button onclick="window.print()" style="padding: 8px 16px; background: #2EB500; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">인쇄 / PDF 저장</button>
+            <button onclick="window.print()" style="padding: 8px 16px; background: #2EB500; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; margin-right: 8px;">인쇄</button>
+            <button onclick="downloadPDF()" style="padding: 8px 16px; background: #1976d2; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">PDF 다운로드 (컬러)</button>
           </div>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>
+          <script>
+            async function downloadPDF() {
+              const el = document.querySelector('div[style*="210mm"]');
+              if (!el) return;
+              const btn = event.target;
+              btn.textContent = '생성 중...';
+              btn.disabled = true;
+              try {
+                const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                const pdfW = pdf.internal.pageSize.getWidth();
+                const pdfH = pdf.internal.pageSize.getHeight();
+                const imgW = canvas.width;
+                const imgH = canvas.height;
+                const ratio = pdfW / imgW;
+                const pageH = pdfH / ratio;
+                let y = 0;
+                while (y < imgH) {
+                  const pageCanvas = document.createElement('canvas');
+                  pageCanvas.width = imgW;
+                  pageCanvas.height = Math.min(pageH, imgH - y);
+                  const ctx = pageCanvas.getContext('2d');
+                  ctx.drawImage(canvas, 0, y, imgW, pageCanvas.height, 0, 0, imgW, pageCanvas.height);
+                  const imgData = pageCanvas.toDataURL('image/png');
+                  if (y > 0) pdf.addPage();
+                  pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pageCanvas.height * ratio);
+                  y += pageH;
+                }
+                pdf.save('AI_가족평가_보고서_${kidName}.pdf');
+              } catch(e) { console.error(e); alert('PDF 생성 실패'); }
+              btn.textContent = 'PDF 다운로드 (컬러)';
+              btn.disabled = false;
+            }
+          <\/script>
           ${html}
         </body>
         </html>
@@ -293,6 +355,14 @@ const generateReportHTML = (data: any): string => {
 
       <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 8px;">5. 종합 소견 (상담 대화 내용)</h2>
       ${llmHTML || '<p style="color: #666;">대화 기록이 없습니다.</p>'}
+
+      ${data.aiInterpretation ? `
+      <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1565c0; border-left: 4px solid #1565c0; padding-left: 8px;">6. AI 임상 해석</h2>
+      <div style="padding: 15px; background: #f0f7ff; border: 1px solid #bdd7ee; border-radius: 5px; margin-bottom: 10px;">
+        <p style="font-size: 10px; color: #666; font-style: italic; margin-bottom: 8px;">※ AI 자동 생성 해석</p>
+        <div style="font-size: 11px; line-height: 1.8; white-space: pre-wrap;">${data.aiInterpretation}</div>
+      </div>
+      ` : ''}
 
       <div style="margin-top: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px; text-align: center;">
         <strong>종합 점수:</strong> ${data.score || 0}점

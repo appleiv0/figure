@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { createChatBotMessage } from "react-chatbot-kit";
 import ChatbotWrapper from "../../molecules/Chatbot/ChatbotWrapper";
 import { Animal } from "../../../data";
@@ -11,6 +12,7 @@ import ButtonChooseCard from "../../molecules/Widget/ButtonChooseCard";
 import ChooseFamily from "../../molecules/Widget/ChooseFamily";
 
 const ChooseAnimal = () => {
+  const location = useLocation();
   const selectedCards = useStore((state: any) => state.selectedCards);
   const setSelectedCards = useStore((state: any) => state.setSelectedCards);
 

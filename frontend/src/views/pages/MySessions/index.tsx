@@ -85,7 +85,7 @@ const MySessions = () => {
   // Redirect if not authenticated
   useEffect(() => {
     if (!auth?.email) {
-      navigate("/");
+      navigate("/login");
     }
   }, []);
 
@@ -446,7 +446,7 @@ const MySessions = () => {
               onClick={() => {
                 sessionStorage.removeItem("counselorAuth");
                 sessionStorage.removeItem("adminAuth");
-                navigate("/");
+                navigate("/login");
               }}
               style={{
                 padding: "8px 16px",
@@ -662,8 +662,8 @@ const MySessions = () => {
                         const ff = (session as any).familyFunction;
                         if (!ff) return "-";
                         if (ff === "역기능") return <span className="text-red-600 font-bold">{ff}</span>;
-                        if (ff === "있음") return <span className="text-yellow-600 font-semibold">{ff}</span>;
-                        if (ff === "없음") return <span className="text-green-600">{ff}</span>;
+                        if (ff === "역기능 있음" || ff === "있음") return <span className="text-yellow-600 font-semibold">{ff}</span>;
+                        if (ff === "역기능 없음" || ff === "없음") return <span className="text-green-600">{ff}</span>;
                         return <span>{ff}</span>;
                       })()}
                     </td>
@@ -1003,7 +1003,7 @@ const MySessions = () => {
                             const abuse = detailData.abuse;
                             if (!abuse) return "-";
                             const sum = (abuse["1"] || 0) + (abuse["2"] || 0) + (abuse["3"] || 0);
-                            return sum === 3 ? "있음" : sum >= 1 ? "가능성" : "없음";
+                            return sum === 3 ? "역기능 있음" : sum >= 1 ? "역기능 가능성" : "역기능 없음";
                           })()}
                         </td>
                       </tr>

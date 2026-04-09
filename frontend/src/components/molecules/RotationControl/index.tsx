@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ThreeEvent } from '@react-three/fiber';
 import { FigureInstance } from '../../../types/figure3d';
-import * as THREE from 'three';
 
 interface Props {
   figure: FigureInstance;

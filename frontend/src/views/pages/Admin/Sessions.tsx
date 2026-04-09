@@ -394,13 +394,13 @@ const AdminSessions = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={14} className="px-6 py-4 text-center">
+                  <td colSpan={16} className="px-6 py-4 text-center">
                     로딩 중...
                   </td>
                 </tr>
               ) : filteredSessions.length === 0 ? (
                 <tr>
-                  <td colSpan={14} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={16} className="px-6 py-4 text-center text-gray-500">
                     데이터가 없습니다.
                   </td>
                 </tr>
@@ -460,10 +460,10 @@ const AdminSessions = () => {
                         if (!abuse) return "-";
                         const sum = (abuse["1"] || 0) + (abuse["2"] || 0) + (abuse["3"] || 0);
                         return sum === 3
-                          ? <span className="text-red-600 font-bold">있음</span>
+                          ? <span className="text-red-600 font-bold">역기능 있음</span>
                           : sum >= 1
-                          ? <span className="text-yellow-600 font-semibold">가능성</span>
-                          : <span className="text-green-600">없음</span>;
+                          ? <span className="text-yellow-600 font-semibold">역기능 가능성</span>
+                          : <span className="text-green-600">역기능 없음</span>;
                       })()}
                     </td>
                     <td className="px-0.5 py-1 whitespace-nowrap text-sm">

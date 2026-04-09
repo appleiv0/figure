@@ -4,6 +4,14 @@ import useStore from "../../../store";
 const Result = () => {
   const response = useStore((state: any) => state.response);
 
+  if (!response || !response.message) {
+    return (
+      <div className="h-screen w-full z-20 text-center font-bold relative flex flex-col justify-center">
+        <h2 className="text-2xl">결과를 불러오는 중입니다...</h2>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="h-screen w-full z-20 text-center font-bold relative flex flex-col justify-center">

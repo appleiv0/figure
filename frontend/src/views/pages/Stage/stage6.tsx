@@ -10,26 +10,45 @@ import SelectedCard4Family from "../../../components/molecules/Widget/SelectedCa
 import Header from "../../../components/organisms/Header";
 import useStore from "../../../store";
 import ButtonEnd from "../../../components/molecules/Widget/ButtonEnd";
+import { getItemLocalStorage } from "../../../utils/helper";
+import { USER } from "../../../constants/common.constant";
+import { useState, useEffect } from "react";
 
 const Stage6 = () => {
   const location = useLocation();
-  const chooseAnimal = useStore((state: any) => state.chooseAnimal);
-  const setChooseAnimal = useStore((state: any) => state.setChooseAnimal);
+  const [showContent, setShowContent] = useState(false);
   const selectedFamily = useStore((state: any) => state.selectedFamily);
   const selectedFamilyJosa = useStore((state: any) => state.selectedFamilyJosa);
-  const selectedCardsNew6 = useStore((state: any) => state.selectedCardsNew6);
-  const botName = selectedFamily[0];
+  const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
+
+  const userInfo = getItemLocalStorage(USER) || { kidname: '' };
+
+  // Filter out the kid's own name from the family list for stage6
+  const familyForStage6 = selectedFamily.filter((name: string) => name !== userInfo.kidname);
+  const familyJosaForStage6 = selectedFamilyJosa.filter((_: any, i: number) => selectedFamily[i] !== userInfo.kidname);
+
+  const botName = familyForStage6[0];
+  const botJosa = familyJosaForStage6[0];
+
+  useEffect(() => {
+    // Set currentIndex to the first non-kid family member
+    const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== userInfo.kidname);
+    if (firstNonKidIndex >= 0) {
+      setCurrentIndex(firstNonKidIndex);
+    }
+  }, []);
 
   const handleChooseAnimal = () => {
-    setChooseAnimal(true);
+    setShowContent(true);
   };
 
-  const selectedFamilyWidgets = selectedFamily.map(
+  const selectedFamilyWidgets = familyForStage6.map(
     (family: any, index: number) => ({
       widgetName: `SelectedCard4Family_${family}`,
-      widgetFunc: (props: any) => (
-        <SelectedCard4Family {...props} selected={selectedCardsNew6[index]} />
-      ),
+      widgetFunc: (props: any) => {
+        const currentCardsNew6 = (useStore.getState() as any).selectedCardsNew6;
+        return <SelectedCard4Family {...props} selected={currentCardsNew6[index]} />;
+      },
     })
   );
 
@@ -37,7 +56,7 @@ const Stage6 = () => {
     initialMessages: [
       createChatBotMessage(
         `${botName}${
-          selectedFamilyJosa[0] === 1 ? "은" : "는"
+          botJosa === 1 ? "은" : "는"
         } 너를 무슨 동물로 고를 것 같니?`,
         {
           widget: `ChooseAnimal4Family`,
@@ -64,7 +83,7 @@ const Stage6 = () => {
   return (
     <>
       <Header />
-      {!chooseAnimal && (
+      {!showContent && (
         <Intro
           children={
             <>
@@ -80,7 +99,7 @@ const Stage6 = () => {
           handleChooseAnimal={handleChooseAnimal}
         />
       )}
-      {chooseAnimal && (
+      {showContent && (
         <>
           <div className="container mx-auto">
             {location.pathname.endsWith("/stage5") && (

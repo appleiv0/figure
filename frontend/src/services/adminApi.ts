@@ -6,7 +6,7 @@ const api = axios.create({
   baseURL: API_BASE,
   headers: {
     "Content-Type": "application/json",
-    "X-Admin-Key": import.meta.env.VITE_ADMIN_API_KEY || "change-this-in-production",
+    "X-Admin-Key": import.meta.env.VITE_ADMIN_API_KEY || "",
   },
 });
 
@@ -43,6 +43,8 @@ export interface Session {
   }>;
   aiEvaluation?: string;
   familyType?: string;
+  currentStep?: number;
+  loginCode?: string;
   abuse?: Record<string, number>;
   tension?: string;
   abuser?: Record<string, number>;
@@ -125,6 +127,24 @@ export const adminApi = {
   getUsers: async (): Promise<{ users: Array<{ email: string; name: string; organization: string; sessionCount: number; lastUsed: string }> }> => {
     const response = await api.get("/admin/users");
     return response.data;
+  },
+
+  // Create user (admin only)
+  createUser: async (email: string, name: string, organization: string) => {
+    const res = await api.post("/admin/users", { email, name, organization });
+    return res.data;
+  },
+
+  // Delete user (admin only)
+  deleteUser: async (email: string) => {
+    const res = await api.post("/admin/users/delete", { email });
+    return res.data;
+  },
+
+  // Update user (admin only)
+  updateUser: async (email: string, data: { name?: string; organization?: string; credits?: number }) => {
+    const res = await api.put("/admin/users/update", { email, ...data });
+    return res.data;
   },
 
   // Get sessions by counselor email (public endpoint - no admin key)
@@ -220,6 +240,54 @@ export const adminApi = {
   // Mark evaluations as notified (public API)
   markEvaluationNotified: async (receiptNos: any[]): Promise<{ success: boolean }> => {
     const response = await axios.post(`${API_BASE}/public/mark-evaluation-notified`, { receiptNos });
+    return response.data;
+  },
+
+  // Generate AI clinical interpretation
+  generateInterpretation: async (receiptNo: string) => {
+    const res = await api.post(`/admin/sessions/${receiptNo}/interpretation`);
+    return res.data;
+  },
+
+  // Save therapist interpretation
+  saveTherapistInterpretation: async (receiptNo: string, interpretation: string) => {
+    const res = await api.put(`/admin/sessions/${receiptNo}/interpretation`, { interpretation });
+    return res.data;
+  },
+
+  // Get interpretation
+  getInterpretation: async (receiptNo: string) => {
+    const res = await api.get(`/admin/sessions/${receiptNo}/interpretation`);
+    return res.data;
+  },
+
+  // Get super users list
+  getSuperUsers: async (): Promise<{ superUsers: string[] }> => {
+    const response = await api.get("/admin/super-users");
+    return response.data;
+  },
+
+  // Update super user (add/remove)
+  updateSuperUser: async (email: string, action: "add" | "remove"): Promise<{ success: boolean; superUsers: string[] }> => {
+    const response = await api.put("/admin/super-users", { email, action });
+    return response.data;
+  },
+
+  // Get super users (public API - no admin key)
+  getPublicSuperUsers: async (): Promise<{ superUsers: string[] }> => {
+    const response = await axios.get(`${API_BASE}/public/super-users`);
+    return response.data;
+  },
+
+  // Get app settings (admin)
+  getSettings: async (): Promise<{ showResultToUser: boolean }> => {
+    const response = await api.get("/admin/settings");
+    return response.data;
+  },
+
+  // Update app settings (admin)
+  updateSettings: async (settings: { showResultToUser?: boolean }): Promise<{ success: boolean; showResultToUser?: boolean }> => {
+    const response = await api.put("/admin/settings", settings);
     return response.data;
   },
 };

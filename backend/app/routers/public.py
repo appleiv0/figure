@@ -31,6 +31,27 @@ router = APIRouter(
 )
 
 
+def _infer_step(session: dict) -> int:
+    """Infer current step from session data"""
+    figures = session.get("figures", {})
+    has_canvas = bool(session.get("canvasImage"))
+    has_positions = bool(session.get("positions", {}).get("figures"))
+
+    if has_positions or has_canvas:
+        return 7  # completed doll placement → ending
+    if figures.get("6") and len(figures["6"]) > 0:
+        return 6  # stage6 done → doll placement
+    if figures.get("5") and len(figures["5"]) > 0:
+        return 5  # stage5 done
+    if figures.get("3") and len(figures["3"]) > 0:
+        return 4  # stage3 done → stage4
+    if figures.get("2") and len(figures["2"]) > 0:
+        return 3  # stage2 done → stage3
+    if figures.get("1") and len(figures["1"]) > 0:
+        return 2  # stage1 done → stage2
+    return 0
+
+
 def _hash_password(password: str) -> str:
     """Hash a password using SHA-256."""
     return hashlib.sha256(password.encode()).hexdigest()
@@ -58,6 +79,26 @@ def _verify_password(input_password: str, stored_password: str, collection=None,
 
 
 @router.post(
+    "/save-step",
+    description="Save current step progress",
+    response_class=JSONResponse,
+)
+def save_step(req: dict = Body(...)):
+    """Save the current step to the session for resume capability"""
+    receipt_no = req.get("receiptNo")
+    step = req.get("currentStep")
+    if receipt_no is None or step is None:
+        raise HTTPException(status_code=400, detail="receiptNo and currentStep required")
+
+    collection = get_sessions_collection()
+    result = collection.update_one(
+        {"$or": [{"receiptNo": receipt_no}, {"receiptNo": str(receipt_no)}, {"receiptNo": int(receipt_no) if str(receipt_no).isdigit() else receipt_no}]},
+        {"$set": {"currentStep": step}}
+    )
+    return {"success": result.modified_count > 0}
+
+
+@router.post(
     "/validate-code",
     description="Validate a login code (no auth required)",
     response_class=JSONResponse,
@@ -78,7 +119,25 @@ def validate_code(req: ValidateCodeRequest):
             sessions_col = get_sessions_collection()
             session = sessions_col.find_one({"receiptNo": session_receipt_no})
             if session and session.get("status") == "completed":
-                return ValidateCodeResponse(valid=False, message="이미 완료된 세션의 코드입니다.")
+                # 완료된 세션도 이어하기(인형배치 재시도) 허용
+                resume_org_c = code_doc.get("organization", "")
+                resume_name_c = code_doc.get("counselorName", "")
+                if not resume_org_c or not resume_name_c:
+                    users_col_c = get_users_collection()
+                    user_c = users_col_c.find_one({"email": code_doc.get("counselorEmail")})
+                    if user_c:
+                        if not resume_org_c:
+                            resume_org_c = user_c.get("organization", "")
+                        if not resume_name_c:
+                            resume_name_c = user_c.get("name", "")
+                return ValidateCodeResponse(
+                    valid=True,
+                    counselorEmail=code_doc.get("counselorEmail"),
+                    counselorName=resume_name_c,
+                    organization=resume_org_c,
+                    used=True,
+                    sessionReceiptNo=session_receipt_no,
+                )
             # 미완료 세션 → 이어하기 가능 (organization 보완)
             resume_org = code_doc.get("organization", "")
             resume_name = code_doc.get("counselorName", "")
@@ -153,7 +212,13 @@ def use_code(req: UseCodeRequest):
     )
 
     if result is not None:
-        # Successfully claimed the code
+        # Successfully claimed the code - also save loginCode to session
+        if req.receiptNo:
+            sessions_col = get_sessions_collection()
+            sessions_col.update_one(
+                {"receiptNo": str(req.receiptNo)},
+                {"$set": {"loginCode": req.code}},
+            )
         return UseCodeResponse(success=True, message="코드가 사용 처리되었습니다.")
 
     # Code wasn't claimed - either doesn't exist, already used, or expired
@@ -403,6 +468,31 @@ def mark_evaluation_notified(req: MarkEvaluationNotifiedRequest):
     return {"success": True}
 
 
+@router.get("/super-users", response_class=JSONResponse)
+def get_super_users_public():
+    """Get list of super user emails (public)"""
+    from app.database.mongodb import get_database
+    db = get_database()
+    settings = db["app_settings"].find_one({"_id": "global"})
+    default_super_users = ["appleiv@gmail.com", "a33351702@gmail.com", "beratung@hansei.ac.kr", "kaft2960@gmail.com"]
+    super_users = settings.get("superUsers", default_super_users) if settings else default_super_users
+    return {"superUsers": super_users}
+
+
+@router.get(
+    "/settings/show-result",
+    description="Check if results should be shown to users",
+    response_class=JSONResponse,
+)
+def get_show_result_setting():
+    """Public endpoint to check if test results should be shown"""
+    from app.database.mongodb import get_database
+    db = get_database()
+    settings = db["app_settings"].find_one({"_id": "global"})
+    show = settings.get("showResultToUser", True) if settings else True
+    return {"showResultToUser": show}
+
+
 @router.post(
     "/auto-save-canvas",
     description="Auto-save canvas screenshot during doll placement",
@@ -448,6 +538,11 @@ def complete_session(req: dict = Body(...)):
             kid_name = session.get("kid", {}).get("name", "아동")
             receipt_no_int = int(receipt_no) if str(receipt_no).isdigit() else receipt_no
             controller_figure.get_Report(kid_name, receipt_no_int)
+            # Also save inferred step
+            session = collection.find_one(receipt_no_query)
+            if session:
+                step = _infer_step(session)
+                collection.update_one(receipt_no_query, {"$set": {"currentStep": step}})
     except Exception as e:
         print(f"Score calculation error for {receipt_no}: {e}")
 
@@ -484,7 +579,9 @@ def get_my_session(receipt_no: str, email: str = Query(...)):
         raise HTTPException(status_code=403, detail="Access denied")
 
     from app.routers.admin import serialize_session
-    return {"session": serialize_session(session)}
+    from app.utils.session_token import generate_session_token
+    session_token = generate_session_token(str(session.get("receiptNo", "")))
+    return {"session": serialize_session(session), "sessionToken": session_token}
 
 
 @router.get(
