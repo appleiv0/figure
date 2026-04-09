@@ -10,15 +10,11 @@ import { useSaveChat } from "../../../services/hooks/hookChatbot";
 
 const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
   const selectedCards = useStore((state: any) => state.selectedCards);
-  const selectedFamily = useStore((state: any) => state.selectedFamily);
-  const currentIndex = useStore((state: any) => state.currentIndex);
-  const selectedFamilyJosa = useStore((state: any) => state.selectedFamilyJosa);
   const setMessageUser = useStore((state: any) => state.setMessageUser);
   const currentStep = useStore((state: any) => state.currentStep); void currentStep;
-  const figure = useStore((state: any) => state.figure);
   const setFigure = useStore((state: any) => state.setFigure);
 
-  const [count, setCount] = useState(0);
+  const [, setCount] = useState(0);
   const countRef = useRef(0);
   const [stage1CardIndex, setStage1CardIndex] = useState(0);
   const [stage2CardIndex, setStage2CardIndex] = useState(0);

@@ -86,7 +86,7 @@ const Landing = () => {
         // 이미 사용된 코드이고 세션이 있으면 → 이어하기
         if (result.used && result.sessionReceiptNo) {
           try {
-            const sessionData = await adminApi.getMySession(String(result.sessionReceiptNo), result.counselorEmail || "");
+            const sessionData = await adminApi.getMySession(String(result.sessionReceiptNo), result.counselorEmail || "") as any;
             const session = sessionData.session;
 
             if (session) {
