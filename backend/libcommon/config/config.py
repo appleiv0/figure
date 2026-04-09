@@ -4,7 +4,7 @@ from libcommon.utils.Logger import Logger, LOG_FILE_WHEN, LoggerLevel
 import pathlib
 import dotenv
 
-dotenv.load_dotenv(dotenv.find_dotenv())
+dotenv.load_dotenv(dotenv.find_dotenv(), override=True)
 
 HOST = "0.0.0.0"
 PORT = os.environ["PORT"]
