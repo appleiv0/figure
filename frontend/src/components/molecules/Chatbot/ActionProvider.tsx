@@ -412,10 +412,14 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
     const freshJosa5 = useStore.getState().selectedFamilyJosa as number[];
     if (nextIndex < freshFam5.length) {
       const currentAllCards = useStore.getState().selectedCards as any[];
+      const figureStore = useStore.getState().figure as any[];
       const nextCard = currentAllCards[nextIndex];
+      // selectedCards가 비어있으면 figure store에서 stage3 동물 찾기
+      const nextAnimal = nextCard?.figure || figureStore?.find((f: any) => f.relation === freshFam5[nextIndex])?.figure || "";
+      const nextJosa = nextCard?.josa ?? (nextAnimal ? 1 : 0);
       const botMessage2 = createChatBotMessage(
         `${freshFam5[nextIndex]}${freshJosa5[nextIndex] === 1 ? "은" : "는"
-        } ${nextCard?.figure || ""}${nextCard?.josa === 1 ? "이었" : "였"
+        } ${nextAnimal}${nextJosa === 1 ? "이었" : "였"
         }는데, 어떤 동물이 되었으면 좋겠어?`,
         {
           widget: "ChooseAnimal4Family",

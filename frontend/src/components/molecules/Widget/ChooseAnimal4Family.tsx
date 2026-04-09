@@ -8,8 +8,6 @@ import { useLocation } from "react-router-dom";
 const ChooseAnimal4Family = (props: any) => {
   const selectedCards = useStore((state: any) => state.selectedCards);
   const setSelectedCards = useStore((state: any) => state.setSelectedCards);
-  const selectedFamily = useStore((state: any) => state.selectedFamily);
-  const currentIndex = useStore((state: any) => state.currentIndex);
   const selectedCardsNew = useStore((state: any) => state.selectedCardsNew);
   const setSelectedCardsNew = useStore(
     (state: any) => state.setSelectedCardsNew
@@ -34,12 +32,13 @@ const ChooseAnimal4Family = (props: any) => {
 
   const handleCircleClick = (index: number, name: string, img: string, josa: number) => {
     setCheckedState(checkedState.map((_bool, j) => j === index));
+    const freshState = useStore.getState() as any;
     setCurrentFigure({
       figure: name,
       index,
       img,
       josa,
-      relation: selectedFamily[currentIndex],
+      relation: freshState.selectedFamily[freshState.currentIndex],
       selectedAt: new Date().toISOString(),
     });
   };

@@ -19,8 +19,12 @@ const Stage5 = () => {
   const selectedFamilyJosa = useStore((state: any) => state.selectedFamilyJosa);
   const setFigure = useStore((state: any) => state.setFigure);
 
-  const botName = selectedFamily[0];
-  const prevFigure = selectedCards?.[0]?.figure || "";
+  // figure store에서 stage3 동물 정보 가져오기 (selectedCards가 비었을 때 fallback)
+  const figureStore = useStore((state: any) => state.figure) as any[];
+  const botName = selectedFamily?.[0] || "";
+  const prevFigure = selectedCards?.[0]?.figure
+    || figureStore?.find((f: any) => f.relation === selectedFamily?.[0])?.figure
+    || "";
 
   useEffect(() => {
     setFigure([]);
