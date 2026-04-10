@@ -661,16 +661,14 @@ const AdminSessionDetail = () => {
         {/* Canvas Image + AI 평가 - 관리자만 */}
         {isAdmin && <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex justify-between items-center mb-4">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h2 className="text-xl font-bold">인형 배치 이미지</h2>
-              {(session as any).dollInstances?.length > 0 && (
-                <button
-                  onClick={() => setShowScenePreview(true)}
-                  className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                >
-                  3D {session.canvasImage ? '재생성' : '생성'}
-                </button>
-              )}
+              <button
+                onClick={() => setShowScenePreview(true)}
+                style={{ padding: '6px 16px', backgroundColor: '#16a34a', color: 'white', borderRadius: 8, fontSize: 14, border: 'none', cursor: 'pointer' }}
+              >
+                3D 재생성
+              </button>
             </div>
             {session.canvasImage ? (
               <div className="flex justify-center">
