@@ -69,10 +69,16 @@ card_directions = {
 
 
 def _generate_login_code():
-    """Generate a unique 6-character alphanumeric code"""
+    """Generate a unique 6-character alphanumeric code (with DB duplicate check)"""
     import string as _string
+    from app.database.mongodb import get_login_codes_collection
     chars = _string.ascii_uppercase + _string.digits
-    return ''.join(random.choices(chars, k=6))
+    codes_col = get_login_codes_collection()
+    for _ in range(100):
+        code = ''.join(random.choices(chars, k=6))
+        if not codes_col.find_one({"code": code}):
+            return code
+    return ''.join(random.choices(chars, k=6))  # fallback
 
 
 def create_receipt_number(counselor: dict, kid: dict, agree: bool, counselor_email: str = None):
