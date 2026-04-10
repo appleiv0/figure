@@ -1,6 +1,5 @@
 import asyncio
 import threading
-from collections import defaultdict
 
 
 class SessionLockManager:
@@ -11,8 +10,8 @@ class SessionLockManager:
     """
 
     def __init__(self):
-        self._async_locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
-        self._sync_locks: dict[str, threading.Lock] = defaultdict(threading.Lock)
+        self._async_locks: dict[str, asyncio.Lock] = {}
+        self._sync_locks: dict[str, threading.Lock] = {}
         self._manager_lock = threading.Lock()
 
     def get_async_lock(self, receipt_no: str) -> asyncio.Lock:

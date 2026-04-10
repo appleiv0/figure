@@ -99,7 +99,7 @@ def create_receipt_number(res: JSONResponse, req: ReceiptNoReq):
     response_model=SetFigureRes,
 )
 def set_figure(res: JSONResponse, req: SetFigureReq):
-    if req.sessionToken and not verify_session_token(str(req.receiptNo), req.sessionToken):
+    if not req.sessionToken or not verify_session_token(str(req.receiptNo), req.sessionToken):
         return response(res, status_error.FORBIDDEN)
     err, ret = controller_figure.set_figure(
         req.kidName, req.receiptNo, req.stage, req.figures
@@ -123,7 +123,7 @@ def set_figure(res: JSONResponse, req: SetFigureReq):
     response_model=SetPostionRes,
 )
 def set_position(res: JSONResponse, req: SetPostionReq):
-    if req.sessionToken and not verify_session_token(str(req.receiptNo), req.sessionToken):
+    if not req.sessionToken or not verify_session_token(str(req.receiptNo), req.sessionToken):
         return response(res, status_error.FORBIDDEN)
     err, ret = controller_figure.set_position(
         req.kidName, req.receiptNo, req.centerH, req.centerV, req.figures,
@@ -143,7 +143,7 @@ def set_position(res: JSONResponse, req: SetPostionReq):
     response_model=LLMCompletionRes,
 )
 async def llm_completion(res: JSONResponse, req: LLMCompletionReq):
-    if req.sessionToken and not verify_session_token(str(req.receiptNo), req.sessionToken):
+    if not req.sessionToken or not verify_session_token(str(req.receiptNo), req.sessionToken):
         return response(res, status_error.FORBIDDEN)
     err, ret = await controller_figure.llm_completion(
         req.kidName, req.receiptNo, req.count, req.relation, req.message
