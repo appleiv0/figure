@@ -700,11 +700,46 @@ const AdminSessionDetail = () => {
                         onClick={async () => {
                           setCapturingSaving(true);
                           try {
-                            // Find the canvas inside the 3D scene
-                            const canvas = document.querySelector('.scene-preview-container canvas') as HTMLCanvasElement;
-                            if (canvas) {
-                              const dataUrl = canvas.toDataURL('image/png');
-                              // Save to backend
+                            const glCanvas = document.querySelector('.scene-preview-container canvas') as HTMLCanvasElement;
+                            if (glCanvas) {
+                              const w = glCanvas.width;
+                              const h = glCanvas.height;
+                              const offscreen = document.createElement('canvas');
+                              offscreen.width = w;
+                              offscreen.height = h;
+                              const ctx = offscreen.getContext('2d');
+                              if (ctx) {
+                                ctx.drawImage(glCanvas, 0, 0);
+                                // Draw role labels from Html overlays
+                                const labels = document.querySelectorAll('.scene-preview-container [style*="pointer-events: none"]');
+                                if (labels.length > 0) {
+                                  labels.forEach((label) => {
+                                    const el = label as HTMLElement;
+                                    const parent = el.closest('div[style*="position"]') as HTMLElement;
+                                    if (!parent) return;
+                                    const rect = parent.getBoundingClientRect();
+                                    const canvasRect = glCanvas.getBoundingClientRect();
+                                    const sx = ((rect.left + rect.width/2 - canvasRect.left) / canvasRect.width) * w;
+                                    const sy = ((rect.top + rect.height/2 - canvasRect.top) / canvasRect.height) * h;
+                                    const text = el.textContent || '';
+                                    const fontSize = Math.round(w / 25);
+                                    ctx.font = `bold ${fontSize}px sans-serif`;
+                                    ctx.textAlign = 'center';
+                                    const metrics = ctx.measureText(text);
+                                    const pw = 8, ph = 4;
+                                    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+                                    const rx = sx - metrics.width/2 - pw;
+                                    const ry = sy - fontSize/2 - ph;
+                                    ctx.beginPath();
+                                    if (ctx.roundRect) ctx.roundRect(rx, ry, metrics.width + pw*2, fontSize + ph*2, 6);
+                                    else ctx.rect(rx, ry, metrics.width + pw*2, fontSize + ph*2);
+                                    ctx.fill();
+                                    ctx.fillStyle = '#ffffff';
+                                    ctx.fillText(text, sx, sy + fontSize/3);
+                                  });
+                                }
+                              }
+                              const dataUrl = offscreen.toDataURL('image/png');
                               const apiBase = (import.meta as any).env?.VITE_ENV_API_BACKEND_DOMAIN || '/api';
                               await fetch(`${apiBase}/admin/sessions/${receiptNo}/canvas`, {
                                 method: 'PUT',
@@ -714,7 +749,6 @@ const AdminSessionDetail = () => {
                                 },
                                 body: JSON.stringify({ canvasImage: dataUrl })
                               });
-                              // Update local state
                               setSession({ ...session!, canvasImage: dataUrl } as any);
                               setShowScenePreview(false);
                               alert('인형 배치 이미지가 저장되었습니다.');
