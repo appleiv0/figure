@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useParams, Link } from "react-router-dom";
 import { adminApi, Session } from "../../../services/adminApi";
 import { formatLLMConversation } from "../../../utils/pdfReport";
 import { DollInstanceData } from "../../../types/figure3d";
+
+const DeskScene3D = lazy(() => import("../../../components/organisms/DeskScene3D"));
 
 const AdminSessionDetail = () => {
   const { receiptNo } = useParams<{ receiptNo: string }>();
@@ -18,6 +20,8 @@ const AdminSessionDetail = () => {
   const [generatingInterpretation, setGeneratingInterpretation] = useState(false);
   const [savingInterpretation, setSavingInterpretation] = useState(false);
   const isAdmin = sessionStorage.getItem("adminAuth") === "true";
+  const [showScenePreview, setShowScenePreview] = useState(false);
+  const [capturingSaving, setCapturingSaving] = useState(false);
 
   // Check authorization for AI interpretation
   const counselorAuth = sessionStorage.getItem("counselorAuth");
@@ -673,6 +677,80 @@ const AdminSessionDetail = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <p>이미지가 저장되지 않았습니다.</p>
+                {(session as any).dollInstances?.length > 0 && (
+                  <button
+                    onClick={() => setShowScenePreview(true)}
+                    className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    3D 인형 배치 재생성
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* 3D Scene Preview Modal */}
+            {showScenePreview && (session as any).dollInstances?.length > 0 && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+                <div className="bg-white rounded-xl p-4 w-[90vw] max-w-[800px]" style={{ height: "70vh" }}>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-bold">3D 인형 배치 미리보기</h3>
+                    <div className="flex gap-2">
+                      <button
+                        disabled={capturingSaving}
+                        onClick={async () => {
+                          setCapturingSaving(true);
+                          try {
+                            // Find the canvas inside the 3D scene
+                            const canvas = document.querySelector('.scene-preview-container canvas') as HTMLCanvasElement;
+                            if (canvas) {
+                              const dataUrl = canvas.toDataURL('image/png');
+                              // Save to backend
+                              const apiBase = (import.meta as any).env?.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+                              await fetch(`${apiBase}/admin/sessions/${receiptNo}/canvas`, {
+                                method: 'PUT',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'X-Admin-Key': 'change-this-in-production'
+                                },
+                                body: JSON.stringify({ canvasImage: dataUrl })
+                              });
+                              // Update local state
+                              setSession({ ...session!, canvasImage: dataUrl } as any);
+                              setShowScenePreview(false);
+                              alert('인형 배치 이미지가 저장되었습니다.');
+                            } else {
+                              alert('캔버스를 찾을 수 없습니다. 잠시 후 다시 시도해주세요.');
+                            }
+                          } catch (e) {
+                            alert('저장에 실패했습니다.');
+                          } finally {
+                            setCapturingSaving(false);
+                          }
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+                      >
+                        {capturingSaving ? '저장 중...' : '캡처 & 저장'}
+                      </button>
+                      <button
+                        onClick={() => setShowScenePreview(false)}
+                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                      >
+                        닫기
+                      </button>
+                    </div>
+                  </div>
+                  <div className="scene-preview-container" style={{ height: "calc(100% - 50px)" }}>
+                    <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-500">3D 씬 로딩 중...</div>}>
+                      <DeskScene3D
+                        onNext={() => {}}
+                        phase={1}
+                        onPhaseChange={() => {}}
+                        readOnly={true}
+                        initialDollInstances={(session as any).dollInstances}
+                      />
+                    </Suspense>
+                  </div>
+                </div>
               </div>
             )}
           </div>

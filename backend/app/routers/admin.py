@@ -385,6 +385,23 @@ def save_evaluation(receipt_no: str, body: dict = Body(...)):
     }
 
 
+@router.put(
+    "/sessions/{receipt_no}/canvas",
+    description="Save or regenerate canvas image for a session",
+    response_class=JSONResponse,
+)
+def save_canvas_image(receipt_no: str, body: dict = Body(...)):
+    """Save a canvas image (base64) for a session"""
+    session = session_repository.find_by_receipt_no(receipt_no)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    canvas_image = body.get("canvasImage", "")
+    if not canvas_image:
+        raise HTTPException(status_code=400, detail="canvasImage is required")
+    success = session_repository.update_canvas_image(receipt_no, canvas_image)
+    return {"success": success, "message": "이미지가 저장되었습니다." if success else "저장에 실패했습니다."}
+
+
 @router.post(
     "/sessions/{receipt_no}/interpretation",
     description="Generate AI clinical interpretation for a session",
