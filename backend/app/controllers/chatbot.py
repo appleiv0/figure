@@ -94,7 +94,7 @@ def prompt_engineering_2(data_json: dict, relation: str):
             m_6 = f"- {f_3}{get_josa(f_3)['이/가']} 생각하는 {figure['figure']}:{figure['message']}.\n- {f_6}{get_josa(f_6)['은/는']} 나야."
     m_llm = f"- {data_json['llmCompletion'][relation]['bot'][0]}: {data_json['llmCompletion'][relation]['user'][0]}"
 
-    prompt_prefix = "다음 내용을 참고해서 나에게 짧은 위로의 말을 해줘."
+    prompt_prefix = "다음 내용을 참고해서 나에게 짧은 위로의 말을 해줘. '나'는 대화하고 있는 아이 본인이야. 동물 이름이 아니라 '너'로 지칭해줘."
     prompt_scenario = "\n".join([m_3, m_6])
     prompt_suffix = m_llm
 
@@ -143,7 +143,7 @@ def prompt_engineering_1(data_json: dict, relation: str):
             # m_6 = f"- {f_3}{get_josa(f_3)['이/가']} 생각하는 나:{figure['figure']}, {figure['message']}."
             m_6 = f"- {f_3}{get_josa(f_3)['이/가']} 생각하는 {figure['figure']}:{figure['message']}.\n- {f_6}{get_josa(f_6)['은/는']} 나야."
 
-    prompt_prefix = "다음 두 가지 내용을 참고하고, 간단한 피드백과 질문을 해줘."
+    prompt_prefix = "다음 두 가지 내용을 참고하고, 간단한 피드백과 질문을 해줘. '나'는 대화하고 있는 아이 본인이야. 동물 이름이 아니라 '너'로 지칭해줘."
     prompt_scenario = "\n".join([m_3, m_6])
     prompt_suffix = ""
 
