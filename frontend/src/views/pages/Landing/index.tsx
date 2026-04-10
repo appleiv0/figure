@@ -136,7 +136,21 @@ const Landing = () => {
                 step = 6; // Go to doll placement stage
               }
 
-              (useStore.getState() as any).setCurrentStep(step);
+              const store = useStore.getState() as any;
+              store.setCurrentStep(step);
+
+              // Restore selectedFamily from session figures
+              if (figures["3"]?.length > 0) {
+                const familyNames = figures["3"].map((f: any) => f.relation).filter((r: string) => r !== kidname);
+                store.setSelectedFamily(familyNames);
+                store.setSelectedFamilyJosa(familyNames.map((name: string) => {
+                  const last = name.charAt(name.length - 1);
+                  if (last >= "\uAC00" && last <= "\uD7A3") {
+                    return (last.charCodeAt(0) - 0xAC00) % 28 > 0 ? 1 : 0;
+                  }
+                  return 1;
+                }));
+              }
 
               // 스토어 업데이트가 반영된 후 네비게이션
               setTimeout(async () => {
