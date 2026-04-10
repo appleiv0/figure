@@ -665,7 +665,7 @@ const AdminSessionDetail = () => {
               <h2 className="text-xl font-bold">인형 배치 이미지</h2>
               <button
                 onClick={() => setShowScenePreview(true)}
-                style={{ padding: '6px 16px', backgroundColor: '#16a34a', color: 'white', borderRadius: 8, fontSize: 14, border: 'none', cursor: 'pointer' }}
+                style={{ padding: '8px 20px', backgroundColor: '#0066cc', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 'bold', border: '2px solid #004999', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
               >
                 3D 재생성
               </button>
@@ -743,7 +743,7 @@ const AdminSessionDetail = () => {
                     <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-500">3D 씬 로딩 중...</div>}>
                       <DeskScene3D
                         onNext={() => {}}
-                        phase={1}
+                        phase={2}
                         onPhaseChange={() => {}}
                         readOnly={true}
                         initialDollInstances={(session as any).dollInstances}
