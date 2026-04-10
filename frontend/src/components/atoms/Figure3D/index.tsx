@@ -281,17 +281,15 @@ export default function Figure3D({
       </group>
 
       {/* 역할 라벨 (머리 바로 위) */}
-      <Html position={[0, dollHeight + poseScale * 0.05, 0]} center sprite>
+      <Html position={[0, dollHeight + poseScale * (renderedPose === 'sit' ? 0.4 : 0.05), 0]} center sprite zIndexRange={[1, 0]}>
         <div style={{
-          color: '#fff',
+          color: '#222',
           fontSize: 13,
           fontWeight: 'bold',
           fontFamily: 'sans-serif',
           whiteSpace: 'nowrap',
-          background: 'rgba(0,0,0,0.5)',
-          padding: '2px 8px',
-          borderRadius: 4,
-          textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+          textShadow: '0 0 3px rgba(255,255,255,0.9), 0 0 6px rgba(255,255,255,0.7)',
+          pointerEvents: 'none',
         }}>{figureType.label}</div>
       </Html>
 
