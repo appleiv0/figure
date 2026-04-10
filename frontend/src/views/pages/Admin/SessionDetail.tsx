@@ -661,7 +661,17 @@ const AdminSessionDetail = () => {
         {/* Canvas Image + AI 평가 - 관리자만 */}
         {isAdmin && <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">인형 배치 이미지</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">인형 배치 이미지</h2>
+              {(session as any).dollInstances?.length > 0 && (
+                <button
+                  onClick={() => setShowScenePreview(true)}
+                  className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                >
+                  3D {session.canvasImage ? '재생성' : '생성'}
+                </button>
+              )}
+            </div>
             {session.canvasImage ? (
               <div className="flex justify-center">
                 <img
@@ -677,16 +687,6 @@ const AdminSessionDetail = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <p>이미지가 저장되지 않았습니다.</p>
-              </div>
-            )}
-            {(session as any).dollInstances?.length > 0 && (
-              <div className="text-center mt-3">
-                <button
-                  onClick={() => setShowScenePreview(true)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                >
-                  3D 인형 배치 {session.canvasImage ? '재생성' : '생성'}
-                </button>
               </div>
             )}
 
