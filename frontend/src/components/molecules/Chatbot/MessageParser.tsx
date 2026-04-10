@@ -5,13 +5,15 @@ const MessageParser = ({ children, actions }: any) => {
   const { checker } = children.props.state;
   const parse = (message: any) => {
     if (checker === "first") {
-      actions.afterInitMessage(message);
-      const state = useStore.getState() as any;
-      const idx = state.currentIndex;
-      const cards = state.selectedCards;
+      // IMPORTANT: capture idx BEFORE afterInitMessage which increments currentIndex
+      const preState = useStore.getState() as any;
+      const idx = preState.currentIndex;
+      const cards = preState.selectedCards;
       const card = cards[idx] || cards[cards.length - 1];
-      const family = state.selectedFamily[idx];
+      const family = preState.selectedFamily[idx];
+      actions.afterInitMessage(message);
       if (card) {
+        const postState = useStore.getState() as any;
         const newFigure: any = {
           figure: card.figure,
           message: message,
@@ -20,17 +22,19 @@ const MessageParser = ({ children, actions }: any) => {
         if (card.selectedAt) {
           newFigure.selectedAt = card.selectedAt;
         }
-        state.setFigure([...state.figure, newFigure]);
+        postState.setFigure([...postState.figure, newFigure]);
       }
     }
     if (checker === "second") {
-      actions.afterInitMessage5(message);
-      const state = useStore.getState() as any;
-      const idx = state.currentIndex;
-      const cards = state.selectedCardsNew;
+      // IMPORTANT: capture idx BEFORE afterInitMessage5 which increments currentIndex
+      const preState = useStore.getState() as any;
+      const idx = preState.currentIndex;
+      const cards = preState.selectedCardsNew;
       const card = cards[idx] || cards[cards.length - 1];
-      const family = state.selectedFamily[idx];
+      const family = preState.selectedFamily[idx];
+      actions.afterInitMessage5(message);
       if (card) {
+        const postState = useStore.getState() as any;
         const newFigure: any = {
           figure: card.figure,
           message: message,
@@ -39,7 +43,7 @@ const MessageParser = ({ children, actions }: any) => {
         if (card.selectedAt) {
           newFigure.selectedAt = card.selectedAt;
         }
-        state.setFigure([...state.figure, newFigure]);
+        postState.setFigure([...postState.figure, newFigure]);
       }
     }
     if (checker === "stage6_1") {
