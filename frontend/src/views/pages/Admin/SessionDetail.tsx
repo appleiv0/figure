@@ -677,14 +677,16 @@ const AdminSessionDetail = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <p>이미지가 저장되지 않았습니다.</p>
-                {(session as any).dollInstances?.length > 0 && (
-                  <button
-                    onClick={() => setShowScenePreview(true)}
-                    className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    3D 인형 배치 재생성
-                  </button>
-                )}
+              </div>
+            )}
+            {(session as any).dollInstances?.length > 0 && (
+              <div className="text-center mt-3">
+                <button
+                  onClick={() => setShowScenePreview(true)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                >
+                  3D 인형 배치 {session.canvasImage ? '재생성' : '생성'}
+                </button>
               </div>
             )}
 
