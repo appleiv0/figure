@@ -20,9 +20,11 @@ const Stage3 = () => {
   const botName = selectedFamily[0];
 
   const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
+  const setSelectedCards = useStore((state: any) => state.setSelectedCards);
   useEffect(() => {
     setFigure([]);
     setCurrentIndex(0);
+    setSelectedCards([]);
   }, []);
 
   const handleChooseAnimal = () => {

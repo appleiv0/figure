@@ -279,9 +279,8 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
   };
 
   const initialAction = (selectedFigures: any) => {
-    // 항상 마지막에 추가된 동물을 사용 (currentIndex 클로저 문제 방지)
-    const latestFigure = selectedFigures[selectedFigures.length - 1];
     const idx = useStore.getState().currentIndex;
+    const latestFigure = selectedFigures[idx] || selectedFigures[selectedFigures.length - 1];
     const family = (useStore.getState().selectedFamily as string[])[idx];
     const familyJosa = (useStore.getState().selectedFamilyJosa as number[])[idx];
 
@@ -363,8 +362,8 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
     }
   };
   const initialAction5 = (selectedFigures: any) => {
-    const latestFigure = selectedFigures[selectedFigures.length - 1];
     const idx = useStore.getState().currentIndex;
+    const latestFigure = selectedFigures[idx] || selectedFigures[selectedFigures.length - 1];
     const family = (useStore.getState().selectedFamily as string[])[idx];
     const familyJosa = (useStore.getState().selectedFamilyJosa as number[])[idx];
 
@@ -456,8 +455,8 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
   };
 
   const initialAction6 = (selectedFigures: any) => {
-    const latestFigure = selectedFigures[selectedFigures.length - 1];
     const idx = useStore.getState().currentIndex;
+    const latestFigure = selectedFigures[idx] || selectedFigures[selectedFigures.length - 1];
     const family = (useStore.getState().selectedFamily as string[])[idx];
     const familyJosa = (useStore.getState().selectedFamilyJosa as number[])[idx];
 

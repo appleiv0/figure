@@ -58,10 +58,12 @@ const Stage6 = () => {
   const botName = familyForStage6[0] || "";
   const botJosa = familyJosaForStage6[0];
 
+  const setSelectedCardsNew6 = useStore((state: any) => state.setSelectedCardsNew6);
   useEffect(() => {
     // Set currentIndex to the first non-kid family member
     const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== userInfo.kidname);
     setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex : 0);
+    setSelectedCardsNew6([]);
   }, [selectedFamily]);
 
   const handleChooseAnimal = () => {

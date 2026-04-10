@@ -58,9 +58,11 @@ const Stage5 = () => {
     || "";
 
   const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
+  const setSelectedCardsNew = useStore((state: any) => state.setSelectedCardsNew);
   useEffect(() => {
     setFigure([]);
     setCurrentIndex(0);
+    setSelectedCardsNew([]);
   }, []);
 
   const handleChooseAnimal = () => {
