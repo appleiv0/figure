@@ -61,9 +61,7 @@ const Stage6 = () => {
   useEffect(() => {
     // Set currentIndex to the first non-kid family member
     const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== userInfo.kidname);
-    if (firstNonKidIndex >= 0) {
-      setCurrentIndex(firstNonKidIndex);
-    }
+    setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex : 0);
   }, [selectedFamily]);
 
   const handleChooseAnimal = () => {

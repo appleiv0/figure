@@ -19,8 +19,10 @@ const Stage3 = () => {
   const setFigure = useStore((state: any) => state.setFigure);
   const botName = selectedFamily[0];
 
+  const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
   useEffect(() => {
     setFigure([]);
+    setCurrentIndex(0);
   }, []);
 
   const handleChooseAnimal = () => {

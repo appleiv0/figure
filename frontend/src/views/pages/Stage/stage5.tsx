@@ -57,8 +57,10 @@ const Stage5 = () => {
     || figureStore?.find((f: any) => f.relation === selectedFamily?.[0])?.figure
     || "";
 
+  const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
   useEffect(() => {
     setFigure([]);
+    setCurrentIndex(0);
   }, []);
 
   const handleChooseAnimal = () => {
