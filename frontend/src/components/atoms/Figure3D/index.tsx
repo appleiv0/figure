@@ -245,10 +245,12 @@ export default function Figure3D({
       isDraggingRef.current = true;
       gl.domElement.style.cursor = 'grabbing';
     } else {
+      // 모바일/인앱 브라우저: 150ms로 빠르게 드래그 시작
       longPressTimer.current = setTimeout(() => {
         isDraggingRef.current = true;
         gl.domElement.style.cursor = 'grabbing';
-      }, 500);
+        if (navigator.vibrate) navigator.vibrate(20);
+      }, 150);
     }
   };
 

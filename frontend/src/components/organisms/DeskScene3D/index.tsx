@@ -505,12 +505,14 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
 
   return (
     <div style={{ width: '100dvw', height: '100dvh', background: '#1a1a1a', display: 'flex', justifyContent: 'center' }}>
-    <div ref={canvasRef} style={{ width: '100%', maxWidth: isDesktop ? 430 : undefined, height: '100dvh', background: '#f0ebe3', touchAction: 'none', position: 'relative' }}>
+    <div ref={canvasRef} style={{ width: '100%', maxWidth: isDesktop ? 430 : undefined, height: '100dvh', background: '#f0ebe3', touchAction: 'none', position: 'relative', overflow: 'hidden' }}
+      onTouchMove={(e) => e.preventDefault()}>
       <Canvas
         shadows
         dpr={[1, 2]}
         onPointerMissed={handleDeselectAll}
-        style={{ width: '100%', height: '100%', background: '#f0ebe3' }}
+        style={{ width: '100%', height: '100%', background: '#f0ebe3', touchAction: 'none' }}
+        onTouchMove={(e) => e.preventDefault()}
         gl={{
           antialias: true,
           preserveDrawingBuffer: true,
