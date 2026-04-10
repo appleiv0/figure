@@ -921,8 +921,8 @@ def get_report(kidName: str, receiptNo: int):
     if not data_json:
         return "기능적입니다.", {}
 
-    abuse = data_json["abuse"]
-    if abuse["1"] + abuse["2"] + abuse["3"] == 3:
+    abuse = data_json.get("abuse", {})
+    if abuse.get("1", 0) + abuse.get("2", 0) + abuse.get("3", 0) == 3:
         message = "역기능 있습니다."
 
     # 긴장/갈등 판정: stage 5 + stage 6
