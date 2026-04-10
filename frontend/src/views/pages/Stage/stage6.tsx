@@ -22,12 +22,40 @@ const Stage6 = () => {
   const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
 
   const userInfo = getItemLocalStorage(USER) || { kidname: '' };
+  const setSelectedFamily = useStore((state: any) => state.setSelectedFamily);
+  const setSelectedFamilyJosa = useStore((state: any) => state.setSelectedFamilyJosa);
+
+  // Restore selectedFamily from backend if empty (session resume case)
+  useEffect(() => {
+    if (selectedFamily.length === 0 && userInfo.receiptNo) {
+      const apiBase = (import.meta as any).env?.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+      fetch(`${apiBase}/admin/sessions/${userInfo.receiptNo}`, {
+        headers: { "X-Admin-Key": "change-this-in-production" }
+      })
+        .then(r => r.json())
+        .then(data => {
+          const figs3 = data?.session?.figures?.["3"] || [];
+          if (figs3.length > 0) {
+            const names = figs3.map((f: any) => f.relation).filter((r: string) => r !== userInfo.kidname);
+            setSelectedFamily(names);
+            setSelectedFamilyJosa(names.map((name: string) => {
+              const last = name.charAt(name.length - 1);
+              if (last >= "\uAC00" && last <= "\uD7A3") {
+                return (last.charCodeAt(0) - 0xAC00) % 28 > 0 ? 1 : 0;
+              }
+              return 1;
+            }));
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   // Filter out the kid's own name from the family list for stage6
   const familyForStage6 = selectedFamily.filter((name: string) => name !== userInfo.kidname);
   const familyJosaForStage6 = selectedFamilyJosa.filter((_: any, i: number) => selectedFamily[i] !== userInfo.kidname);
 
-  const botName = familyForStage6[0];
+  const botName = familyForStage6[0] || "";
   const botJosa = familyJosaForStage6[0];
 
   useEffect(() => {
@@ -36,7 +64,7 @@ const Stage6 = () => {
     if (firstNonKidIndex >= 0) {
       setCurrentIndex(firstNonKidIndex);
     }
-  }, []);
+  }, [selectedFamily]);
 
   const handleChooseAnimal = () => {
     setShowContent(true);

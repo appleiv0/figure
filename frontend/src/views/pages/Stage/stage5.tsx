@@ -10,6 +10,8 @@ import ChooseAnimal4Family from "../../../components/molecules/Widget/ChooseAnim
 import SelectedCard4Family from "../../../components/molecules/Widget/SelectedCard4Family";
 import Header from "../../../components/organisms/Header";
 import useStore from "../../../store";
+import { getItemLocalStorage } from "../../../utils/helper";
+import { USER } from "../../../constants/common.constant";
 
 const Stage5 = () => {
   const location = useLocation();
@@ -17,7 +19,36 @@ const Stage5 = () => {
   const selectedFamily = useStore((state: any) => state.selectedFamily);
   const selectedCards = useStore((state: any) => state.selectedCards);
   const selectedFamilyJosa = useStore((state: any) => state.selectedFamilyJosa);
+  const setSelectedFamily = useStore((state: any) => state.setSelectedFamily);
+  const setSelectedFamilyJosa = useStore((state: any) => state.setSelectedFamilyJosa);
   const setFigure = useStore((state: any) => state.setFigure);
+  const userInfo = getItemLocalStorage(USER) || { kidname: '', receiptNo: '' };
+
+  // Restore selectedFamily from backend if empty (session resume case)
+  useEffect(() => {
+    if (selectedFamily.length === 0 && userInfo.receiptNo) {
+      const apiBase = (import.meta as any).env?.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+      fetch(`${apiBase}/admin/sessions/${userInfo.receiptNo}`, {
+        headers: { "X-Admin-Key": "change-this-in-production" }
+      })
+        .then(r => r.json())
+        .then(data => {
+          const figs3 = data?.session?.figures?.["3"] || [];
+          if (figs3.length > 0) {
+            const names = figs3.map((f: any) => f.relation).filter((r: string) => r !== userInfo.kidname);
+            setSelectedFamily(names);
+            setSelectedFamilyJosa(names.map((name: string) => {
+              const last = name.charAt(name.length - 1);
+              if (last >= "\uAC00" && last <= "\uD7A3") {
+                return (last.charCodeAt(0) - 0xAC00) % 28 > 0 ? 1 : 0;
+              }
+              return 1;
+            }));
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   // figure store에서 stage3 동물 정보 가져오기 (selectedCards가 비었을 때 fallback)
   const figureStore = useStore((state: any) => state.figure) as any[];
