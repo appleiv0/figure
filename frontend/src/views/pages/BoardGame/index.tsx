@@ -1222,7 +1222,7 @@ const BoardGame = () => {
                   </div>
 
                   {/* 문항별 점수 */}
-                  <div style={{ background: "#f8f9ff", borderRadius: 12, padding: "20px 24px", border: "1px solid #e8eaf6" }}>
+                  <div data-pdf-hide style={{ background: "#f8f9ff", borderRadius: 12, padding: "20px 24px", border: "1px solid #e8eaf6" }}>
                     <h4 style={{ fontSize: 15, fontWeight: 700, color: "#5c6bc0", marginBottom: 16 }}>문항별 점수</h4>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
                       {EVAL_SECTIONS.map((s) => {
