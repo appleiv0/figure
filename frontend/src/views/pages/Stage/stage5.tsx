@@ -10,8 +10,6 @@ import ChooseAnimal4Family from "../../../components/molecules/Widget/ChooseAnim
 import SelectedCard4Family from "../../../components/molecules/Widget/SelectedCard4Family";
 import Header from "../../../components/organisms/Header";
 import useStore from "../../../store";
-import { getItemLocalStorage } from "../../../utils/helper";
-import { USER } from "../../../constants/common.constant";
 
 const Stage5 = () => {
   const location = useLocation();
@@ -19,36 +17,7 @@ const Stage5 = () => {
   const selectedFamily = useStore((state: any) => state.selectedFamily);
   const selectedCards = useStore((state: any) => state.selectedCards);
   const selectedFamilyJosa = useStore((state: any) => state.selectedFamilyJosa);
-  const setSelectedFamily = useStore((state: any) => state.setSelectedFamily);
-  const setSelectedFamilyJosa = useStore((state: any) => state.setSelectedFamilyJosa);
   const setFigure = useStore((state: any) => state.setFigure);
-  const userInfo = getItemLocalStorage(USER) || { kidname: '', receiptNo: '' };
-
-  // Restore selectedFamily from backend if empty (session resume case)
-  useEffect(() => {
-    if (selectedFamily.length === 0 && userInfo.receiptNo) {
-      const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
-      fetch(`${apiBase}/admin/sessions/${userInfo.receiptNo}`, {
-        headers: { "X-Admin-Key": "change-this-in-production" }
-      })
-        .then(r => r.json())
-        .then(data => {
-          const figs3 = data?.session?.figures?.["3"] || [];
-          if (figs3.length > 0) {
-            const names = figs3.map((f: any) => f.relation).filter((r: string) => r !== '나' && r !== userInfo.kidname);
-            setSelectedFamily(names);
-            setSelectedFamilyJosa(names.map((name: string) => {
-              const last = name.charAt(name.length - 1);
-              if (last >= "\uAC00" && last <= "\uD7A3") {
-                return (last.charCodeAt(0) - 0xAC00) % 28 > 0 ? 1 : 0;
-              }
-              return 1;
-            }));
-          }
-        })
-        .catch(() => {});
-    }
-  }, []);
 
   // figure store에서 stage3 동물 정보 가져오기 (selectedCards가 비었을 때 fallback)
   const figureStore = useStore((state: any) => state.figure) as any[];
@@ -60,23 +29,16 @@ const Stage5 = () => {
   const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
   const setSelectedCardsNew = useStore((state: any) => state.setSelectedCardsNew);
   const selectedCardsNew = useStore((state: any) => state.selectedCardsNew);
+  const currentMemberIndex = useStore((state: any) => state.currentMemberIndex);
+
   useEffect(() => {
     if (selectedCardsNew.length === 0) {
       setFigure([]);
       setSelectedCardsNew([]);
-      // 이미 완료된 가족 수만큼 currentIndex 설정 (이어하기)
-      if (userInfo.receiptNo) {
-        const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
-        fetch(`${apiBase}/admin/sessions/${userInfo.receiptNo}`, {
-          headers: { "X-Admin-Key": "change-this-in-production" }
-        }).then(r => r.json()).then(data => {
-          const done = data?.session?.figures?.["5"]?.length || 0;
-          setCurrentIndex(done > 0 ? done : 0);
-        }).catch(() => setCurrentIndex(0));
-      } else {
-        setCurrentIndex(0);
-      }
+      // store.currentMemberIndex는 Layout의 자동 hydrate에서 백엔드 _infer_progress 결과로 설정됨
+      setCurrentIndex(currentMemberIndex || 0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChooseAnimal = () => {

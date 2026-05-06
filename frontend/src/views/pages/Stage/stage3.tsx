@@ -29,23 +29,16 @@ const Stage3 = () => {
   const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
   const setSelectedCards = useStore((state: any) => state.setSelectedCards);
   const selectedCards = useStore((state: any) => state.selectedCards);
+  const currentMemberIndex = useStore((state: any) => state.currentMemberIndex);
+
   useEffect(() => {
     if (selectedCards.length === 0) {
       setFigure([]);
       setSelectedCards([]);
-      // 이미 완료된 가족 수만큼 currentIndex 설정 (이어하기)
-      if (userInfo.receiptNo) {
-        const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
-        fetch(`${apiBase}/admin/sessions/${userInfo.receiptNo}`, {
-          headers: { "X-Admin-Key": "change-this-in-production" }
-        }).then(r => r.json()).then(data => {
-          const done = data?.session?.figures?.["3"]?.length || 0;
-          setCurrentIndex(done > 0 ? done : 0);
-        }).catch(() => setCurrentIndex(0));
-      } else {
-        setCurrentIndex(0);
-      }
+      // store.currentMemberIndex는 Layout의 자동 hydrate에서 백엔드 _infer_progress 결과로 설정됨
+      setCurrentIndex(currentMemberIndex || 0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChooseAnimal = () => {

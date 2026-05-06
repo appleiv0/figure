@@ -22,34 +22,6 @@ const Stage6 = () => {
   const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
 
   const userInfo = getItemLocalStorage(USER) || { kidname: '' };
-  const setSelectedFamily = useStore((state: any) => state.setSelectedFamily);
-  const setSelectedFamilyJosa = useStore((state: any) => state.setSelectedFamilyJosa);
-
-  // Restore selectedFamily from backend if empty (session resume case)
-  useEffect(() => {
-    if (selectedFamily.length === 0 && userInfo.receiptNo) {
-      const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
-      fetch(`${apiBase}/admin/sessions/${userInfo.receiptNo}`, {
-        headers: { "X-Admin-Key": "change-this-in-production" }
-      })
-        .then(r => r.json())
-        .then(data => {
-          const figs3 = data?.session?.figures?.["3"] || [];
-          if (figs3.length > 0) {
-            const names = figs3.map((f: any) => f.relation).filter((r: string) => r !== '나' && r !== userInfo.kidname);
-            setSelectedFamily(names);
-            setSelectedFamilyJosa(names.map((name: string) => {
-              const last = name.charAt(name.length - 1);
-              if (last >= "\uAC00" && last <= "\uD7A3") {
-                return (last.charCodeAt(0) - 0xAC00) % 28 > 0 ? 1 : 0;
-              }
-              return 1;
-            }));
-          }
-        })
-        .catch(() => {});
-    }
-  }, []);
 
   // Filter out self from the family list for stage6 ("나" or legacy kidname)
   const familyForStage6 = selectedFamily.filter((name: string) => name !== '나' && name !== '나' && name !== userInfo.kidname);
@@ -60,33 +32,18 @@ const Stage6 = () => {
 
   const setSelectedCardsNew6 = useStore((state: any) => state.setSelectedCardsNew6);
   const selectedCardsNew6 = useStore((state: any) => state.selectedCardsNew6);
+  const currentMemberIndex = useStore((state: any) => state.currentMemberIndex);
+
   useEffect(() => {
     if (selectedCardsNew6.length === 0) {
       setSelectedCardsNew6([]);
-      // 이미 완료된 가족 수만큼 currentIndex 설정 (이어하기)
-      if (userInfo.receiptNo) {
-        const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
-        fetch(`${apiBase}/admin/sessions/${userInfo.receiptNo}`, {
-          headers: { "X-Admin-Key": "change-this-in-production" }
-        }).then(r => r.json()).then(data => {
-          const done = data?.session?.figures?.["6"]?.length || 0;
-          if (done > 0) {
-            // 완료된 수 + 본인 인덱스 보정
-            const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== '나' && name !== userInfo.kidname);
-            setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex + done : done);
-          } else {
-            const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== '나' && name !== userInfo.kidname);
-            setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex : 0);
-          }
-        }).catch(() => {
-          const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== '나' && name !== userInfo.kidname);
-          setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex : 0);
-        });
-      } else {
-        const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== '나' && name !== userInfo.kidname);
-        setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex : 0);
-      }
+      // 본인이 selectedFamily에 섞여 있을 수 있으니 본인 아닌 첫 인덱스 찾고 memberIndex 더함
+      const isNonSelf = (name: string) => name !== '나' && name !== userInfo.kidname;
+      const firstNonSelfIndex = selectedFamily.findIndex(isNonSelf);
+      const baseIndex = firstNonSelfIndex >= 0 ? firstNonSelfIndex : 0;
+      setCurrentIndex(baseIndex + (currentMemberIndex || 0));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFamily]);
 
   const handleChooseAnimal = () => {
