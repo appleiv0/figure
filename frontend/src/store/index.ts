@@ -136,7 +136,6 @@ const useStore = create(
       partialize: (state: any) => ({
         currentStep: state.currentStep,
         currentMemberIndex: state.currentMemberIndex,
-        lastHydratedReceiptNo: state.lastHydratedReceiptNo,
         selectedFamily: state.selectedFamily,
         selectedFamilyJosa: state.selectedFamilyJosa,
         response: state.response,
