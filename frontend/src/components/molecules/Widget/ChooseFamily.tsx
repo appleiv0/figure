@@ -123,15 +123,19 @@ const ChooseFamily = () => {
     setIsShow(false);
   };
 
-  const handleStartChat = async () => {
+  const handleStartChat = async (familyForBackend?: string[]) => {
     if (location.pathname.endsWith("/stage1") || location.pathname.endsWith("/stage2")) {
       try {
-        const response = await fetchFigure({
+        const payload: any = {
           kidName: userInfo.kidname,
           receiptNo: `${userInfo.receiptNo}`,
           stage: `${currentStep}`,
           figures: figure,
-        });
+        };
+        if (familyForBackend && familyForBackend.length > 0) {
+          payload.family_members = familyForBackend;
+        }
+        const response = await fetchFigure(payload);
 
         if (!response) {
           console.error("API Error: No response received");
@@ -228,8 +232,8 @@ const ChooseFamily = () => {
     setSelectedFamily(newFamily);
     setSelectedFamilyJosa(newJosa);
 
-    // 백엔드 호출 + 다음 stage 이동
-    await handleStartChat();
+    // 백엔드 호출 + family_members와 함께 push
+    await handleStartChat(newFamily);
   };
 
   return (
