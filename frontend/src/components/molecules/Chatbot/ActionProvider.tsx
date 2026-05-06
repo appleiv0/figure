@@ -408,10 +408,13 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
     saveChatMessage("user", message, family);
     saveChatMessage("bot", `그렇구나. 그래서 ${family}${familyJosa === 1 ? "이" : "가"} ${currentFig.figure}${currentFig.josa === 1 ? "이" : "가"} 되었으면 좋겠구나.`, family);
 
-    const nextIndex = idx + 1;
-
+    // Find next family member that is NOT self ("나" or kidname)
     const freshFam5 = useStore.getState().selectedFamily as string[];
     const freshJosa5 = useStore.getState().selectedFamilyJosa as number[];
+    let nextIndex = idx + 1;
+    while (nextIndex < freshFam5.length && (freshFam5[nextIndex] === '나' || freshFam5[nextIndex] === userInfo.kidname)) {
+      nextIndex++;
+    }
     if (nextIndex < freshFam5.length) {
       const currentAllCards = useStore.getState().selectedCards as any[];
       const figureStore = useStore.getState().figure as any[];
