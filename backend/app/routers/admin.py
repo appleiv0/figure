@@ -407,18 +407,18 @@ def save_canvas_image(receipt_no: str, body: dict = Body(...)):
     description="Generate AI clinical interpretation for a session",
     response_class=JSONResponse,
 )
-async def generate_session_interpretation(receipt_no: str):
-    """Generate AI interpretation using Claude API"""
+async def generate_session_interpretation(receipt_no: str, model: str = "claude"):
+    """Generate AI interpretation using Claude or GPT API"""
     session = session_repository.find_by_receipt_no(receipt_no)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    interpretation = await generate_interpretation(session)
+    interpretation = await generate_interpretation(session, model=model)
     if not interpretation:
         raise HTTPException(status_code=500, detail="AI 해석 생성에 실패했습니다")
 
     session_repository.update_session(receipt_no, {"aiInterpretation": interpretation})
-    return {"interpretation": interpretation}
+    return {"interpretation": interpretation, "model": model}
 
 
 @router.put(
@@ -757,6 +757,9 @@ def generate_code(req: GenerateCodeRequest):
 
     # Save login code
     codes_col = get_login_codes_collection()
+    expires_at = None
+    if req.expiryHours is not None and req.expiryHours > 0:
+        expires_at = now + timedelta(hours=req.expiryHours)
     codes_col.insert_one({
         "code": code,
         "counselorEmail": req.email,
@@ -764,6 +767,8 @@ def generate_code(req: GenerateCodeRequest):
         "organization": req.organization,
         "used": False,
         "createdAt": now,
+        "expiresAt": expires_at,
+        "expiryHours": req.expiryHours,
         "usedAt": None,
         "sessionReceiptNo": None,
     })

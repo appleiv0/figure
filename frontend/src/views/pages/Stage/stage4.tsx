@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import Intro4 from "../../../components/molecules/Intro/Intro4";
 import Header from "../../../components/organisms/Header";
 import DeskScene3D from "../../../components/organisms/DeskScene3D";
@@ -79,22 +78,27 @@ const Stage4 = () => {
     // Save step to backend for resume capability (fire and forget)
     try {
       const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
-      axios.post(`${apiBase}/public/save-step`, { receiptNo: userInfo?.receiptNo, currentStep: 7 });
+      fetch(`${apiBase}/public/save-step`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ receiptNo: userInfo?.receiptNo, currentStep: 7 }) }).catch(() => {});
     } catch {}
 
     // Check if results should be shown
     try {
       const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
-      const settingsRes = await axios.get(`${apiBase}/public/settings/show-result`);
-      if (settingsRes.data?.showResultToUser) {
+      const settingsRes = await fetch(`${apiBase}/public/settings/show-result`).then(r => r.json());
+      if (settingsRes?.showResultToUser) {
         // 결과 페이지로 가기 전에 리포트 데이터를 먼저 가져옴
         try {
-          const reportRes = await axios.post(`${apiBase}/getReport`, {
-            kidName: userInfo?.kidname,
-            receiptNo: `${userInfo?.receiptNo}`,
+          const reportRes = await fetch(`${apiBase}/getReport`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              kidName: userInfo?.kidname,
+              receiptNo: Number(userInfo?.receiptNo),
+            }),
           });
-          if (reportRes.data) {
-            (useStore.getState() as any).setResponse(reportRes.data);
+          const reportData = await reportRes.json();
+          if (reportData) {
+            (useStore.getState() as any).setResponse(reportData);
           }
         } catch (e) {
           console.error("Report fetch error:", e);

@@ -27,7 +27,7 @@ const Stage5 = () => {
   // Restore selectedFamily from backend if empty (session resume case)
   useEffect(() => {
     if (selectedFamily.length === 0 && userInfo.receiptNo) {
-      const apiBase = (import.meta as any).env?.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+      const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
       fetch(`${apiBase}/admin/sessions/${userInfo.receiptNo}`, {
         headers: { "X-Admin-Key": "change-this-in-production" }
       })
@@ -59,10 +59,24 @@ const Stage5 = () => {
 
   const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
   const setSelectedCardsNew = useStore((state: any) => state.setSelectedCardsNew);
+  const selectedCardsNew = useStore((state: any) => state.selectedCardsNew);
   useEffect(() => {
-    setFigure([]);
-    setCurrentIndex(0);
-    setSelectedCardsNew([]);
+    if (selectedCardsNew.length === 0) {
+      setFigure([]);
+      setSelectedCardsNew([]);
+      // 이미 완료된 가족 수만큼 currentIndex 설정 (이어하기)
+      if (userInfo.receiptNo) {
+        const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+        fetch(`${apiBase}/admin/sessions/${userInfo.receiptNo}`, {
+          headers: { "X-Admin-Key": "change-this-in-production" }
+        }).then(r => r.json()).then(data => {
+          const done = data?.session?.figures?.["5"]?.length || 0;
+          setCurrentIndex(done > 0 ? done : 0);
+        }).catch(() => setCurrentIndex(0));
+      } else {
+        setCurrentIndex(0);
+      }
+    }
   }, []);
 
   const handleChooseAnimal = () => {

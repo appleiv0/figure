@@ -715,7 +715,7 @@ const AdminDashboard = () => {
                       type="number"
                       value={creditInput}
                       onChange={(e) => setCreditInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && creditInput && handleCreditSave()}
+                      onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && creditInput && handleCreditSave()}
                       style={{ width: "80px", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "14px" }}
                       autoFocus
                     />
@@ -779,7 +779,7 @@ const AdminDashboard = () => {
                       onChange={(e) => setNewUserOrg(e.target.value)}
                       placeholder="소속 기관명을 입력해주세요"
                       onKeyDown={(e) => {
-                        if (e.key === "Enter" && !addUserLoading && newUserEmail.trim()) {
+                        if (e.key === "Enter" && !e.nativeEvent.isComposing && !addUserLoading && newUserEmail.trim()) {
                           handleAddUser();
                         }
                       }}
@@ -1077,7 +1077,7 @@ const AdminDashboard = () => {
                                 : "bg-yellow-100 text-yellow-800"
                             }`}
                           >
-                            {session.status === "completed" ? "완료" : "진행중"}
+                            {session.status === "completed" ? "완료" : `진행중 (${(session as any).currentStep ?? 0}/7)`}
                           </span>
                         </td>
                         <td className="px-0.5 py-1 whitespace-nowrap text-sm">

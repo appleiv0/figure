@@ -5,7 +5,6 @@ import DeskModel from '../../atoms/DeskModel';
 import Figure3D from '../../atoms/Figure3D';
 import { FigureInstance, Figure3DType, FiguresConfig, DollPose, DollInstanceData, DOLL_MODELS } from '../../../types/figure3d';
 import * as THREE from 'three';
-import axios from 'axios';
 import { getItemLocalStorage } from '../../../utils/helper';
 import { USER } from '../../../constants/common.constant';
 
@@ -157,40 +156,49 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
     const glCanvas = glRef.current.domElement;
     const w = glCanvas.width;
     const h = glCanvas.height;
+
+    // 세로(portrait) 비율이면 4:3 가로 비율로 크롭
+    const targetRatio = 4 / 3;
+    const currentRatio = w / h;
+    let cropX = 0, cropY = 0, cropW = w, cropH = h;
+    if (currentRatio < targetRatio) {
+      cropH = Math.round(w / targetRatio);
+      cropY = Math.round((h - cropH) / 2);
+    }
+
     const offscreen = document.createElement('canvas');
-    offscreen.width = w;
-    offscreen.height = h;
+    offscreen.width = cropW;
+    offscreen.height = cropH;
     const ctx = offscreen.getContext('2d');
     if (ctx && cameraRef.current) {
-      ctx.drawImage(glCanvas, 0, 0);
+      ctx.drawImage(glCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
       const camera = cameraRef.current as THREE.PerspectiveCamera;
       instancesRef.current.forEach(inst => {
-        const labelHeight = inst.figureType.size * (inst.pose === 'sit' ? 1.6 : 2.15);
-        const pos3 = new THREE.Vector3(inst.position.x, labelHeight, inst.position.z);
+        // Figure3D와 동일한 높이 계산: poseScale = size * scaleMultiplier
+        const scaleMultiplier = inst.pose === 'sit' ? 0.4 : 0.5;
+        const poseScale = inst.figureType.size * scaleMultiplier;
+        const dollHeight = poseScale * (inst.pose === 'sit' ? 1.6 : 2.1);
+        const labelY = dollHeight + poseScale * (inst.pose === 'sit' ? 0.4 : 0.05);
+        const pos3 = new THREE.Vector3(inst.position.x, labelY, inst.position.z);
         pos3.project(camera);
         const sx = (pos3.x * 0.5 + 0.5) * w;
-        const sy = (-pos3.y * 0.5 + 0.5) * h;
-        const fontSize = Math.round(w / 30);
+        const sy = (-pos3.y * 0.5 + 0.5) * h - cropY;
+        const fontSize = Math.round(cropW / 25);
         ctx.font = `bold ${fontSize}px sans-serif`;
         ctx.textAlign = 'center';
         const text = inst.figureType.label;
-        const metrics = ctx.measureText(text);
-        const pw = 6, ph = 4;
-        ctx.fillStyle = 'rgba(0,0,0,0.55)';
-        const rx = sx - metrics.width / 2 - pw;
-        const ry = sy - fontSize / 2 - ph;
-        const rw = metrics.width + pw * 2;
-        const rh = fontSize + ph * 2;
-        ctx.beginPath();
-        if (ctx.roundRect) { ctx.roundRect(rx, ry, rw, rh, 6); } else { ctx.rect(rx, ry, rw, rh); }
-        ctx.fill();
-        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = 'rgba(255,255,255,0.9)';
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = '#222';
         ctx.fillText(text, sx, sy + fontSize / 3);
+        ctx.fillText(text, sx, sy + fontSize / 3);
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
       });
       return offscreen.toDataURL('image/png');
     }
     if (ctx) {
-      ctx.drawImage(glCanvas, 0, 0);
+      ctx.drawImage(glCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
       return offscreen.toDataURL('image/png');
     }
     return glCanvas.toDataURL('image/png');
@@ -208,7 +216,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
         if (!canvasImage) return;
 
         const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
-        await axios.post(`${apiBase}/public/auto-save-canvas`, { receiptNo, canvasImage });
+        await fetch(`${apiBase}/public/auto-save-canvas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ receiptNo, canvasImage }) });
       } catch (e) {
         // Silent fail for auto-save
       }
@@ -398,34 +406,27 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
         if (ctx && cameraRef.current) {
           ctx.drawImage(glCanvas, 0, 0);
           const camera = cameraRef.current as THREE.PerspectiveCamera;
-          // 각 인형 위에 라벨 그리기
+          // 각 인형 위에 라벨 그리기 (Figure3D와 동일한 높이 계산)
           instancesRef.current.forEach(inst => {
-            const labelHeight = inst.figureType.size * (inst.pose === 'sit' ? 1.6 : 2.15);
-            const pos3 = new THREE.Vector3(inst.position.x, labelHeight, inst.position.z);
+            const scaleMultiplier = inst.pose === 'sit' ? 0.4 : 0.5;
+            const poseScale = inst.figureType.size * scaleMultiplier;
+            const dollHeight = poseScale * (inst.pose === 'sit' ? 1.6 : 2.1);
+            const labelY = dollHeight + poseScale * (inst.pose === 'sit' ? 0.4 : 0.05);
+            const pos3 = new THREE.Vector3(inst.position.x, labelY, inst.position.z);
             pos3.project(camera);
             const sx = (pos3.x * 0.5 + 0.5) * w;
             const sy = (-pos3.y * 0.5 + 0.5) * h;
-            const fontSize = Math.round(w / 30);
+            const fontSize = Math.round(w / 25);
             ctx.font = `bold ${fontSize}px sans-serif`;
             ctx.textAlign = 'center';
             const text = inst.figureType.label;
-            const metrics = ctx.measureText(text);
-            const pw = 6;
-            const ph = 4;
-            ctx.fillStyle = 'rgba(0,0,0,0.55)';
-            const rx = sx - metrics.width / 2 - pw;
-            const ry = sy - fontSize / 2 - ph;
-            const rw = metrics.width + pw * 2;
-            const rh = fontSize + ph * 2;
-            ctx.beginPath();
-            if (ctx.roundRect) {
-              ctx.roundRect(rx, ry, rw, rh, 6);
-            } else {
-              ctx.rect(rx, ry, rw, rh);
-            }
-            ctx.fill();
-            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = 'rgba(255,255,255,0.9)';
+            ctx.shadowBlur = 6;
+            ctx.fillStyle = '#222';
             ctx.fillText(text, sx, sy + fontSize / 3);
+            ctx.fillText(text, sx, sy + fontSize / 3);
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
           });
           canvasImage = offscreen.toDataURL('image/png');
         } else {
@@ -504,8 +505,8 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
   }, [selectedId, handlePositionChange, handleDragEnd]);
 
   return (
-    <div style={{ width: '100dvw', height: '100dvh', background: '#1a1a1a', display: 'flex', justifyContent: 'center' }}>
-    <div ref={canvasRef} style={{ width: '100%', maxWidth: isDesktop ? 430 : undefined, height: '100dvh', background: '#f0ebe3', touchAction: 'none', position: 'relative', overflow: 'hidden' }}
+    <div style={{ width: readOnly ? '100%' : '100dvw', height: readOnly ? '100%' : '100dvh', background: '#f0ebe3', display: 'flex', justifyContent: 'center' }}>
+    <div ref={canvasRef} style={{ width: '100%', maxWidth: isDesktop ? 430 : undefined, height: readOnly ? '100%' : '100dvh', background: '#f0ebe3', touchAction: 'none', position: 'relative', overflow: 'hidden' }}
       onTouchMove={(e) => e.preventDefault()}>
       <Canvas
         shadows
@@ -752,7 +753,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
                   fontFamily: 'sans-serif',
                 }}
                 onKeyDown={e => {
-                  if (e.key === 'Enter' && customRole.trim()) {
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing && customRole.trim()) {
                     handleRoleSelect(customRole.trim());
                   }
                 }}

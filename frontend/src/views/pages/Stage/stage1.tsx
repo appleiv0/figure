@@ -8,9 +8,12 @@ const Stage1 = () => {
   const [showContent, setShowContent] = useState(false);
   const [mountKey, setMountKey] = useState(0);
   const setFigure = useStore((state: any) => state.setFigure);
+  const selectedCards = useStore((state: any) => state.selectedCards);
 
   useEffect(() => {
-    setFigure([]);
+    if (selectedCards.length === 0) {
+      setFigure([]);
+    }
   }, []);
 
   const handleChooseAnimal = () => {

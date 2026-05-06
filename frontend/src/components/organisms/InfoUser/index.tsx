@@ -363,7 +363,7 @@ const InforUser: React.FC = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handlePasswordSubmit()}
+              onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handlePasswordSubmit()}
               placeholder="비밀번호를 입력하세요"
               autoFocus
               style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", marginBottom: "16px" }}

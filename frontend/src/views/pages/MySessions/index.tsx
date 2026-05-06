@@ -14,6 +14,18 @@ const MySessions = () => {
     }
   })();
 
+  // 코드 로그인은 해당 세션만 접근 가능 → my-sessions 차단
+  if (auth?.loginCode && !auth?.isAdmin) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center text-center px-4">
+        <h2 className="text-xl font-bold mb-4">코드 로그인으로는 세션 목록을 볼 수 없습니다.</h2>
+        <button onClick={() => navigate("/login")} className="px-6 py-3 rounded-lg text-white font-semibold" style={{ backgroundColor: "#E8734A" }}>
+          로그인 페이지로 돌아가기
+        </button>
+      </div>
+    );
+  }
+
   const isAdmin = !!auth?.isAdmin;
 
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -28,6 +40,7 @@ const MySessions = () => {
   const [generatedCode, setGeneratedCode] = useState("");
   const [codeGenerating, setCodeGenerating] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
+  const [codeExpiryHours, setCodeExpiryHours] = useState<number | null>(24);
 
   // Password change state
   const [pwModalOpen, setPwModalOpen] = useState(false);
@@ -143,7 +156,7 @@ const MySessions = () => {
     }
     setCodeGenerating(true);
     try {
-      const data = await adminApi.generateCode(auth.email, auth.userName || auth.name || "", auth.userOrganization || auth.organization || "");
+      const data = await adminApi.generateCode(auth.email, auth.userName || auth.name || "", auth.userOrganization || auth.organization || "", codeExpiryHours);
       setGeneratedCode(data.code);
       setCredits(data.credits);
       setCodeModalOpen(true);
@@ -486,6 +499,27 @@ const MySessions = () => {
           >
             {codeGenerating ? "생성 중..." : "일회용 코드 생성"}
           </button>
+          <select
+            value={codeExpiryHours === null ? "none" : String(codeExpiryHours)}
+            onChange={(e) => setCodeExpiryHours(e.target.value === "none" ? null : Number(e.target.value))}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "6px",
+              border: "1px solid #d1d5db",
+              fontSize: "14px",
+              color: "#374151",
+              cursor: "pointer",
+            }}
+          >
+            <option value="6">6시간</option>
+            <option value="12">12시간</option>
+            <option value="24">24시간</option>
+            <option value="48">48시간</option>
+            <option value="72">72시간</option>
+            <option value="168">7일</option>
+            <option value="720">30일</option>
+            <option value="none">무제한</option>
+          </select>
         </div>
 
         {/* Search */}
@@ -496,7 +530,7 @@ const MySessions = () => {
               placeholder="아동 이름 검색"
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleSearch()}
               className="border rounded px-3 py-2"
             />
             <button
@@ -824,7 +858,7 @@ const MySessions = () => {
                   type="password"
                   value={pwConfirm}
                   onChange={(e) => setPwConfirm(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleChangePassword()}
+                  onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleChangePassword()}
                   placeholder="새 비밀번호 확인"
                   style={{ width: "100%", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: "8px", fontSize: "14px", boxSizing: "border-box" }}
                 />

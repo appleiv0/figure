@@ -53,7 +53,7 @@ kid_relation = ["형", "누나", "동생", "언니", "오빠"]
 
 async def request_chatgpt_1(prompt: dict):
     chat_completion = await client.chat.completions.create(
-        messages=prompt, model="gpt-3.5-turbo", max_tokens=200, temperature=0.2
+        messages=prompt, model="gpt-4o-mini", max_tokens=200, temperature=0.2
     )
     completion = chat_completion.choices[0].message.content
     return completion
@@ -61,7 +61,7 @@ async def request_chatgpt_1(prompt: dict):
 
 async def request_chatgpt_2(prompt: dict):
     chat_completion = await client.chat.completions.create(
-        messages=prompt, model="gpt-3.5-turbo", max_tokens=200, temperature=0
+        messages=prompt, model="gpt-4o-mini", max_tokens=200, temperature=0.2
     )
     completion = chat_completion.choices[0].message.content
     return completion
@@ -83,40 +83,35 @@ def prompt_engineering_2(data_json: dict, relation: str):
     f_3 = ""
     for figure in data_json["figures"]["3"]:
         if figure["relation"] == relation:
-            m_3 = f"- {figure['figure']}의 행동:{figure['message']}"
+            m_3 = f"- 아이가 {relation}{get_josa(relation)['을/를']} {figure['figure']}로 표현한 이유: {figure['message']}"
             f_3 = figure["figure"]
     m_6 = ""
     f_6 = ""
     for figure in data_json["figures"]["6"]:
         if figure["relation"] == relation:
             f_6 = figure["figure"]
-            # m_6 = f"- {f_3}{get_josa(f_3)['이/가']} 생각하는 나:{figure['figure']}, {figure['message']}."
-            m_6 = f"- {f_3}{get_josa(f_3)['이/가']} 생각하는 {figure['figure']}:{figure['message']}.\n- {f_6}{get_josa(f_6)['은/는']} 나야."
-    m_llm = f"- {data_json['llmCompletion'][relation]['bot'][0]}: {data_json['llmCompletion'][relation]['user'][0]}"
+            m_6 = f"- {relation}({f_3}){get_josa(f_3)['이/가']} 생각하는 나({f_6}): {figure['message']}"
+    m_llm = f"- 이전 대화: {data_json['llmCompletion'][relation]['bot'][0]}: {data_json['llmCompletion'][relation]['user'][0]}"
 
-    prompt_prefix = "다음 내용을 참고해서 나에게 짧은 위로의 말을 해줘. '나'는 대화하고 있는 아이 본인이야. 동물 이름이 아니라 '너'로 지칭해줘."
+    prompt_prefix = f"다음은 아이가 가족 구성원 '{relation}'{get_josa(relation)['을/를']} 동물로 표현한 내용과 이전 대화야. 이를 참고해서 짧은 위로의 말을 해줘.\n규칙:\n1. 동물 이름 대신 '{relation}'과 '너'를 사용해.\n2. {relation}{get_josa(relation)['이/가']} 너(아이)에게 어떻게 하는지 방향으로 말해."
     prompt_scenario = "\n".join([m_3, m_6])
     prompt_suffix = m_llm
 
     prompt: list[dict[str, str]] = [
         {
             "role": "system",
-            "content": "당신은 친절한 상담사. 질문에 친절하게 답변해줘.",
-        },
-        {
-            "role": "system",
-            "content": "10살 어린이의 친구처럼 친근하게 말해줘.",
+            "content": "당신은 아동 인형치료 전문 상담사. 10살 어린이의 친구처럼 친근하게 위로해줘. 동물 이름이 아닌 가족 호칭(엄마, 아빠 등)과 '너'를 사용해.",
         },
         {
             "role": "user",
-            "content": f"{prompt_prefix}\n토끼는 나를 힘들게 하지 않아. 나를 양처럼 생각하고 옆에 같이 있어줘.",
+            "content": "다음은 아이가 가족 구성원 '엄마'를 동물로 표현한 내용과 이전 대화야. 이를 참고해서 짧은 위로의 말을 해줘.\n규칙:\n1. 동물 이름 대신 '엄마'와 '너'를 사용해.\n2. 엄마가 너(아이)에게 어떻게 하는지 방향으로 말해.\n- 아이가 엄마를 토끼로 표현한 이유: 토끼같이 귀여워요.\n- 엄마(토끼)가 생각하는 나(양): 내가 순해서\n- 이전 대화: 엄마가 너를 힘들게 하지는 않니?: 엄마는 나를 힘들게 하지 않아. 옆에 같이 있어줘.",
         },
-        {"role": "assistant", "content": "그렇게 토끼는 너를 친근하게 생각하고 옆에 있어주는구나."},
+        {"role": "assistant", "content": "엄마가 너를 소중하게 생각하고 옆에 있어주는구나. 정말 다행이다."},
         {
             "role": "user",
-            "content": f"{prompt_prefix}\n돼지때문에 나는 아무것도 못해요. 우리식구 다 힘들어요. 조개는 돼지때문에 아무것도 안하고 돼지 보기 싫어서 딱 닫고 있어요. 돼지가 들어오면 피해요.",
+            "content": "다음은 아이가 가족 구성원 '아빠'를 동물로 표현한 내용과 이전 대화야. 이를 참고해서 짧은 위로의 말을 해줘.\n규칙:\n1. 동물 이름 대신 '아빠'와 '너'를 사용해.\n2. 아빠가 너(아이)에게 어떻게 하는지 방향으로 말해.\n- 아이가 아빠를 돼지로 표현한 이유: 술 쳐먹고 맨날 더러우니까요.\n- 아빠(돼지)가 생각하는 나(조개): 내가 아빠를 무시하니까\n- 이전 대화: 아빠가 너한테 어떻게 할 때 제일 힘들어?: 아빠때문에 아무것도 못해요. 아빠 보기 싫어요.",
         },
-        {"role": "assistant", "content": "그래서 돼지가 조개를 힘들게 하는구나."},
+        {"role": "assistant", "content": "아빠 때문에 많이 힘들었구나. 네 마음이 충분히 이해돼. 너는 잘못한 게 없어."},
         {
             "role": "user",
             "content": "\n".join([prompt_prefix, prompt_scenario, prompt_suffix]),
@@ -133,44 +128,39 @@ def prompt_engineering_1(data_json: dict, relation: str):
     f_3 = ""
     for figure in data_json["figures"]["3"]:
         if figure["relation"] == relation:
-            m_3 = f"- {figure['figure']}의 행동:{figure['message']}"
+            m_3 = f"- 아이가 {relation}{get_josa(relation)['을/를']} {figure['figure']}로 표현한 이유: {figure['message']}"
             f_3 = figure["figure"]
     m_6 = ""
     f_6 = ""
     for figure in data_json["figures"]["6"]:
         if figure["relation"] == relation:
             f_6 = figure["figure"]
-            # m_6 = f"- {f_3}{get_josa(f_3)['이/가']} 생각하는 나:{figure['figure']}, {figure['message']}."
-            m_6 = f"- {f_3}{get_josa(f_3)['이/가']} 생각하는 {figure['figure']}:{figure['message']}.\n- {f_6}{get_josa(f_6)['은/는']} 나야."
+            m_6 = f"- {relation}({f_3}){get_josa(f_3)['이/가']} 생각하는 나({f_6}): {figure['message']}"
 
-    prompt_prefix = "다음 두 가지 내용을 참고하고, 간단한 피드백과 질문을 해줘. '나'는 대화하고 있는 아이 본인이야. 동물 이름이 아니라 '너'로 지칭해줘."
+    prompt_prefix = f"다음은 아이가 가족 구성원 '{relation}'{get_josa(relation)['을/를']} 동물로 표현한 내용과, {relation}{get_josa(relation)['이/가']} 나를 어떤 동물로 볼 것 같은지에 대한 내용이야. 이를 참고해서 간단한 피드백과 질문을 해줘.\n규칙:\n1. 동물 이름 대신 '{relation}'과 '너'를 사용해.\n2. '{relation}이 생각하는 나' 부분의 이유는 {relation}{get_josa(relation)['이/가']} 너를 그렇게 보는 이유야. 이 이유가 너의 행동이나 특성이라면 그에 대한 너의 감정을 물어봐."
     prompt_scenario = "\n".join([m_3, m_6])
     prompt_suffix = ""
 
     prompt: list[dict[str, str]] = [
         {
             "role": "system",
-            "content": "당신은 친절한 상담사. 질문에 친절하게 답변해줘.",
-        },
-        {
-            "role": "system",
-            "content": "10살 어린이의 친구처럼 친근하게 말해줘.",
+            "content": "당신은 아동 인형치료 전문 상담사. 10살 어린이의 친구처럼 친근하게 말해줘. 동물 이름이 아닌 가족 호칭(엄마, 아빠 등)과 '너'를 사용해.",
         },
         {
             "role": "user",
-            "content": f"{prompt_prefix}\n- 상어의 행동: 우리 엄마는 아무도 이길 사람이 없어요.\n- 상어가 생각하는 나: 악어, 내가 자꾸 말썽부리고 대들고 싸우니까",
+            "content": "다음은 아이가 가족 구성원 '엄마'를 동물로 표현한 내용과, 엄마가 나를 어떤 동물로 볼 것 같은지에 대한 내용이야. 이를 참고해서 간단한 피드백과 질문을 해줘.\n규칙:\n1. 동물 이름 대신 '엄마'와 '너'를 사용해.\n2. '엄마가 생각하는 나' 부분의 이유는 엄마가 너를 그렇게 보는 이유야. 이 이유가 너의 행동이나 특성이라면 그에 대한 너의 감정을 물어봐.\n- 아이가 엄마를 상어로 표현한 이유: 우리 엄마는 아무도 이길 사람이 없어요.\n- 엄마(상어)가 생각하는 나(악어): 내가 자꾸 말썽부리고 대들고 싸우니까",
         },
-        {"role": "assistant", "content": "상어가 너를 악어로 보고 어떻게 힘들게 할까?"},
+        {"role": "assistant", "content": "엄마가 너를 그렇게 본다고 생각하는구나. 네가 말썽부리고 대든다고 느끼는 건 어떤 기분이야?"},
         {
             "role": "user",
-            "content": f"{prompt_prefix}\n- 토끼의 행동: 토끼같이 귀여워요.\n- 토끼가 생각하는 나: 양, 내가 양처럼 순하고 우니까.",
+            "content": "다음은 아이가 가족 구성원 '엄마'를 동물로 표현한 내용과, 엄마가 나를 어떤 동물로 볼 것 같은지에 대한 내용이야. 이를 참고해서 간단한 피드백과 질문을 해줘.\n규칙:\n1. 동물 이름 대신 '엄마'와 '너'를 사용해.\n2. '엄마가 생각하는 나' 부분의 이유는 엄마가 너를 그렇게 보는 이유야. 이 이유가 너의 행동이나 특성이라면 그에 대한 너의 감정을 물어봐.\n- 아이가 엄마를 젖소로 표현한 이유: 엄마가 밥을 잘 차려줘서요.\n- 엄마(젖소)가 생각하는 나(양): 내가 순해서",
         },
-        {"role": "assistant", "content": "토끼는 너를 양으로 보고 힘들게 하지는 않니?"},
+        {"role": "assistant", "content": "엄마가 너를 순하다고 생각하는구나. 네가 순하게 행동하는 건 어떤 마음에서 그런 거야?"},
         {
             "role": "user",
-            "content": f"{prompt_prefix}\n- 돼지의 행동: 술 쳐먹고 맨날 오줌 싸고 똥 싸고 돼지처럼 더러우니까요.\n- 돼지가 생각하는 나: 조개, 내가 아빠를 무시하니까 아빠는 날 조개라고 고를거예요.",
+            "content": "다음은 아이가 가족 구성원 '아빠'를 동물로 표현한 내용과, 아빠가 나를 어떤 동물로 볼 것 같은지에 대한 내용이야. 이를 참고해서 간단한 피드백과 질문을 해줘.\n규칙:\n1. 동물 이름 대신 '아빠'와 '너'를 사용해.\n2. '아빠가 생각하는 나' 부분의 이유는 아빠가 너를 그렇게 보는 이유야. 이 이유가 너의 행동이나 특성이라면 그에 대한 너의 감정을 물어봐.\n- 아이가 아빠를 돼지로 표현한 이유: 술 쳐먹고 맨날 오줌 싸고 똥 싸고 돼지처럼 더러우니까요.\n- 아빠(돼지)가 생각하는 나(조개): 내가 아빠를 무시하니까",
         },
-        {"role": "assistant", "content": "아빠가 너를 조개로 보고 너를 어떻게 힘들게 할까?"},
+        {"role": "assistant", "content": "아빠가 너를 그렇게 생각한다니 속상하겠다. 네가 아빠를 무시하게 되는 건 어떤 마음에서 그런 걸까?"},
         {
             "role": "user",
             "content": "\n".join([prompt_prefix, prompt_scenario, prompt_suffix]),
@@ -200,13 +190,13 @@ async def get_llm_completion(kidName: str, receiptNo: int, count: int, relation:
     elif count == 1:
         prompt, f_3 = prompt_engineering_2(data_json, relation)
         completion = await request_chatgpt_2(prompt)
-        completion = f"{completion}\n{f_3}에게 어떤 말을 하고싶을까?"
+        completion = f"{completion}\n{relation}에게 어떤 말을 하고싶을까?"
 
         data_json["llmCompletion"][relation]["bot"][count] = completion
         session_repository.update_llm_completion(receipt_no_str, relation, data_json["llmCompletion"][relation])
     else:
         f_3 = prompt_engineering_3(data_json, relation)
-        completion = f"그렇구나. {f_3}에게 그렇게 말해주고 싶구나."
+        completion = f"그렇구나. {relation}에게 그렇게 말해주고 싶구나."
 
     return completion
     # return prompt

@@ -4,6 +4,7 @@ const CustomInputForm = ({ setState: _setState, actionProvider: _actionProvider,
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const submittingRef = useRef(false);
+  const composingRef = useRef(false);
 
   const adjustHeight = () => {
     const textarea = textareaRef.current;
@@ -21,16 +22,24 @@ const CustomInputForm = ({ setState: _setState, actionProvider: _actionProvider,
     e.preventDefault();
     if (!input.trim() || submittingRef.current) return;
     submittingRef.current = true;
-    messageParser.parse(input);
+    const value = input;
     setInput("");
     if (textareaRef.current) {
+      textareaRef.current.value = "";
       textareaRef.current.style.height = "auto";
     }
+    messageParser.parse(value);
+    // IME 잔여 글자 제거: compositionend 후 onChange가 늦게 발생할 수 있음
+    requestAnimationFrame(() => {
+      setInput("");
+      if (textareaRef.current) textareaRef.current.value = "";
+    });
     setTimeout(() => { submittingRef.current = false; }, 1000);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    // 한글 IME 조합 중 Enter 무시 (keyCode 229 = IME Process key)
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
       e.preventDefault();
       handleSubmit(e);
     }
@@ -46,8 +55,10 @@ const CustomInputForm = ({ setState: _setState, actionProvider: _actionProvider,
         className="react-chatbot-kit-chat-input"
         placeholder="메시지를 입력하세요"
         value={input}
-        onChange={(e) => setInput(e.target.value)}
+        onChange={(e) => { if (!submittingRef.current) setInput(e.target.value); }}
         onKeyDown={handleKeyDown}
+        onCompositionStart={() => { composingRef.current = true; }}
+        onCompositionEnd={() => { setTimeout(() => { composingRef.current = false; }, 100); }}
         rows={1}
         style={{ resize: "none", overflow: "hidden" }}
       />

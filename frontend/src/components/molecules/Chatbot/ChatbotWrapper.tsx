@@ -56,7 +56,7 @@ const ChatbotWrapper = (props: any) => {
 
     // Enter to submit, Shift+Enter for new line
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && !e.shiftKey) {
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
         e.preventDefault();
         if (textarea.value.trim()) {
           // Sync value first

@@ -159,15 +159,23 @@ def validate_code(req: ValidateCodeRequest):
             )
         return ValidateCodeResponse(valid=False, message="이미 사용된 코드입니다.")
 
-    # Check 24-hour expiry
-    created_at = code_doc.get("createdAt")
-    if created_at:
-        now = datetime.now(KST)
-        if created_at.tzinfo is None:
-            created_at = created_at.replace(tzinfo=KST)
-        elapsed = now - created_at
-        if elapsed.total_seconds() > 86400:
-            return ValidateCodeResponse(valid=False, message="만료된 코드입니다. (24시간 초과)")
+    # Check expiry
+    now = datetime.now(KST)
+    expires_at = code_doc.get("expiresAt")
+    if expires_at:
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=KST)
+        if now > expires_at:
+            expiry_hours = code_doc.get("expiryHours", 24)
+            return ValidateCodeResponse(valid=False, message=f"만료된 코드입니다. ({expiry_hours}시간 초과)")
+    else:
+        # Legacy: expiresAt 없는 기존 코드는 24시간 기본 만료
+        created_at = code_doc.get("createdAt")
+        if created_at:
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=KST)
+            if (now - created_at).total_seconds() > 86400:
+                return ValidateCodeResponse(valid=False, message="만료된 코드입니다. (24시간 초과)")
 
     # organization이 비어있으면 users 컬렉션에서 보완
     org = code_doc.get("organization", "")

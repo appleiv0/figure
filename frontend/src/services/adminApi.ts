@@ -178,8 +178,8 @@ export const adminApi = {
   },
 
   // Generate one-time code
-  generateCode: async (email: string, name: string, organization: string): Promise<{ code: string; credits: number }> => {
-    const response = await api.post("/admin/generate-code", { email, name, organization });
+  generateCode: async (email: string, name: string, organization: string, expiryHours: number | null = 24): Promise<{ code: string; credits: number }> => {
+    const response = await api.post("/admin/generate-code", { email, name, organization, expiryHours });
     return response.data;
   },
 
@@ -244,8 +244,8 @@ export const adminApi = {
   },
 
   // Generate AI clinical interpretation
-  generateInterpretation: async (receiptNo: string) => {
-    const res = await api.post(`/admin/sessions/${receiptNo}/interpretation`);
+  generateInterpretation: async (receiptNo: string, model: string = "claude") => {
+    const res = await api.post(`/admin/sessions/${receiptNo}/interpretation?model=${model}`);
     return res.data;
   },
 

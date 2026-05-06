@@ -56,31 +56,16 @@ const ButtonEnd = () => {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>진단보고서 - ${kidName}</title>
+          <title>AI 가족 평가 결과지 - ${kidName}</title>
+          <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
           <style>
-            html, body, *, *::before, *::after {
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-              color-adjust: exact !important;
-              forced-color-adjust: none !important;
-            }
-            @page {
-              size: A4;
-              margin: 10mm;
-            }
+            html, body, *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; forced-color-adjust: none !important; }
+            body { font-family: 'Noto Sans KR', sans-serif; background: #e0e0e0; }
             @media print {
-              html, body { margin: 0; }
+              @page { size: A4; margin: 0; }
+              body { margin: 0; background: #fff; }
               .no-print { display: none !important; }
-              html, body, *, *::before, *::after {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-                forced-color-adjust: none !important;
-              }
-              td[style*="background"], th[style*="background"], div[style*="background"] {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-              }
+              html, body, *, *::before, *::after { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; forced-color-adjust: none !important; }
             }
           </style>
         </head>
@@ -184,191 +169,303 @@ const ButtonEnd = () => {
 
 // PDF 보고서 HTML 생성 함수
 const generateReportHTML = (data: any): string => {
-  const kidName = data.kid?.name || "";
-  const age = data.kid?.birth ? calculateAge(data.kid.birth) : "-";
+  const kidName = data.kid?.name || "아동";
+  const age = data.kid?.birth ? calculateAge(data.kid.birth) : "-"; void age;
   const sex = data.kid?.sex === "Female" ? "여" : data.kid?.sex === "Male" ? "남" : "-";
   const testDate = formatDate(data.date);
 
   const meFigures = data.figures?.["1"] || [];
   const wishFigures = data.figures?.["2"] || [];
-  const familyFigures = (data.figures?.["3"] || []).filter(
+  const allFamilyFigures = data.figures?.["3"] || [];
+  const familyFigures = allFamilyFigures.filter(
     (f: any) => f.relation !== "나" && f.relation !== kidName && !f.relation.includes("나")
   );
-  const myFamilyFigure = (data.figures?.["3"] || []).find(
+  const myFamilyFigure = allFamilyFigures.find(
     (f: any) => f.relation === "나" || f.relation === kidName || f.relation.includes(kidName)
   );
-  const wishedFamilyFigures = data.figures?.["5"] || [];
   const familyThinkOfMe = data.figures?.["6"] || [];
-
-  const formatFigures = (figures: any[]) => {
-    if (!figures || figures.length === 0) return "-";
-    return figures.map((f) => `${f.figure} - ${f.message || "이유 없음"}`).join("<br/>");
-  };
 
   const llmConversations = formatLLMConversation(data.llmCompletion, data.chatHistory);
 
-  const llmHTML = llmConversations
-    .map(({ relation, conversations }) => {
-      const rows = conversations
-        .map(
-          (conv) => `
-          <tr>
-            <td style="border: 1px solid #ccc; padding: 8px;">${conv.question}</td>
-            <td style="border: 1px solid #ccc; padding: 8px;">${conv.answer || "-"}</td>
-          </tr>
-        `
-        )
-        .join("");
+  // Abuse / family function summary
+  const abuseLabel = (() => {
+    const abuse = data.abuse;
+    if (!abuse) return "-";
+    const sum = (abuse["1"] || 0) + (abuse["2"] || 0) + (abuse["3"] || 0);
+    return sum === 3 ? "역기능 있음" : sum >= 1 ? "역기능 가능성" : "역기능 없음";
+  })();
 
-      return `
-        <h4 style="font-size: 12px; font-weight: bold; margin: 10px 0 5px;">[${relation}]에 대한 대화</h4>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
-          <thead>
-            <tr>
-              <th style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; width: 60%;">상담사 질문</th>
-              <th style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; width: 40%;">아동 응답</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      `;
-    })
-    .join("");
+  // Tension label
+  const tensionLabel = data.tension || "-";
 
-  return `
-    <div style="width: 210mm; min-height: 297mm; padding: 15mm; background: #fff; font-family: 'Noto Sans KR', sans-serif; font-size: 11px; line-height: 1.6; color: #333;">
-      <h1 style="text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">
-        AI 가족 평가 보고서
-      </h1>
+  // --- 평가내용 rows ---
+  const evalRows: string[] = [];
 
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+  // 나를 상징하는 동물
+  if (meFigures.length > 0) {
+    meFigures.forEach((f: any, i: number) => {
+      evalRows.push(`<tr>
+        ${i === 0 ? `<td rowspan="${meFigures.length}" style="border:1px solid #ccc;padding:8px 10px;font-weight:500;vertical-align:middle;text-align:center;">나를 상징하는 동물</td>` : ''}
+        <td style="border:1px solid #ccc;padding:8px 10px;">${f.figure}</td>
+        <td style="border:1px solid #ccc;padding:8px 10px;">-</td>
+        <td style="border:1px solid #ccc;padding:8px 10px;">${f.message || "-"}</td>
+      </tr>`);
+    });
+  } else {
+    evalRows.push(`<tr>
+      <td style="border:1px solid #ccc;padding:8px 10px;font-weight:500;text-align:center;">나를 상징하는 동물</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">-</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">-</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">-</td>
+    </tr>`);
+  }
+
+  // 내가 소망하는 동물
+  if (wishFigures.length > 0) {
+    wishFigures.forEach((f: any, i: number) => {
+      evalRows.push(`<tr>
+        ${i === 0 ? `<td rowspan="${wishFigures.length}" style="border:1px solid #ccc;padding:8px 10px;font-weight:500;vertical-align:middle;text-align:center;">내가 소망하는 동물</td>` : ''}
+        <td style="border:1px solid #ccc;padding:8px 10px;">${f.figure}</td>
+        <td style="border:1px solid #ccc;padding:8px 10px;">-</td>
+        <td style="border:1px solid #ccc;padding:8px 10px;">${f.message || "-"}</td>
+      </tr>`);
+    });
+  } else {
+    evalRows.push(`<tr>
+      <td style="border:1px solid #ccc;padding:8px 10px;font-weight:500;text-align:center;">내가 소망하는 동물</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">-</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">-</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">-</td>
+    </tr>`);
+  }
+
+  // 가족을 상징하는 동물
+  const allFamilyRows = [...familyFigures];
+  if (myFamilyFigure) allFamilyRows.push({...myFamilyFigure, relation: myFamilyFigure.relation + ' (나)'});
+  if (allFamilyRows.length > 0) {
+    allFamilyRows.forEach((f: any, i: number) => {
+      evalRows.push(`<tr>
+        ${i === 0 ? `<td rowspan="${allFamilyRows.length}" style="border:1px solid #ccc;padding:8px 10px;font-weight:500;vertical-align:middle;text-align:center;">가족을 상징하는 동물</td>` : ''}
+        <td style="border:1px solid #ccc;padding:8px 10px;">${f.figure}</td>
+        <td style="border:1px solid #ccc;padding:8px 10px;">${f.relation}</td>
+        <td style="border:1px solid #ccc;padding:8px 10px;">${f.message || "-"}</td>
+      </tr>`);
+    });
+  } else {
+    evalRows.push(`<tr>
+      <td style="border:1px solid #ccc;padding:8px 10px;font-weight:500;text-align:center;">가족을 상징하는 동물</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">-</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">-</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">-</td>
+    </tr>`);
+  }
+
+  // 가족이 나를 상징하는 동물
+  if (familyThinkOfMe.length > 0) {
+    familyThinkOfMe.forEach((f: any, i: number) => {
+      evalRows.push(`<tr>
+        ${i === 0 ? `<td rowspan="${familyThinkOfMe.length}" style="border:1px solid #ccc;padding:8px 10px;font-weight:500;vertical-align:middle;text-align:center;">가족이 나를 상징하는 동물</td>` : ''}
+        <td style="border:1px solid #ccc;padding:8px 10px;">${f.figure}</td>
+        <td style="border:1px solid #ccc;padding:8px 10px;">${f.relation}</td>
+        <td style="border:1px solid #ccc;padding:8px 10px;">${f.message || "-"}</td>
+      </tr>`);
+    });
+  } else {
+    evalRows.push(`<tr>
+      <td style="border:1px solid #ccc;padding:8px 10px;font-weight:500;text-align:center;">가족이 나를 상징하는 동물</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">-</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">-</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">-</td>
+    </tr>`);
+  }
+
+  // 가족인형 세우기
+  const canvasContent = data.canvasImage
+    ? `<img src="${data.canvasImage}" alt="가족인형 세우기" style="max-width:100%;max-height:300px;object-fit:contain;" />`
+    : "가족인형 배치 이미지가 없습니다.";
+  evalRows.push(`<tr>
+    <td style="border:1px solid #ccc;padding:8px 10px;font-weight:500;">가족인형 세우기</td>
+    <td colspan="3" style="border:1px solid #ccc;padding:8px 10px;text-align:center;">${canvasContent}</td>
+  </tr>`);
+
+  // --- 상담내용 rows ---
+  const counselRows = llmConversations.map(({ relation, conversations }) => {
+    const firstConv = conversations[0];
+    if (!firstConv) return "";
+    return `<tr>
+      <td style="border:1px solid #ccc;padding:8px 10px;font-weight:500;">${relation}</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">${firstConv.question}</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">${firstConv.answer || "-"}</td>
+    </tr>`;
+  }).filter(Boolean).join("");
+
+  // --- 평가결과 ---
+  const familyTypeDesc = data.familyType || "-";
+
+  // AI 임상 해석 (markdown rendering)
+  const aiInterpretation = data.aiInterpretation || "";
+  const therapistInterpretation = data.therapistInterpretation || "";
+
+  // Common styles
+  const cellStyle = 'border:1px solid #ccc;padding:8px 10px;';
+  const labelCellStyle = `${cellStyle}background:#f0f0f0;font-weight:500;width:20%;`;
+
+  // --- PAGE 1 ---
+  const page1 = `
+    <div style="width:210mm;min-height:297mm;padding:20mm 15mm;background:#fff;font-family:'Noto Sans KR',sans-serif;font-size:13px;line-height:1.7;color:#333;box-sizing:border-box;">
+      <!-- Title -->
+      <h1 style="text-align:center;font-size:52px;font-weight:400;color:#333;margin:0 0 32px 0;">AI 가족 평가 결과지</h1>
+
+      <!-- 개요 -->
+      <div style="background:linear-gradient(135deg,#a8b5d6,#8e9ec7);border-radius:8px;padding:10px 20px;margin-bottom:12px;">
+        <span style="font-size:22px;font-weight:700;color:#fff;">개요</span>
+      </div>
+      <p style="font-size:13px;line-height:1.8;color:#444;margin:0 0 24px 0;">
+        본 결과지는 아동·청소년의 가족 관계 및 가족 기능을 파악하기 위해 실시된 AI 기반 가족 평가 결과를 정리한 문서입니다.
+        동물 상징 기법과 가족 인형 세우기를 활용하여 내담자가 인식하는 가족 역동, 정서적 거리감, 의사소통 패턴을 탐색하였으며,
+        상담사의 관찰 내용과 함께 종합적으로 분석되었습니다.
+      </p>
+
+      <!-- 기본정보 -->
+      <div style="background:linear-gradient(135deg,#7ec4a8,#5fb893);border-radius:8px;padding:10px 20px;margin-bottom:12px;">
+        <span style="font-size:22px;font-weight:700;color:#fff;">기본정보</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
         <tr>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold; width: 25%;">검사일</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${testDate}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold; width: 25%;">관리번호</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${data.receiptNo}</td>
+          <td style="${labelCellStyle}">이름</td>
+          <td style="${cellStyle}width:30%;">${kidName}</td>
+          <td style="${labelCellStyle}">성별/생년월일</td>
+          <td style="${cellStyle}width:30%;">${sex} / ${data.kid?.birth ? data.kid.birth.substring(0, 10) : "-"}</td>
         </tr>
         <tr>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">상담기관</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${data.counselor?.organization || "-"}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">상담사</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${data.counselor?.name || "-"}</td>
+          <td style="${labelCellStyle}">가족기능</td>
+          <td style="${cellStyle}">${abuseLabel}</td>
+          <td style="${labelCellStyle}">상담기관</td>
+          <td style="${cellStyle}">${data.counselor?.organization || "-"}</td>
         </tr>
         <tr>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">아동 이름</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${kidName}</td>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">성별 / 나이</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${sex} / 만 ${age}세</td>
+          <td style="${labelCellStyle}">가족관계</td>
+          <td style="${cellStyle}">${tensionLabel === "높음" ? "긴장/갈등 높음" : tensionLabel === "있음" ? "긴장/갈등 있음" : tensionLabel === "없음" ? "긴장/갈등 없음" : tensionLabel}</td>
+          <td style="${labelCellStyle}">상담사</td>
+          <td style="${cellStyle}">${data.counselor?.name || "-"}</td>
         </tr>
         <tr>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">진단 결과</td>
-          <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold; color: #d32f2f;" colspan="3">${data.report || "-"}</td>
-        </tr>
-        <tr>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">관계구조분석</td>
-          <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold; color: #1976d2;" colspan="3">${data.tension || "-"}</td>
+          <td style="${labelCellStyle}">가족체계유형</td>
+          <td style="${cellStyle}">${data.familyType || "-"}</td>
+          <td style="${labelCellStyle}">검사일</td>
+          <td style="${cellStyle}">${testDate}</td>
         </tr>
       </table>
 
-      <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 8px;">1. 나 (Me)</h2>
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
-        <tr>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold; width: 25%;">나를 표현하는 동물</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${formatFigures(meFigures)}</td>
-        </tr>
-        <tr>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">되고 싶은 동물 (소망)</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${formatFigures(wishFigures)}</td>
-        </tr>
-      </table>
-
-      <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 8px;">2. 가족 (Family)</h2>
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+      <!-- 평가내용 -->
+      <div style="background:linear-gradient(135deg,#c9a5d4,#b48cc2);border-radius:8px;padding:10px 20px;margin-bottom:12px;">
+        <span style="font-size:22px;font-weight:700;color:#fff;">평가내용</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
         <thead>
           <tr>
-            <th style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">가족 관계</th>
-            <th style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">선택한 동물</th>
-            <th style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">선택 이유</th>
+            <th style="${cellStyle}background:#f0f0f0;font-weight:700;width:22%;">유형</th>
+            <th style="${cellStyle}background:#f0f0f0;font-weight:700;width:18%;">동물</th>
+            <th style="${cellStyle}background:#f0f0f0;font-weight:700;width:18%;">내용/가족</th>
+            <th style="${cellStyle}background:#f0f0f0;font-weight:700;width:42%;">선택이유</th>
           </tr>
         </thead>
         <tbody>
-          ${familyFigures.length > 0
-      ? familyFigures
-        .map(
-          (f: any) => `
-                <tr>
-                  <td style="border: 1px solid #ccc; padding: 8px;">${f.relation}</td>
-                  <td style="border: 1px solid #ccc; padding: 8px;">${f.figure}</td>
-                  <td style="border: 1px solid #ccc; padding: 8px;">${f.message || "-"}</td>
-                </tr>
-              `
-        )
-        .join("")
-      : '<tr><td style="border: 1px solid #ccc; padding: 8px;" colspan="3">-</td></tr>'
-    }
-          ${myFamilyFigure
-      ? `
-            <tr>
-              <td style="border: 1px solid #ccc; padding: 8px;">${myFamilyFigure.relation} (나)</td>
-              <td style="border: 1px solid #ccc; padding: 8px;">${myFamilyFigure.figure}</td>
-              <td style="border: 1px solid #ccc; padding: 8px;">${myFamilyFigure.message || "-"}</td>
-            </tr>
-          `
-      : ""
-    }
+          ${evalRows.join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  // --- PAGE 2 ---
+  const page2 = `
+    <div style="width:210mm;min-height:297mm;padding:20mm 15mm;background:#fff;font-family:'Noto Sans KR',sans-serif;font-size:13px;line-height:1.7;color:#333;box-sizing:border-box;page-break-before:always;">
+      <!-- 상담내용 -->
+      <div style="background:linear-gradient(135deg,#e8a87c,#d99565);border-radius:8px;padding:10px 20px;margin-bottom:12px;">
+        <span style="font-size:22px;font-weight:700;color:#fff;">상담내용</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <thead>
+          <tr>
+            <th style="${cellStyle}background:#f0f0f0;font-weight:700;width:20%;">유형</th>
+            <th style="${cellStyle}background:#f0f0f0;font-weight:700;width:40%;">상담사질문</th>
+            <th style="${cellStyle}background:#f0f0f0;font-weight:700;width:40%;">내담자 답변</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${counselRows || '<tr><td colspan="3" style="' + cellStyle + 'text-align:center;color:#999;">대화 기록이 없습니다.</td></tr>'}
         </tbody>
       </table>
 
-      <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 8px;">3. 나와 가족 관계</h2>
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
-        <tr>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold; width: 25%;">친한 가족끼리 배치 하기</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${data.friendly_message || "-"}</td>
-        </tr>
-        ${data.canvasImage ? `
-        <tr>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">가족 배치도</td>
-          <td style="border: 1px solid #ccc; padding: 8px; text-align: center;">
-            <img src="${data.canvasImage}" alt="가족 배치도" style="max-width: 100%; max-height: 250px; object-fit: contain;" />
-          </td>
-        </tr>
-        ` : ''}
-      </table>
-
-      <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 8px;">4. 심층 분석</h2>
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
-        <tr>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold; width: 25%;">내가 바라는 가족의 동물상징</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${wishedFamilyFigures.length > 0
-      ? wishedFamilyFigures.map((f: any) => `${f.relation}: ${f.figure}(${f.message})`).join(", ")
-      : "-"
-    }</td>
-        </tr>
-        <tr>
-          <td style="border: 1px solid #ccc; padding: 8px; background: #f0f0f0; font-weight: bold;">가족이 생각하는 나</td>
-          <td style="border: 1px solid #ccc; padding: 8px;">${familyThinkOfMe.length > 0
-      ? familyThinkOfMe.map((f: any) => `${f.relation}이 생각하는 나: ${f.figure}(${f.message})`).join(", ")
-      : "-"
-    }</td>
-        </tr>
-      </table>
-
-      <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 8px;">5. 종합 소견 (상담 대화 내용)</h2>
-      ${llmHTML || '<p style="color: #666;">대화 기록이 없습니다.</p>'}
-
-      ${data.aiInterpretation ? `
-      <h2 style="font-size: 14px; font-weight: bold; margin: 15px 0 8px; color: #1565c0; border-left: 4px solid #1565c0; padding-left: 8px;">6. AI 임상 해석</h2>
-      <div style="padding: 15px; background: #f0f7ff; border: 1px solid #bdd7ee; border-radius: 5px; margin-bottom: 10px;">
-        <p style="font-size: 10px; color: #666; font-style: italic; margin-bottom: 8px;">※ AI 자동 생성 해석</p>
-        <div style="font-size: 11px; line-height: 1.8; white-space: pre-wrap;">${data.aiInterpretation}</div>
+      <!-- 평가결과 -->
+      <div style="background:linear-gradient(135deg,#d4a5a0,#c9918c);border-radius:8px;padding:10px 20px;margin-bottom:12px;">
+        <span style="font-size:22px;font-weight:700;color:#fff;">평가결과</span>
       </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <tr>
+          <td style="${labelCellStyle}">가족기능</td>
+          <td style="${cellStyle}">${abuseLabel}</td>
+        </tr>
+        <tr>
+          <td style="${labelCellStyle}">가족관계</td>
+          <td style="${cellStyle}">${tensionLabel === "높음" ? "긴장/갈등 높음" : tensionLabel === "있음" ? "긴장/갈등 있음" : tensionLabel === "없음" ? "긴장/갈등 없음" : tensionLabel}</td>
+        </tr>
+        <tr>
+          <td style="${labelCellStyle}">가족체계유형</td>
+          <td style="${cellStyle}">${familyTypeDesc}</td>
+        </tr>
+      </table>
+
+      ${aiInterpretation ? `
+      <!-- AI 임상 해석 -->
+      <div style="background:linear-gradient(135deg,#64b5f6,#42a5f5);border-radius:8px;padding:10px 20px;margin-bottom:12px;">
+        <span style="font-size:22px;font-weight:700;color:#fff;">AI 임상 해석</span>
+      </div>
+      <div style="padding:15px;background:#f0f7ff;border:1px solid #bdd7ee;border-radius:8px;margin-bottom:12px;">
+        <p style="font-size:11px;color:#666;font-style:italic;margin-bottom:12px;">※ AI 자동 생성 해석입니다. 치료사가 검토 후 활용하세요.</p>
+        <div style="font-size:13px;line-height:1.8;color:#333;">${(() => {
+          let t = aiInterpretation;
+          t = t.replace(/^### (.+)$/gm, '<h4 style="font-size:13px;font-weight:700;color:#1565c0;margin:16px 0 6px;border-left:3px solid #1565c0;padding-left:8px;">$1</h4>');
+          t = t.replace(/^## (.+)$/gm, '<h3 style="font-size:15px;font-weight:700;color:#1565c0;margin:20px 0 8px;border-left:4px solid #1565c0;padding-left:8px;">$1</h3>');
+          t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+          t = t.replace(/\*(.+?)\*/g, '<em>$1</em>');
+          t = t.replace(/\n\n/g, '</p><p style="margin:8px 0;">');
+          t = t.replace(/\n/g, '<br/>');
+          return '<p style="margin:8px 0;">' + t + '</p>';
+        })()}</div>
+      </div>
+      ${therapistInterpretation ? `
+      <div style="padding:15px;background:#f0fff0;border:1px solid #b2dfb2;border-radius:8px;margin-bottom:24px;">
+        <h4 style="font-size:14px;font-weight:bold;color:#2e7d32;margin-bottom:8px;">치료사 의견</h4>
+        <div style="font-size:13px;line-height:1.8;color:#333;white-space:pre-wrap;">${therapistInterpretation}</div>
+      </div>
+      ` : `
+      <div style="padding:15px;background:#f0fff0;border:1px solid #b2dfb2;border-radius:8px;margin-bottom:24px;">
+        <h4 style="font-size:14px;font-weight:bold;color:#2e7d32;margin-bottom:8px;">치료사 의견:</h4>
+        <div style="min-height:80px;border:1px dashed #ccc;border-radius:4px;padding:8px;"></div>
+      </div>
+      `}
       ` : ''}
 
-      <div style="margin-top: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px; text-align: center;">
-        <strong>종합 점수:</strong> ${data.score || 0}점
+      <!-- Footer -->
+      <div style="background:linear-gradient(135deg,#d4a5a0,#c9918c,#b8807a);padding:18px 30px;display:flex;align-items:center;gap:16px;border-radius:4px;margin-top:32px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img src="/aspt-logo.png" alt="ASPT" style="height:40px;" />
+          <div style="font-size:13px;font-weight:700;color:#fff;line-height:1.4;">
+            한국인형치료연구회
+            <span style="display:block;font-size:12px;font-weight:500;">AI가족평가</span>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#fff;line-height:1.6;text-align:right;flex:1;">
+          <strong style="font-size:12px;">저자 최광현, 선우현</strong><br/>
+          한국인형치료연구회의 허락없이 이 결과지의 일부 또는 전부를<br/>
+          무단으로 공개, 배포하거나 변형하는 행위를 절대 금합니다.
+        </div>
       </div>
     </div>
   `;
+
+  return `${page1}${page2}`;
 };
 
 const calculateAge = (birthDate: string): number => {

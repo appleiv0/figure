@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import axios from "axios";
 import "dayjs/locale/ko";
 import { USER } from "../../../constants/common.constant";
 import { getItemLocalStorage } from "../../../utils/helper";
@@ -11,7 +10,7 @@ const Ending = () => {
     const completeSession = async () => {
       try {
         const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
-        await axios.post(`${apiBase}/public/complete-session`, { receiptNo: userInfo.receiptNo });
+        await fetch(`${apiBase}/public/complete-session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ receiptNo: userInfo.receiptNo }) });
       } catch (e) {
         console.error("Failed to complete session:", e);
       }

@@ -57,6 +57,7 @@ class GenerateCodeRequest(BaseModel):
     email: str
     name: str
     organization: str
+    expiryHours: Optional[int] = 24  # 코드 유효 기간 (시간), None이면 무제한
 
 
 class GenerateCodeResponse(BaseModel):

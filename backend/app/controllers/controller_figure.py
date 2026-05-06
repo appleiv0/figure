@@ -305,6 +305,9 @@ def get_Report(kidName: str, receiptNo: int):
     score, _ = chatbot.get_score(kidName, receiptNo)
     message, data_json = chatbot.get_report(kidName, receiptNo)
 
+    # Remove MongoDB ObjectId (not JSON serializable)
+    data_json.pop("_id", None)
+
     # 신뢰도 분석
     reliability = chatbot.get_reliability(kidName, receiptNo)
     data_json["reliability"] = reliability

@@ -11,12 +11,6 @@ const Header = () => {
   const navigator = useNavigate();
   const setCurrentStep = useStore((state: any) => state.setCurrentStep);
   const currentStep = useStore((state: any) => state.currentStep);
-  const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
-  const setSelectedCards = useStore((state: any) => state.setSelectedCards);
-  const setSelectedCardsNew = useStore((state: any) => state.setSelectedCardsNew);
-  const setSelectedCardsNew6 = useStore((state: any) => state.setSelectedCardsNew6);
-  const setChooseAnimal = useStore((state: any) => state.setChooseAnimal);
-  const setFigure = useStore((state: any) => state.setFigure);
 
   useEffect(() => {
     setCurrentPage(location.pathname);
@@ -27,12 +21,6 @@ const Header = () => {
     if (idx > 0) {
       const prevStep = currentStep > 0 ? currentStep - 1 : 0;
       setCurrentStep(prevStep);
-      setCurrentIndex(0);
-      setFigure([]);
-      setChooseAnimal(false);
-      setSelectedCards([]);
-      setSelectedCardsNew([]);
-      setSelectedCardsNew6([]);
       navigator(stageOrder[idx - 1]);
     } else {
       navigator("/");

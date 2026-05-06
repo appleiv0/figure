@@ -12,10 +12,11 @@ const AdminSessionDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aiEvaluation, setAiEvaluation] = useState("");
-  const [familyType, setFamilyType] = useState("");
+  const [familyType, setFamilyType] = useState<string>("");
   const [evalSaving, setEvalSaving] = useState(false);
   const [evalSaved, setEvalSaved] = useState(false);
   const [aiInterpretation, setAiInterpretation] = useState<string>("");
+  const [interpretationModel, setInterpretationModel] = useState<string>("claude");
   const [therapistInterpretation, setTherapistInterpretation] = useState<string>("");
   const [generatingInterpretation, setGeneratingInterpretation] = useState(false);
   const [savingInterpretation, setSavingInterpretation] = useState(false);
@@ -23,10 +24,8 @@ const AdminSessionDetail = () => {
   const [showScenePreview, setShowScenePreview] = useState(false);
   const [capturingSaving, setCapturingSaving] = useState(false);
 
-  // Check authorization for AI interpretation
-  const counselorAuth = sessionStorage.getItem("counselorAuth");
-  const counselorEmail = counselorAuth ? JSON.parse(counselorAuth).email : "";
-  const isAuthorizedForInterpretation = counselorEmail === "appleiv@gmail.com";
+  // Check authorization for AI interpretation - all super users/admins
+  const isAuthorizedForInterpretation = isAdmin;
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -62,7 +61,7 @@ const AdminSessionDetail = () => {
     if (!receiptNo) return;
     setGeneratingInterpretation(true);
     try {
-      const result = await adminApi.generateInterpretation(receiptNo);
+      const result = await adminApi.generateInterpretation(receiptNo, interpretationModel);
       setAiInterpretation(result.interpretation);
     } catch (err) {
       alert("AI 해석 생성에 실패했습니다. 다시 시도해주세요.");
@@ -360,7 +359,7 @@ const AdminSessionDetail = () => {
         <!-- Footer -->
         <div style="background:linear-gradient(135deg,#d4a5a0,#c9918c,#b8807a);padding:18px 30px;display:flex;align-items:center;gap:16px;border-radius:4px;margin-top:32px;">
           <div style="display:flex;align-items:center;gap:10px;">
-            <img src="/family/aspt-logo.png" alt="ASPT" style="height:40px;" />
+            <img src="/aspt-logo.png" alt="ASPT" style="height:40px;" />
             <div style="font-size:13px;font-weight:700;color:#fff;line-height:1.4;">
               한국인형치료연구회
               <span style="display:block;font-size:12px;font-weight:500;">AI가족평가</span>
@@ -691,10 +690,16 @@ const AdminSessionDetail = () => {
             {/* 3D Scene Preview Modal */}
             {showScenePreview && (session as any).dollInstances?.length > 0 && (
               <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-                <div className="bg-white rounded-xl p-4 w-[90vw] max-w-[800px]" style={{ height: "70vh" }}>
+                <div className="bg-white rounded-xl p-2 w-[90vw] max-w-[446px]" style={{ height: "70vh" }}>
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-lg font-bold">3D 인형 배치 미리보기</h3>
                     <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowScenePreview(false)}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 text-lg font-bold"
+                      >
+                        ✕
+                      </button>
                       <button
                         disabled={capturingSaving}
                         onClick={async () => {
@@ -725,22 +730,18 @@ const AdminSessionDetail = () => {
                                     const fontSize = Math.round(w / 25);
                                     ctx.font = `bold ${fontSize}px sans-serif`;
                                     ctx.textAlign = 'center';
-                                    const metrics = ctx.measureText(text);
-                                    const pw = 8, ph = 4;
-                                    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-                                    const rx = sx - metrics.width/2 - pw;
-                                    const ry = sy - fontSize/2 - ph;
-                                    ctx.beginPath();
-                                    if (ctx.roundRect) ctx.roundRect(rx, ry, metrics.width + pw*2, fontSize + ph*2, 6);
-                                    else ctx.rect(rx, ry, metrics.width + pw*2, fontSize + ph*2);
-                                    ctx.fill();
-                                    ctx.fillStyle = '#ffffff';
+                                    ctx.shadowColor = 'rgba(255,255,255,0.9)';
+                                    ctx.shadowBlur = 6;
+                                    ctx.fillStyle = '#222';
                                     ctx.fillText(text, sx, sy + fontSize/3);
+                                    ctx.fillText(text, sx, sy + fontSize/3);
+                                    ctx.shadowColor = 'transparent';
+                                    ctx.shadowBlur = 0;
                                   });
                                 }
                               }
                               const dataUrl = offscreen.toDataURL('image/png');
-                              const apiBase = (import.meta as any).env?.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+                              const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
                               await fetch(`${apiBase}/admin/sessions/${receiptNo}/canvas`, {
                                 method: 'PUT',
                                 headers: {
@@ -791,24 +792,49 @@ const AdminSessionDetail = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-bold mb-4">가족유형 판정</h2>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">가족유형</label>
-              <select
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                value={familyType}
-                onChange={(e) => { setFamilyType(e.target.value); setEvalSaved(false); }}
-                disabled={!isAdmin}
-              >
-                <option value="">선택하세요</option>
-                <option value="균형형">① 균형형 (기능적)</option>
-                <option value="고립형">② 고립형 (역기능)</option>
-                <option value="세대단절형">③ 세대단절형 (역기능)</option>
-                <option value="우회공격형">④ 우회공격형 (역기능)</option>
-                <option value="분열형">⑤ 분열형 (역기능)</option>
-                <option value="이산형">⑥ 이산형 (역기능)</option>
-                <option value="우회보호형">⑦ 우회보호형 (역기능)</option>
-                <option value="밀착형">⑧ 밀착형 (역기능)</option>
-                <option value="목적지향형">⑨ 목적지향형 (역기능)</option>
-              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-2">가족유형 (복수 선택 가능)</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {[
+                  { value: "균형형", label: "① 균형형 (기능적)", color: "#2e7d32" },
+                  { value: "고립형", label: "② 고립형", color: "#c62828" },
+                  { value: "세대단절형", label: "③ 세대단절형", color: "#c62828" },
+                  { value: "우회공격형", label: "④ 우회공격형", color: "#c62828" },
+                  { value: "분열형", label: "⑤ 분열형", color: "#c62828" },
+                  { value: "이산형", label: "⑥ 이산형", color: "#c62828" },
+                  { value: "우회보호형", label: "⑦ 우회보호형", color: "#c62828" },
+                  { value: "밀착형", label: "⑧ 밀착형", color: "#c62828" },
+                  { value: "목적지향형", label: "⑨ 목적지향형", color: "#c62828" },
+                ].map((t) => {
+                  const selected = familyType.split(",").filter(Boolean).includes(t.value);
+                  return (
+                    <label
+                      key={t.value}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '6px 12px', borderRadius: 8, cursor: isAdmin ? 'pointer' : 'not-allowed',
+                        border: selected ? `2px solid ${t.color}` : '1px solid #d1d5db',
+                        background: selected ? (t.color === '#2e7d32' ? '#e8f5e9' : '#ffebee') : 'white',
+                        fontSize: 13, fontWeight: selected ? 600 : 400,
+                        opacity: isAdmin ? 1 : 0.7,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        disabled={!isAdmin}
+                        onChange={() => {
+                          const types = familyType.split(",").filter(Boolean);
+                          const next = selected ? types.filter(v => v !== t.value) : [...types, t.value];
+                          setFamilyType(next.join(","));
+                          setEvalSaved(false);
+                        }}
+                        style={{ accentColor: t.color }}
+                      />
+                      {t.label}
+                    </label>
+                  );
+                })}
+              </div>
               {!isAdmin && (
                 <button
                   onClick={async () => {
@@ -930,15 +956,40 @@ const AdminSessionDetail = () => {
 
             {/* AI Interpretation display */}
             {aiInterpretation ? (
-              <div style={{ background: 'white', padding: 16, borderRadius: 8, marginBottom: 16, whiteSpace: 'pre-wrap', lineHeight: 1.8, fontSize: 14 }}>
-                {aiInterpretation}
-              </div>
+              <div
+                style={{ background: 'white', padding: 16, borderRadius: 8, marginBottom: 16, lineHeight: 1.8, fontSize: 14 }}
+                dangerouslySetInnerHTML={{ __html: aiInterpretation
+                  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                  .replace(/^### (.+)$/gm, '<h4 style="font-size:15px;font-weight:700;color:#1565c0;margin:20px 0 8px;border-left:4px solid #1565c0;padding-left:8px;">$1</h4>')
+                  .replace(/^## (.+)$/gm, '<h3 style="font-size:16px;font-weight:700;color:#1565c0;margin:24px 0 10px;">$1</h3>')
+                  .replace(/\n\n/g, '</p><p style="margin:8px 0;">')
+                  .replace(/\n/g, '<br/>')
+                  .replace(/^/, '<p style="margin:8px 0;">').replace(/$/, '</p>')
+                }}
+              />
             ) : (
               <p style={{ color: '#999', marginBottom: 16 }}>AI 해석이 아직 생성되지 않았습니다.</p>
             )}
 
-            {/* Generate / Regenerate button */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+            {/* Generate / Regenerate button + model selector */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, alignItems: 'center' }}>
+              <select
+                value={interpretationModel}
+                onChange={(e) => setInterpretationModel(e.target.value)}
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #bdd7ee',
+                  fontSize: 14,
+                  color: '#333',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="claude">Claude Sonnet</option>
+                <option value="gpt">GPT-4o</option>
+              </select>
               <button
                 onClick={handleGenerateInterpretation}
                 disabled={generatingInterpretation}

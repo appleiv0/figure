@@ -438,7 +438,7 @@ const AdminSessions = () => {
                             : "bg-yellow-100 text-yellow-800"
                         }`}
                       >
-                        {session.status === "completed" ? "완료" : "진행중"}
+                        {session.status === "completed" ? "완료" : `진행중 (${(session as any).currentStep ?? 0}/7)`}
                       </span>
                     </td>
                     <td className="px-0.5 py-1 whitespace-nowrap text-sm">

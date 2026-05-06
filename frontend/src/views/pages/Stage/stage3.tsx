@@ -10,6 +10,8 @@ import ChooseAnimal4Family from "../../../components/molecules/Widget/ChooseAnim
 import SelectedCard4Family from "../../../components/molecules/Widget/SelectedCard4Family";
 import Header from "../../../components/organisms/Header";
 import useStore from "../../../store";
+import { getItemLocalStorage } from "../../../utils/helper";
+import { USER } from "../../../constants/common.constant";
 
 const Stage3 = () => {
   const location = useLocation();
@@ -17,14 +19,29 @@ const Stage3 = () => {
   const selectedFamily = useStore((state: any) => state.selectedFamily);
   const selectedFamilyJosa = useStore((state: any) => state.selectedFamilyJosa);
   const setFigure = useStore((state: any) => state.setFigure);
+  const userInfo = getItemLocalStorage(USER) || {};
   const botName = selectedFamily[0];
 
   const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
   const setSelectedCards = useStore((state: any) => state.setSelectedCards);
+  const selectedCards = useStore((state: any) => state.selectedCards);
   useEffect(() => {
-    setFigure([]);
-    setCurrentIndex(0);
-    setSelectedCards([]);
+    if (selectedCards.length === 0) {
+      setFigure([]);
+      setSelectedCards([]);
+      // 이미 완료된 가족 수만큼 currentIndex 설정 (이어하기)
+      if (userInfo.receiptNo) {
+        const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+        fetch(`${apiBase}/admin/sessions/${userInfo.receiptNo}`, {
+          headers: { "X-Admin-Key": "change-this-in-production" }
+        }).then(r => r.json()).then(data => {
+          const done = data?.session?.figures?.["3"]?.length || 0;
+          setCurrentIndex(done > 0 ? done : 0);
+        }).catch(() => setCurrentIndex(0));
+      } else {
+        setCurrentIndex(0);
+      }
+    }
   }, []);
 
   const handleChooseAnimal = () => {

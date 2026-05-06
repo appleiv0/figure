@@ -28,7 +28,7 @@ const Stage6 = () => {
   // Restore selectedFamily from backend if empty (session resume case)
   useEffect(() => {
     if (selectedFamily.length === 0 && userInfo.receiptNo) {
-      const apiBase = (import.meta as any).env?.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+      const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
       fetch(`${apiBase}/admin/sessions/${userInfo.receiptNo}`, {
         headers: { "X-Admin-Key": "change-this-in-production" }
       })
@@ -59,11 +59,34 @@ const Stage6 = () => {
   const botJosa = familyJosaForStage6[0];
 
   const setSelectedCardsNew6 = useStore((state: any) => state.setSelectedCardsNew6);
+  const selectedCardsNew6 = useStore((state: any) => state.selectedCardsNew6);
   useEffect(() => {
-    // Set currentIndex to the first non-kid family member
-    const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== userInfo.kidname);
-    setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex : 0);
-    setSelectedCardsNew6([]);
+    if (selectedCardsNew6.length === 0) {
+      setSelectedCardsNew6([]);
+      // 이미 완료된 가족 수만큼 currentIndex 설정 (이어하기)
+      if (userInfo.receiptNo) {
+        const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+        fetch(`${apiBase}/admin/sessions/${userInfo.receiptNo}`, {
+          headers: { "X-Admin-Key": "change-this-in-production" }
+        }).then(r => r.json()).then(data => {
+          const done = data?.session?.figures?.["6"]?.length || 0;
+          if (done > 0) {
+            // 완료된 수 + 본인 인덱스 보정
+            const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== userInfo.kidname);
+            setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex + done : done);
+          } else {
+            const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== userInfo.kidname);
+            setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex : 0);
+          }
+        }).catch(() => {
+          const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== userInfo.kidname);
+          setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex : 0);
+        });
+      } else {
+        const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== userInfo.kidname);
+        setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex : 0);
+      }
+    }
   }, [selectedFamily]);
 
   const handleChooseAnimal = () => {

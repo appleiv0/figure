@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
-import axios from "axios";
 import { adminApi } from "../../../services/adminApi";
 import { setItemLocalStorage } from "../../../utils/helper";
 import { USER } from "../../../constants/common.constant";
@@ -126,14 +125,23 @@ const Landing = () => {
                 else step = 0;
               }
 
-              // For completed sessions: allow redo from doll placement
+              // 자동 진행: 데이터가 완료되었는데 step이 뒤처져 있으면 올려줌
+              if (step < 7 && (hasPositions || hasCanvas)) step = 7;
+              if (step < 6 && figures["6"]?.length > 0) {
+                // Stage 6 완료 확인: 가족 구성원(본인 제외) 전원 응답했는지
+                const familyRels = new Set((figures["3"] || []).map((f: any) => f.relation).filter((r: string) => r !== kidname));
+                const stage6Rels = new Set((figures["6"] || []).map((f: any) => f.relation));
+                const allDone = [...familyRels].every(r => stage6Rels.has(r));
+                if (allDone) step = 6;
+              }
+              if (step < 5 && figures["5"]?.length > 0) step = 5;
+              if (step < 4 && figures["3"]?.length > 0) step = 4;
+              if (step < 3 && figures["2"]?.length > 0) step = 3;
+              if (step < 2 && figures["1"]?.length > 0) step = 2;
+
+              // For completed sessions: show result/report
               if (session.status === "completed") {
-                // Save step=6 to backend for redo
-                try {
-                  const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
-                  await axios.post(`${apiBase}/public/save-step`, { receiptNo: session.receiptNo, currentStep: 6 });
-                } catch {}
-                step = 6; // Go to doll placement stage
+                step = 7; // Go to result page for report download
               }
 
               const store = useStore.getState() as any;
@@ -160,8 +168,8 @@ const Landing = () => {
                   // Check showResultToUser setting
                   try {
                     const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
-                    const settingsRes = await axios.get(`${apiBase}/public/settings/show-result`);
-                    if (settingsRes.data?.showResultToUser) {
+                    const settingsRes = await fetch(`${apiBase}/public/settings/show-result`).then(r => r.json());
+                    if (settingsRes?.showResultToUser) {
                       navigate("/result");
                     } else {
                       navigate("/ending");
@@ -362,7 +370,7 @@ const Landing = () => {
                     setLoginCode(e.target.value.toUpperCase().slice(0, 6));
                     setCodeError("");
                   }}
-                  onKeyDown={(e) => e.key === "Enter" && handleCodeSubmit()}
+                  onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleCodeSubmit()}
                   placeholder="6자리 코드 입력"
                   maxLength={6}
                   autoFocus

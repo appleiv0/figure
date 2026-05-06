@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import axios from "axios";
 import ButtonEnd from "../../../components/molecules/Widget/ButtonEnd";
 import useStore from "../../../store";
 import { getItemLocalStorage } from "../../../utils/helper";
@@ -13,13 +12,21 @@ const Result = () => {
   // Auto-fetch report if response is empty (session resume case)
   useEffect(() => {
     if ((!response || !response.message) && userInfo.receiptNo) {
-      const apiBase = (import.meta as any).env?.VITE_ENV_API_BACKEND_DOMAIN || '/api';
-      axios.post(`${apiBase}/getReport`, {
-        kidName: userInfo.kidname,
-        receiptNo: `${userInfo.receiptNo}`,
-      }).then(res => {
-        if (res.data) setResponse(res.data);
-      }).catch(() => {});
+      const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
+      fetch(`${apiBase}/getReport`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kidName: userInfo.kidname,
+          receiptNo: Number(userInfo.receiptNo),
+        }),
+      }).then(r => r.json()).then(data => {
+        if (data) {
+          setResponse(data);
+        }
+      }).catch((err) => {
+        console.error("getReport failed:", err.message);
+      });
     }
   }, []);
 

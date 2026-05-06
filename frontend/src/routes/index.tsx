@@ -29,6 +29,14 @@ const RequireSession = ({ children }: { children: React.ReactElement }) => {
   return children;
 };
 
+const RequireGoogleLogin = ({ children }: { children: React.ReactElement }) => {
+  try {
+    const auth = JSON.parse(sessionStorage.getItem('counselorAuth') || '{}');
+    if (auth.loginCode && !auth.isAdmin) return <Navigate to="/login" replace />;
+  } catch {}
+  return children;
+};
+
 export const Router = () => {
   const currentStep = useStore((state: any) => state.currentStep);
 
@@ -117,7 +125,7 @@ export const Router = () => {
         },
         {
           path: "/my-sessions",
-          element: <MySessions />,
+          element: <RequireGoogleLogin><MySessions /></RequireGoogleLogin>,
         },
         {
           path: "/admin",

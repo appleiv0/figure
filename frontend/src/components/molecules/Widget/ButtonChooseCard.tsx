@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { USER } from "../../../constants/common.constant";
 import { useSetFigure } from "../../../services/hooks/hookFigures";
 import useStore from "../../../store";
@@ -43,9 +42,15 @@ const ButtonStart = () => {
     try {
       if (userInfo?.receiptNo) {
         const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
-        await axios.post(`${apiBase}/public/save-step`, { receiptNo: userInfo.receiptNo, currentStep: step });
+        await fetch(`${apiBase}/public/save-step`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ receiptNo: userInfo.receiptNo, currentStep: step }),
+        });
       }
-    } catch {}
+    } catch (e) {
+      console.error("save-step failed:", e);
+    }
   };
 
   const handleNext = () => {
