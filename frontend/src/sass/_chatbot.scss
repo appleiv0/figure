@@ -76,11 +76,14 @@
   }
   .react-chatbot-kit-chat-input-form {
     position: relative;
+    display: flex;
+    align-items: center;
   }
   .react-chatbot-kit-chat-btn-send {
     position: absolute;
-    bottom: 0.625rem;
     right: 0.625rem;
+    top: 50%;
+    transform: translateY(-50%);
     background-image: url("../../assets/images/icons/arrow-up-solid.svg");
     background-repeat: no-repeat;
     background-size: 1.125rem 1.5rem;

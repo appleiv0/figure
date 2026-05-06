@@ -111,7 +111,9 @@ function findEmptySpot(instances: FigureInstance[], fig: Figure3DType): { x: num
   return { x: 0, z: startZ };
 }
 
-const FAMILY_ROLES = ['나', '엄마', '아빠', '남편', '아내', '아들', '딸', '언니', '누나', '오빠', '형', '남동생', '여동생', '할아버지', '할머니', '삼촌', '이모', '고모', '기타'];
+const FAMILY_ROLES_M = ['나', '엄마', '아빠', '아내', '아들', '딸', '형', '누나', '남동생', '여동생'];
+const FAMILY_ROLES_F = ['나', '엄마', '아빠', '남편', '아들', '딸', '오빠', '언니', '남동생', '여동생'];
+const FAMILY_ROLES_EXPAND = ['친할아버지', '친할머니', '외할아버지', '외할머니', '삼촌', '외삼촌', '이모', '고모'];
 
 interface DeskScene3DProps {
   onNext?: (canvasImage: string, dollInstances: DollInstanceData[]) => void;
@@ -130,6 +132,9 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
   const [showRolePicker, setShowRolePicker] = useState(false);
   const [pendingFigure, setPendingFigure] = useState<{ id: string; fig: Figure3DType } | null>(null);
   const [customRole, setCustomRole] = useState('');
+  const [showExpandRoles, setShowExpandRoles] = useState(false);
+  const deskUserInfo = getItemLocalStorage(USER);
+  const mainRoles = deskUserInfo?.gender === 'Female' ? FAMILY_ROLES_F : FAMILY_ROLES_M;
   const canvasRef = useRef<HTMLDivElement>(null);
   const glRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
@@ -715,7 +720,7 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
               gridTemplateColumns: 'repeat(3, 1fr)',
               gap: 8,
             }}>
-              {FAMILY_ROLES.filter(r => r !== '기타').map(role => (
+              {mainRoles.map(role => (
                 <button
                   key={role}
                   onClick={() => handleRoleSelect(role)}
@@ -737,6 +742,52 @@ export default function DeskScene3D({ onNext, initialDollInstances, readOnly, ph
                 </button>
               ))}
             </div>
+            <div style={{ marginTop: 8, textAlign: 'center' }}>
+              <button
+                onClick={() => setShowExpandRoles(!showExpandRoles)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#6b7280',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  fontFamily: 'sans-serif',
+                }}
+              >
+                {showExpandRoles ? '접기 ▲' : '다른 가족 추가 ▼'}
+              </button>
+            </div>
+            {showExpandRoles && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 8,
+                marginTop: 8,
+              }}>
+                {FAMILY_ROLES_EXPAND.map(role => (
+                  <button
+                    key={role}
+                    onClick={() => handleRoleSelect(role)}
+                    style={{
+                      padding: '10px 4px',
+                      fontSize: 14,
+                      fontWeight: 'bold',
+                      background: '#f3f4f6',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: 10,
+                      cursor: 'pointer',
+                      fontFamily: 'sans-serif',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#2EB500'; e.currentTarget.style.color = 'white'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#f3f4f6'; e.currentTarget.style.color = 'black'; }}
+                  >
+                    {role}
+                  </button>
+                ))}
+              </div>
+            )}
             <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
               <input
                 type="text"

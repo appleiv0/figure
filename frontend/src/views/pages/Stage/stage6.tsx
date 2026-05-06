@@ -36,7 +36,7 @@ const Stage6 = () => {
         .then(data => {
           const figs3 = data?.session?.figures?.["3"] || [];
           if (figs3.length > 0) {
-            const names = figs3.map((f: any) => f.relation).filter((r: string) => r !== userInfo.kidname);
+            const names = figs3.map((f: any) => f.relation).filter((r: string) => r !== '나' && r !== userInfo.kidname);
             setSelectedFamily(names);
             setSelectedFamilyJosa(names.map((name: string) => {
               const last = name.charAt(name.length - 1);
@@ -51,9 +51,9 @@ const Stage6 = () => {
     }
   }, []);
 
-  // Filter out the kid's own name from the family list for stage6
-  const familyForStage6 = selectedFamily.filter((name: string) => name !== userInfo.kidname);
-  const familyJosaForStage6 = selectedFamilyJosa.filter((_: any, i: number) => selectedFamily[i] !== userInfo.kidname);
+  // Filter out self from the family list for stage6 ("나" or legacy kidname)
+  const familyForStage6 = selectedFamily.filter((name: string) => name !== '나' && name !== '나' && name !== userInfo.kidname);
+  const familyJosaForStage6 = selectedFamilyJosa.filter((_: any, i: number) => selectedFamily[i] !== '나' && selectedFamily[i] !== userInfo.kidname);
 
   const botName = familyForStage6[0] || "";
   const botJosa = familyJosaForStage6[0];
@@ -72,18 +72,18 @@ const Stage6 = () => {
           const done = data?.session?.figures?.["6"]?.length || 0;
           if (done > 0) {
             // 완료된 수 + 본인 인덱스 보정
-            const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== userInfo.kidname);
+            const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== '나' && name !== userInfo.kidname);
             setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex + done : done);
           } else {
-            const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== userInfo.kidname);
+            const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== '나' && name !== userInfo.kidname);
             setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex : 0);
           }
         }).catch(() => {
-          const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== userInfo.kidname);
+          const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== '나' && name !== userInfo.kidname);
           setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex : 0);
         });
       } else {
-        const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== userInfo.kidname);
+        const firstNonKidIndex = selectedFamily.findIndex((name: string) => name !== '나' && name !== userInfo.kidname);
         setCurrentIndex(firstNonKidIndex >= 0 ? firstNonKidIndex : 0);
       }
     }

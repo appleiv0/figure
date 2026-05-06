@@ -74,67 +74,59 @@ export const defaultStage4Figures = [
   },
 ];
 
-export const chooseFamily = [
-  {
-    index: 0,
-    name: "엄마",
-    josa: 0,
-  },
-  {
-    index: 1,
-    name: "아빠",
-    josa: 0,
-  },
-  {
-    index: 2,
-    name: "할아버지",
-    josa: 0,
-  },
-  {
-    index: 3,
-    name: "할머니",
-    josa: 0,
-  },
-  {
-    index: 4,
-    name: "형",
-    josa: 1,
-  },
-  {
-    index: 5,
-    name: "누나",
-    josa: 0,
-  },
-  {
-    index: 6,
-    name: "오빠",
-    josa: 0,
-  },
-  {
-    index: 7,
-    name: "언니",
-    josa: 0,
-  },
-  {
-    index: 8,
-    name: "여동생",
-    josa: 1,
-  },
-  {
-    index: 9,
-    name: "둘째 여동생",
-    josa: 1,
-  },
-  {
-    index: 10,
-    name: "남동생",
-    josa: 1,
-  },
-  {
-    index: 11,
-    name: "둘째 남동생",
-    josa: 1,
-  },
+export type Gender = 'M' | 'F';
+export type Kinship =
+  | 'mother' | 'father'
+  | 'maternal_grandfather' | 'paternal_grandfather'
+  | 'maternal_grandmother' | 'paternal_grandmother'
+  | 'older_brother' | 'older_sister'
+  | 'younger_brother' | 'younger_sister'
+  | 'paternal_uncle_older' | 'paternal_uncle_younger' | 'paternal_uncle'
+  | 'maternal_uncle'
+  | 'paternal_aunt_older' | 'paternal_aunt_younger' | 'paternal_aunt'
+  | 'maternal_aunt'
+  | 'self' | 'other';
+
+export type FamilyGroup = 'parents' | 'grandparents' | 'siblings' | 'relatives';
+
+export interface FamilyMemberOption {
+  index: number;
+  name: string;
+  josa: number;
+  kinship: Kinship;
+  visibleFor: Gender[];
+  group: FamilyGroup;
+  maxCount?: number;
+}
+
+export const chooseFamily: FamilyMemberOption[] = [
+  // 부모
+  { index: 0,  name: "엄마",       josa: 0, kinship: "mother",                visibleFor: ["M","F"], group: "parents",      maxCount: 1 },
+  { index: 1,  name: "아빠",       josa: 0, kinship: "father",                visibleFor: ["M","F"], group: "parents",      maxCount: 1 },
+
+  // 조부모 (외/친 분리)
+  { index: 2,  name: "외할아버지", josa: 0, kinship: "maternal_grandfather",  visibleFor: ["M","F"], group: "grandparents", maxCount: 1 },
+  { index: 3,  name: "친할아버지", josa: 0, kinship: "paternal_grandfather",  visibleFor: ["M","F"], group: "grandparents", maxCount: 1 },
+  { index: 4,  name: "외할머니",   josa: 0, kinship: "maternal_grandmother",  visibleFor: ["M","F"], group: "grandparents", maxCount: 1 },
+  { index: 5,  name: "친할머니",   josa: 0, kinship: "paternal_grandmother",  visibleFor: ["M","F"], group: "grandparents", maxCount: 1 },
+
+  // 형제자매 (성별 기반 표시)
+  { index: 6,  name: "형",         josa: 1, kinship: "older_brother",         visibleFor: ["M"],     group: "siblings" },
+  { index: 7,  name: "오빠",       josa: 0, kinship: "older_brother",         visibleFor: ["F"],     group: "siblings" },
+  { index: 8,  name: "누나",       josa: 0, kinship: "older_sister",          visibleFor: ["M"],     group: "siblings" },
+  { index: 9,  name: "언니",       josa: 0, kinship: "older_sister",          visibleFor: ["F"],     group: "siblings" },
+  { index: 10, name: "남동생",     josa: 1, kinship: "younger_brother",       visibleFor: ["M","F"], group: "siblings" },
+  { index: 11, name: "여동생",     josa: 1, kinship: "younger_sister",        visibleFor: ["M","F"], group: "siblings" },
+
+  // 친척 (B-2에서 펼침 메뉴로 표시 예정. 데이터는 미리 추가)
+  { index: 12, name: "큰아빠",     josa: 0, kinship: "paternal_uncle_older",  visibleFor: ["M","F"], group: "relatives" },
+  { index: 13, name: "작은아빠",   josa: 0, kinship: "paternal_uncle_younger",visibleFor: ["M","F"], group: "relatives" },
+  { index: 14, name: "삼촌",       josa: 0, kinship: "paternal_uncle",        visibleFor: ["M","F"], group: "relatives" },
+  { index: 15, name: "외삼촌",     josa: 0, kinship: "maternal_uncle",        visibleFor: ["M","F"], group: "relatives" },
+  { index: 16, name: "큰엄마",     josa: 0, kinship: "paternal_aunt_older",   visibleFor: ["M","F"], group: "relatives" },
+  { index: 17, name: "작은엄마",   josa: 0, kinship: "paternal_aunt_younger", visibleFor: ["M","F"], group: "relatives" },
+  { index: 18, name: "고모",       josa: 0, kinship: "paternal_aunt",         visibleFor: ["M","F"], group: "relatives" },
+  { index: 19, name: "이모",       josa: 0, kinship: "maternal_aunt",         visibleFor: ["M","F"], group: "relatives" },
 ];
 
 export const Family = [

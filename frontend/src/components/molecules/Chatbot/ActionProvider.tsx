@@ -248,7 +248,7 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
           `이번에는 ${userInfo.kidname}의 가족들을 동물로 선택해보자.`
         );
         const familyMsg = createChatBotMessage(
-          `${userInfo.kidname}의 가족들은 누구누구야?`,
+          `${userInfo.kidname}의 가족들은 누구누구야? (형제자매는 클릭하면 여러 명을 선택할 수 있어)`,
           { widget: "ChooseFamily" }
         );
 
@@ -320,10 +320,13 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
     saveChatMessage("user", message, family);
     saveChatMessage("bot", `그렇구나. ${currentFig.figure}의 모습이 ${family} 같다고 생각했구나.`, family);
 
-    const nextIndex = idx + 1;
-
+    // Find next family member that is NOT self ("나" or kidname)
     const freshFam = useStore.getState().selectedFamily as string[];
     const freshJosa = useStore.getState().selectedFamilyJosa as number[];
+    let nextIndex = idx + 1;
+    while (nextIndex < freshFam.length && (freshFam[nextIndex] === '나' || freshFam[nextIndex] === userInfo.kidname)) {
+      nextIndex++;
+    }
     if (nextIndex < freshFam.length) {
       const botMessage2 = createChatBotMessage(
         `이번에는 ${freshFam[nextIndex]}${freshJosa[nextIndex] === 1 ? "이라고" : "라고"
@@ -554,7 +557,7 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
     const freshFam6 = useStore.getState().selectedFamily as string[];
     const freshJosa6 = useStore.getState().selectedFamilyJosa as number[];
     let nextIndex = idx + 1;
-    while (nextIndex < freshFam6.length && freshFam6[nextIndex] === userInfo.kidname) {
+    while (nextIndex < freshFam6.length && (freshFam6[nextIndex] === '나' || freshFam6[nextIndex] === userInfo.kidname)) {
       nextIndex++;
     }
 
@@ -657,7 +660,7 @@ const ActionProvider = ({ createChatBotMessage, setState, children }: any) => {
     saveChatMessage("bot", `그랬구나, 그래서 ${userInfo.kidname}${userInfo.endWord.eunVSneun} ${names}${josa} 선택했구나.`, "나(소망)");
 
     const botMessage2 = createChatBotMessage(
-      `${userInfo.kidname}의 가족들은 누구누구야?`,
+      `${userInfo.kidname}의 가족들은 누구누구야? (형제자매는 클릭하면 여러 명을 선택할 수 있어)`,
       {
         widget: "ChooseFamily",
       }

@@ -35,6 +35,7 @@ class SetFigureReq(BaseModel):
             ],
         ],
     )
+    family_members: Optional[list] = Field(default=None, examples=[["엄마", "아빠", "형", "여동생", "나"]])
 
 
 class SetPostionReq(BaseModel):

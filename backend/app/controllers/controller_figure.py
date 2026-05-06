@@ -143,15 +143,15 @@ def create_receipt_number(counselor: dict, kid: dict, agree: bool, counselor_ema
     return status_error.OK, ReceiptNoRes(receiptNo=int(receipt_no), endWord=josa, loginCode=login_code, sessionToken=session_token)
 
 
-def set_figure(kidName: str, receiptNo: int, stage: str, figures: list):
+def set_figure(kidName: str, receiptNo: int, stage: str, figures: list, family_members: list = None):
     """Set figure selection for a stage"""
     receipt_no_str = str(receiptNo)
 
     with session_locks.get_sync_lock(receipt_no_str):
-        return _set_figure_locked(kidName, receiptNo, receipt_no_str, stage, figures)
+        return _set_figure_locked(kidName, receiptNo, receipt_no_str, stage, figures, family_members)
 
 
-def _set_figure_locked(kidName: str, receiptNo: int, receipt_no_str: str, stage: str, figures: list):
+def _set_figure_locked(kidName: str, receiptNo: int, receipt_no_str: str, stage: str, figures: list, family_members: list = None):
     # Get session from MongoDB
     session = session_repository.find_by_receipt_no(receipt_no_str)
 
@@ -171,6 +171,10 @@ def _set_figure_locked(kidName: str, receiptNo: int, receipt_no_str: str, stage:
 
     # Update MongoDB
     session_repository.update_figures(receipt_no_str, stage, session["figures"][stage])
+
+    # Save family_members if provided (Stage 2 confirm 시점)
+    if family_members is not None and isinstance(family_members, list):
+        session_repository.update_session(receipt_no_str, {"family_members": family_members})
 
     score, message = chatbot.get_score(kidName, receiptNo)
 

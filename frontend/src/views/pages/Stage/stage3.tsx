@@ -20,7 +20,11 @@ const Stage3 = () => {
   const selectedFamilyJosa = useStore((state: any) => state.selectedFamilyJosa);
   const setFigure = useStore((state: any) => state.setFigure);
   const userInfo = getItemLocalStorage(USER) || {};
-  const botName = selectedFamily[0];
+
+  // Filter out self ("나" or legacy kidname) from the family list for stage3
+  const familyForStage3 = selectedFamily.filter((name: string) => name !== '나' && name !== userInfo.kidname);
+  const familyJosaForStage3 = selectedFamilyJosa.filter((_: any, i: number) => selectedFamily[i] !== '나' && selectedFamily[i] !== userInfo.kidname);
+  const botName = familyForStage3[0];
 
   const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
   const setSelectedCards = useStore((state: any) => state.setSelectedCards);
@@ -48,7 +52,7 @@ const Stage3 = () => {
     setShowContent(true);
   };
 
-  const selectedFamilyWidgets = selectedFamily.map(
+  const selectedFamilyWidgets = familyForStage3.map(
     (family: any, index: number) => ({
       widgetName: `SelectedCard4Family_${family}`,
       widgetFunc: (props: any) => {
@@ -63,7 +67,7 @@ const Stage3 = () => {
       createChatBotMessage(
         // ` 먼저 ${botName}라고 어떤 동물이 되었으면 좋겠는지 골라보자.`,
         ` 먼저 ${botName}${
-          selectedFamilyJosa[0] === 1 ? "이라고" : "라고"
+          familyJosaForStage3[0] === 1 ? "이라고" : "라고"
         } 생각되는 동물을 선택해보자.`,
         {
           widget: `ChooseAnimal4Family`,

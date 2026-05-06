@@ -31,25 +31,71 @@ router = APIRouter(
 )
 
 
-def _infer_step(session: dict) -> int:
-    """Infer current step from session data"""
+def _infer_progress(session: dict) -> dict:
+    """
+    Returns full progress info for client hydration:
+    {
+      "stage": int,           # 사용자 관점 다음 진입 stage (0~7)
+      "memberIndex": int,     # Stage 3/4/5에서 다음 답변할 가족원 인덱스 (0-based)
+      "totalMembers": int,    # 가족원 총 수 (family_members 또는 figures["3"]에서 추론)
+      "phase": str,           # 'stage_intro' | 'in_progress' | 'completed'
+    }
+    """
     figures = session.get("figures", {})
+    family_members = session.get("family_members", [])
+
+    # totalMembers 우선순위: family_members 필드 → figures["3"] 길이 → 0
+    if family_members:
+        total_members = len(family_members)
+    elif figures.get("3"):
+        total_members = len(figures["3"])
+    else:
+        total_members = 0
+
     has_canvas = bool(session.get("canvasImage"))
     has_positions = bool(session.get("positions", {}).get("figures"))
 
     if has_positions or has_canvas:
-        return 7  # completed doll placement → ending
-    if figures.get("6") and len(figures["6"]) > 0:
-        return 6  # stage6 done → doll placement
-    if figures.get("5") and len(figures["5"]) > 0:
-        return 5  # stage5 done
-    if figures.get("3") and len(figures["3"]) > 0:
-        return 4  # stage3 done → stage4
+        return {"stage": 7, "memberIndex": 0, "totalMembers": total_members, "phase": "completed"}
+
+    fam_animal_done = len(figures.get("3", []))
+    fam_wish_done   = len(figures.get("5", []))
+    fam_view_done   = len(figures.get("6", []))
+
+    # Stage 5 (가족이 보는 나) 진행
+    if total_members > 0 and fam_view_done >= total_members:
+        return {"stage": 6, "memberIndex": 0, "totalMembers": total_members, "phase": "stage_intro"}
+    if fam_view_done > 0:
+        return {"stage": 5, "memberIndex": fam_view_done, "totalMembers": total_members, "phase": "in_progress"}
+
+    # Stage 4 (가족소망) 진행
+    if total_members > 0 and fam_wish_done >= total_members and fam_animal_done >= total_members:
+        return {"stage": 5, "memberIndex": 0, "totalMembers": total_members, "phase": "stage_intro"}
+    if fam_wish_done > 0:
+        return {"stage": 4, "memberIndex": fam_wish_done, "totalMembers": total_members, "phase": "in_progress"}
+
+    # Stage 3 (가족원 동물) 진행
+    if total_members > 0 and fam_animal_done >= total_members:
+        return {"stage": 4, "memberIndex": 0, "totalMembers": total_members, "phase": "stage_intro"}
+    if fam_animal_done > 0:
+        return {"stage": 3, "memberIndex": fam_animal_done, "totalMembers": total_members, "phase": "in_progress"}
+
+    # Stage 2 (소망 + 가족 입력) — family_members가 저장됐으면 stage 3 진입 직전
+    if family_members:
+        return {"stage": 3, "memberIndex": 0, "totalMembers": total_members, "phase": "stage_intro"}
     if figures.get("2") and len(figures["2"]) > 0:
-        return 3  # stage2 done → stage3
+        return {"stage": 2, "memberIndex": 0, "totalMembers": total_members, "phase": "in_progress"}
+
+    # Stage 1 (자기상)
     if figures.get("1") and len(figures["1"]) > 0:
-        return 2  # stage1 done → stage2
-    return 0
+        return {"stage": 2, "memberIndex": 0, "totalMembers": total_members, "phase": "stage_intro"}
+
+    return {"stage": 0, "memberIndex": 0, "totalMembers": 0, "phase": "stage_intro"}
+
+
+# Backward compat: 기존 _infer_step 호출 코드 깨지지 않게 wrapper 유지
+def _infer_step(session: dict) -> int:
+    return _infer_progress(session)["stage"]
 
 
 def _hash_password(password: str) -> str:
@@ -622,4 +668,46 @@ def get_my_sessions(
         "page": page,
         "limit": limit,
         "totalPages": (total + limit - 1) // limit,
+    }
+
+
+@router.post(
+    "/session-progress",
+    description="Get full session progress for client hydration (sessionToken auth)",
+    response_class=JSONResponse,
+)
+def get_session_progress(req: dict = Body(...)):
+    """Returns complete progress + state for client-side hydration."""
+    from app.utils.session_token import verify_session_token
+
+    receipt_no = req.get("receiptNo")
+    session_token = req.get("sessionToken")
+
+    if receipt_no is None or not session_token:
+        raise HTTPException(status_code=400, detail="receiptNo and sessionToken required")
+
+    if not verify_session_token(str(receipt_no), session_token):
+        raise HTTPException(status_code=403, detail="Invalid session token")
+
+    collection = get_sessions_collection()
+    receipt_no_str = str(receipt_no)
+    session = collection.find_one(
+        {"$or": [
+            {"receiptNo": receipt_no_str},
+            {"receiptNo": int(receipt_no_str)} if receipt_no_str.isdigit() else {"receiptNo": receipt_no_str},
+        ]}
+    )
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    progress = _infer_progress(session)
+
+    return {
+        "progress": progress,
+        "family_members": session.get("family_members", []),
+        "figures": {k: v for k, v in session.get("figures", {}).items() if isinstance(v, list)},
+        "positions": session.get("positions", {}),
+        "status": session.get("status", "in_progress"),
+        "kid": session.get("kid", {}),
     }

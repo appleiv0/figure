@@ -143,7 +143,7 @@ def set_figure(res: JSONResponse, req: SetFigureReq):
     if req.sessionToken and not verify_session_token(str(req.receiptNo), req.sessionToken):
         return response(res, status_error.FORBIDDEN)
     err, ret = controller_figure.set_figure(
-        req.kidName, req.receiptNo, req.stage, req.figures
+        req.kidName, req.receiptNo, req.stage, req.figures, req.family_members
     )
     return response(res, err, ret)
 

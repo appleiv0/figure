@@ -35,7 +35,7 @@ const Stage5 = () => {
         .then(data => {
           const figs3 = data?.session?.figures?.["3"] || [];
           if (figs3.length > 0) {
-            const names = figs3.map((f: any) => f.relation).filter((r: string) => r !== userInfo.kidname);
+            const names = figs3.map((f: any) => f.relation).filter((r: string) => r !== '나' && r !== userInfo.kidname);
             setSelectedFamily(names);
             setSelectedFamilyJosa(names.map((name: string) => {
               const last = name.charAt(name.length - 1);
