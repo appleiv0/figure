@@ -6,6 +6,7 @@ import { adminApi } from "../../../services/adminApi";
 import { setItemLocalStorage } from "../../../utils/helper";
 import { USER } from "../../../constants/common.constant";
 import useStore from "../../../store";
+import { useSessionProgress } from "../../../services/hooks/hookSessionProgress";
 
 const Landing = () => {
   const [agreed, setAgreed] = useState(false);
@@ -16,6 +17,7 @@ const Landing = () => {
   const [superUsers, setSuperUsers] = useState<string[]>([]);
 
   const navigate = useNavigate();
+  const { fetchProgress } = useSessionProgress();
 
   const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || "").split(",").map((e: string) => e.trim().toLowerCase());
 
@@ -99,57 +101,47 @@ const Landing = () => {
                 eunVSneun: hasBatchim ? "은" : "는",
               };
 
-              // 세션 정보 저장
+              // sessionToken 먼저 저장 (fetchProgress가 자동 첨부)
               setItemLocalStorage(USER, {
                 kidname,
                 selectedDate: session.kid?.birth || "",
                 receiptNo: session.receiptNo,
                 endWord,
                 sessionToken: sessionData.sessionToken || "",
+                gender: session.kid?.sex || "",
               });
 
-              // Infer step from session data
-              const figures = session.figures || {};
-              const hasCanvas = !!session.canvasImage;
-              const hasPositions = !!(session.positions?.figures);
-              let step = session.currentStep ?? 0;
+              // 백엔드 권위 progress 조회
+              const progressData = await fetchProgress(session.receiptNo);
 
-              // If no saved step, infer from data
-              if (!session.currentStep && session.currentStep !== 0) {
-                if (hasPositions || hasCanvas) step = 7;
-                else if (figures["6"]?.length > 0) step = 6;
-                else if (figures["5"]?.length > 0) step = 5;
-                else if (figures["3"]?.length > 0) step = 4;
-                else if (figures["2"]?.length > 0) step = 3;
-                else if (figures["1"]?.length > 0) step = 2;
-                else step = 0;
+              if (!progressData) {
+                console.error("Failed to fetch progress, starting from beginning");
+                navigate("/information");
+                return;
               }
 
-              // 자동 진행: 데이터가 완료되었는데 step이 뒤처져 있으면 올려줌
-              if (step < 7 && (hasPositions || hasCanvas)) step = 7;
-              if (step < 6 && figures["6"]?.length > 0) {
-                // Stage 6 완료 확인: 가족 구성원(본인 제외) 전원 응답했는지
-                const familyRels = new Set((figures["3"] || []).map((f: any) => f.relation).filter((r: string) => r !== kidname));
-                const stage6Rels = new Set((figures["6"] || []).map((f: any) => f.relation));
-                const allDone = [...familyRels].every(r => stage6Rels.has(r));
-                if (allDone) step = 6;
-              }
-              if (step < 5 && figures["5"]?.length > 0) step = 5;
-              if (step < 4 && figures["3"]?.length > 0) step = 4;
-              if (step < 3 && figures["2"]?.length > 0) step = 3;
-              if (step < 2 && figures["1"]?.length > 0) step = 2;
+              const { progress, family_members, figures, status } = progressData;
+              let step = progress.stage;
 
-              // For completed sessions: show result/report
-              if (session.status === "completed") {
-                step = 7; // Go to result page for report download
+              if (status === "completed") {
+                step = 7;
               }
 
+              // store hydrate
               const store = useStore.getState() as any;
               store.setCurrentStep(step);
 
-              // Restore selectedFamily from session figures
-              if (figures["3"]?.length > 0) {
-                const familyNames = figures["3"].map((f: any) => f.relation).filter((r: string) => r !== kidname);
+              // family_members 우선, 없으면 figures["3"]에서 fallback
+              let familyNames: string[] = [];
+              if (family_members && family_members.length > 0) {
+                familyNames = family_members;
+              } else if (figures["3"] && Array.isArray(figures["3"]) && figures["3"].length > 0) {
+                familyNames = figures["3"]
+                  .map((f: any) => f.relation)
+                  .filter((r: string) => r !== kidname);
+              }
+
+              if (familyNames.length > 0) {
                 store.setSelectedFamily(familyNames);
                 store.setSelectedFamilyJosa(familyNames.map((name: string) => {
                   const last = name.charAt(name.length - 1);
@@ -160,12 +152,11 @@ const Landing = () => {
                 }));
               }
 
-              // 스토어 업데이트가 반영된 후 네비게이션
+              // 네비게이션
               setTimeout(async () => {
                 if (step === 0) {
                   navigate("/information");
                 } else if (step >= 7) {
-                  // Check showResultToUser setting
                   try {
                     const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
                     const settingsRes = await fetch(`${apiBase}/public/settings/show-result`).then(r => r.json());
