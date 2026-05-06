@@ -25,6 +25,8 @@ type State = {
   chooseAnimal: boolean;
   currentIndex: number;
   currentStep: number;
+  currentMemberIndex: number;
+  lastHydratedReceiptNo: number | string | null;
   message: string;
 };
 
@@ -49,6 +51,8 @@ const initialState: State = {
   chooseAnimal: false,
   currentIndex: 0,
   currentStep: 0,
+  currentMemberIndex: 0,
+  lastHydratedReceiptNo: null,
   message: "",
 };
 
@@ -107,6 +111,10 @@ const useStore = create(
 
       setCurrentStep: (currentStep: number) => set({ currentStep }),
 
+      setCurrentMemberIndex: (currentMemberIndex: number) => set({ currentMemberIndex }),
+
+      setLastHydratedReceiptNo: (lastHydratedReceiptNo: number | string | null) => set({ lastHydratedReceiptNo }),
+
       setMessageUser: (message: string) => set({ message }),
 
       setIsLogout: (isLogout: boolean) => set({ isLogout }),
@@ -115,18 +123,20 @@ const useStore = create(
       name: 'abuse-therapy-store',
       storage: {
         getItem: (name: string) => {
-          const str = sessionStorage.getItem(name);
+          const str = localStorage.getItem(name);
           return str ? JSON.parse(str) : null;
         },
         setItem: (name: string, value: unknown) => {
-          sessionStorage.setItem(name, JSON.stringify(value));
+          localStorage.setItem(name, JSON.stringify(value));
         },
         removeItem: (name: string) => {
-          sessionStorage.removeItem(name);
+          localStorage.removeItem(name);
         },
       },
       partialize: (state: any) => ({
         currentStep: state.currentStep,
+        currentMemberIndex: state.currentMemberIndex,
+        lastHydratedReceiptNo: state.lastHydratedReceiptNo,
         selectedFamily: state.selectedFamily,
         selectedFamilyJosa: state.selectedFamilyJosa,
         response: state.response,
