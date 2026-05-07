@@ -368,20 +368,142 @@ def write_json_report(results: list, path: str) -> None:
         json.dump(results, f, ensure_ascii=False, indent=2, default=str)
 
 
+def apply_migration(collection, sessions, results, args):
+    """실제 DB에 마이그레이션 적용. 안전 장치 다층."""
+
+    # 안전 장치 1: 백업 경로 필수 + 파일 존재 확인
+    if not args.confirm_backup:
+        print("ERROR: --apply requires --confirm-backup <path/to/backup>", file=sys.stderr)
+        print("Generate backup first:", file=sys.stderr)
+        print("  mongodump --uri=$MONGODB_URI --db=abuse_therapy --archive=./pre_migration_$(date +%Y%m%d_%H%M).archive --gzip", file=sys.stderr)
+        sys.exit(1)
+
+    if not os.path.exists(args.confirm_backup):
+        print(f"ERROR: backup file not found: {args.confirm_backup}", file=sys.stderr)
+        sys.exit(1)
+
+    backup_size = os.path.getsize(args.confirm_backup)
+    backup_mtime = datetime.fromtimestamp(os.path.getmtime(args.confirm_backup))
+    print(f"✓ Backup found: {args.confirm_backup}", file=sys.stderr)
+    print(f"  Size: {backup_size:,} bytes", file=sys.stderr)
+    print(f"  Modified: {backup_mtime.isoformat()}", file=sys.stderr)
+
+    # 안전 장치 2: 적용 대상 통계 미리 보여주기
+    affected = [r for r in results if not r["no_op"]]
+    already_migrated = sum(1 for s in sessions if s.get("_migration_v2"))
+
+    print(f"\n=== Migration Apply Plan ===", file=sys.stderr)
+    print(f"Total sessions: {len(sessions)}", file=sys.stderr)
+    print(f"Affected: {len(affected)}", file=sys.stderr)
+    print(f"No-op (will skip): {len(sessions) - len(affected)}", file=sys.stderr)
+    print(f"Already migrated (will skip): {already_migrated}", file=sys.stderr)
+    print(f"To be applied: {len(affected) - already_migrated}", file=sys.stderr)
+
+    # 안전 장치 3: 인터랙티브 확인
+    print(f"\nProceed with migration? Type 'yes' exactly: ", file=sys.stderr, end="", flush=True)
+    answer = input().strip()
+    if answer != "yes":
+        print("Aborted by user.", file=sys.stderr)
+        sys.exit(0)
+
+    # 적용
+    applied = 0
+    skipped_noop = 0
+    skipped_already = 0
+    failed = 0
+    failed_details = []
+
+    apply_timestamp = datetime.now(timezone.utc).isoformat()
+
+    for s, r in zip(sessions, results):
+        # 안전 장치 4: 이미 마이그레이션된 세션 skip (idempotent)
+        if s.get("_migration_v2"):
+            skipped_already += 1
+            continue
+
+        # No-op skip
+        if r["no_op"]:
+            skipped_noop += 1
+            continue
+
+        try:
+            update_doc = {
+                "figures": r["preview"]["after"]["figures"],
+                "family_members": r["preview"]["after"]["family_members"],
+                "_migration_v2": {
+                    "applied_at": apply_timestamp,
+                    "version": "1.0",
+                    "changes_count": len(r["changes"]),
+                    "had_post_warnings": len(r["post_warnings"]) > 0,
+                    "had_notes": len(r["pre_warnings"]) > 0,
+                },
+            }
+
+            # positions 변경된 경우만 업데이트
+            before_pos = r["preview"]["before"]["positions_figures"]
+            after_pos = r["preview"]["after"]["positions_figures"]
+            if before_pos != after_pos:
+                new_positions = dict(s.get("positions", {}))
+                new_positions["figures"] = after_pos
+                update_doc["positions"] = new_positions
+
+            result = collection.update_one(
+                {"_id": s["_id"]},
+                {"$set": update_doc}
+            )
+
+            if result.modified_count != 1:
+                raise Exception(f"update_one returned modified_count={result.modified_count}")
+
+            applied += 1
+            print(f"  ✓ Applied: receiptNo={s.get('receiptNo')} (kid={r['kid_name']})", file=sys.stderr)
+
+        except Exception as e:
+            failed += 1
+            failed_details.append({
+                "receiptNo": s.get("receiptNo"),
+                "kid": r["kid_name"],
+                "error": str(e),
+            })
+            print(f"  ✗ FAILED: receiptNo={s.get('receiptNo')}: {e}", file=sys.stderr)
+
+            # 안전 장치 5: 첫 실패 즉시 중단
+            print(f"\nABORTING due to failure. {applied} sessions already applied.", file=sys.stderr)
+            print(f"To restore from backup:", file=sys.stderr)
+            print(f"  mongorestore --uri=$MONGODB_URI --archive={args.confirm_backup} --gzip --drop", file=sys.stderr)
+            break
+
+    # 결과 요약
+    print(f"\n=== Apply Result ===", file=sys.stderr)
+    print(f"Applied: {applied}", file=sys.stderr)
+    print(f"Skipped (no-op): {skipped_noop}", file=sys.stderr)
+    print(f"Skipped (already migrated): {skipped_already}", file=sys.stderr)
+    print(f"Failed: {failed}", file=sys.stderr)
+
+    if failed_details:
+        print(f"\nFailures:", file=sys.stderr)
+        for fd in failed_details:
+            print(f"  - {fd}", file=sys.stderr)
+        print(f"\n⚠️  Migration aborted. Restore backup if needed.", file=sys.stderr)
+        sys.exit(1)
+
+    # 검증
+    migrated_total = collection.count_documents({"_migration_v2": {"$exists": True}})
+    print(f"\nVerification: {migrated_total} sessions now have _migration_v2 field", file=sys.stderr)
+    print(f"✓ Migration completed successfully.", file=sys.stderr)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Migrate session labels to V2 format")
     parser.add_argument("--dry-run", action="store_true", default=True,
                         help="Dry run mode (default, no DB changes)")
     parser.add_argument("--apply", action="store_true",
-                        help="Actually apply changes to DB. REQUIRES backup. (D-1c)")
+                        help="Actually apply changes to DB. REQUIRES backup.")
+    parser.add_argument("--confirm-backup", default=None,
+                        help="Path to backup file. Required for --apply.")
     parser.add_argument("--output", default=None, help="Output file path for text report (default: stdout)")
     parser.add_argument("--json", default=None, help="Output JSON file for full preview")
     args = parser.parse_args()
-
-    if args.apply:
-        print("ERROR: --apply mode is for D-1c. This script (D-1a) only supports --dry-run.", file=sys.stderr)
-        print("To apply, use the D-1c version of this script (created in a separate step).", file=sys.stderr)
-        sys.exit(1)
 
     print("Connecting to MongoDB...", file=sys.stderr)
     collection = get_sessions_collection()
@@ -391,6 +513,10 @@ def main():
 
     results = [transform_session(s) for s in sessions]
 
+    if args.apply:
+        return apply_migration(collection, sessions, results, args)
+
+    # ─── DRY-RUN MODE (default) ───
     output = open(args.output, "w", encoding="utf-8") if args.output else sys.stdout
     try:
         write_text_report(results, output)
@@ -404,6 +530,8 @@ def main():
 
     if args.output:
         print(f"\nReport saved to {args.output}", file=sys.stderr)
+
+    print(f"\nThis was DRY-RUN. To apply, use --apply --confirm-backup <backup_path>", file=sys.stderr)
 
 
 if __name__ == "__main__":
