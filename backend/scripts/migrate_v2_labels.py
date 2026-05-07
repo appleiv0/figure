@@ -470,7 +470,7 @@ def apply_migration(collection, sessions, results, args):
             # 안전 장치 5: 첫 실패 즉시 중단
             print(f"\nABORTING due to failure. {applied} sessions already applied.", file=sys.stderr)
             print(f"To restore from backup:", file=sys.stderr)
-            print(f"  mongorestore --uri=$MONGODB_URI --archive={args.confirm_backup} --gzip --drop", file=sys.stderr)
+            print(f"  cat {args.confirm_backup} | docker exec -i abuse-mongodb mongorestore --uri=mongodb://localhost:27017 --archive --gzip --drop", file=sys.stderr)
             break
 
     # 결과 요약

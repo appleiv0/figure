@@ -290,4 +290,9 @@ export const adminApi = {
     const response = await api.put("/admin/settings", settings);
     return response.data;
   },
+
+  // Update session canvas image
+  updateSessionCanvas: async (receiptNo: string, canvasImage: string): Promise<void> => {
+    await api.put(`/admin/sessions/${receiptNo}/canvas`, { canvasImage });
+  },
 };

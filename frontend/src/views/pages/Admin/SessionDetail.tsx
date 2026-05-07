@@ -741,15 +741,7 @@ const AdminSessionDetail = () => {
                                 }
                               }
                               const dataUrl = offscreen.toDataURL('image/png');
-                              const apiBase = import.meta.env.VITE_ENV_API_BACKEND_DOMAIN || '/api';
-                              await fetch(`${apiBase}/admin/sessions/${receiptNo}/canvas`, {
-                                method: 'PUT',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                  'X-Admin-Key': 'change-this-in-production'
-                                },
-                                body: JSON.stringify({ canvasImage: dataUrl })
-                              });
+                              await adminApi.updateSessionCanvas(receiptNo!, dataUrl);
                               setSession({ ...session!, canvasImage: dataUrl } as any);
                               setShowScenePreview(false);
                               alert('인형 배치 이미지가 저장되었습니다.');
