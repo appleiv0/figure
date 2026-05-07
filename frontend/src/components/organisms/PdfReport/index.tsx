@@ -226,13 +226,11 @@ const PdfReport = forwardRef<HTMLDivElement, PdfReportProps>(({ data }, ref) => 
             <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '10px', textAlign: 'center' }}>
               가족인형 세우기
             </h3>
-            <div style={{ textAlign: 'center', border: '1px solid #ccc', padding: '10px', borderRadius: '4px' }}>
-              <img
-                src={data.canvasImage}
-                alt="가족인형 세우기"
-                style={{ maxWidth: '100%', maxHeight: '500px', objectFit: 'contain' }}
-              />
-            </div>
+            <img
+              src={data.canvasImage}
+              alt="가족인형 세우기"
+              style={{ width: '100%', objectFit: 'contain' }}
+            />
           </div>
         )}
 

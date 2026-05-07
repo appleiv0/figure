@@ -326,7 +326,10 @@ def get_score(kidName: str, receiptNo: int):
             score += 1
             data_json["abuse"]["3"] = 1
 
-    # Stage 5: figures["5"] vs figures["3"] — 가족 동물이 가해자↔피해자로 바뀌면 긴장/갈등
+    # 본인-가족 동역학 긴장(tension_family_dynamics):
+    # figures["5"](Stage 4: 가족이 보는 나) vs figures["3"](Stage 3: 내가 본 가족원)
+    # 같은 가족원에 대해 본인-가족 시점에서 가해/피해 동물 역전이 있으면 긴장 가산.
+    # 예: 엄마가 호랑이(가해)인데, 엄마가 보는 나는 토끼(피해) → 가해자-피해자 구도 긴장
     tension_5 = 0
     if "5" in stages.keys() and "3" in stages.keys():
         for fig5 in stages["5"]:
@@ -343,7 +346,10 @@ def get_score(kidName: str, receiptNo: int):
                 break
     data_json["abuse"]["5"] = tension_5
 
-    # Stage 6: figures["6"] vs figures["1"] — 나의 동물이 가해자↔피해자로 바뀌면 긴장/갈등
+    # 자기인식-가족기대 갈등(tension_self_vs_family_expectation):
+    # figures["6"](Stage 5: 가족이 보는 소망하는 나) vs figures["1"](Stage 1: 자기상)
+    # 본인이 보는 자기 vs 가족이 기대하는 본인 사이의 가해/피해 역전이 있으면 긴장 가산.
+    # 예: 본인은 토끼(피해)라 보는데, 가족이 기대하는 나는 호랑이(가해) → 자기인식 갈등
     tension_6 = 0
     if "6" in stages.keys() and "1" in stages.keys():
         stage1_has_abuser = any(fig["figure"] in abuser for fig in stages["1"])

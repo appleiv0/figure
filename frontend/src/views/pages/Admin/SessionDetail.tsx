@@ -198,11 +198,9 @@ const AdminSessionDetail = () => {
 
     // 가족인형 세우기 — 표 밖에서 별도 섹션으로 출력 (아래 canvasSection에서 처리)
     const canvasSection = data.canvasImage
-      ? `<div style="margin:20px 0;text-align:center;">
-          <h3 style="font-size:14px;font-weight:bold;margin-bottom:10px;">가족인형 세우기</h3>
-          <div style="border:1px solid #ccc;padding:10px;border-radius:4px;display:inline-block;">
-            <img src="${data.canvasImage}" alt="가족인형 세우기" style="max-width:100%;max-height:500px;object-fit:contain;" />
-          </div>
+      ? `<div style="margin:20px 0;">
+          <h3 style="font-size:14px;font-weight:bold;margin-bottom:10px;text-align:center;">가족인형 세우기</h3>
+          <img src="${data.canvasImage}" alt="가족인형 세우기" style="width:100%;object-fit:contain;" />
         </div>`
       : "";
 
