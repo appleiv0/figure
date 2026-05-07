@@ -186,15 +186,34 @@ def preprocess_for_interpretation(session):
     result["자기상_상징"] = [{"동물": a, "분류": get_symbol_category(a)} for a in result["자기상_동물"]]
     result["소망_상징"] = [{"동물": a, "분류": get_symbol_category(a)} for a in result["소망_동물"]]
 
-    # Key conversations
+    # Key conversations — Stage 5 GPT 대화(가족이 보는 나)만 핵심발화로 수집
+    # "나", "나(소망)" 등 Stage 1/2의 고정 메시지는 제외 (이미 동물 상징에 반영됨)
+    EXCLUDED_RELATIONS = {"나", "나(소망)"}
     chat_history = session.get("chatHistory", [])
     llm_completion = session.get("llmCompletion", {})
 
-    # From chatHistory
-    if chat_history:
+    # From llmCompletion first (GPT 대화만 포함, Stage 1/2 고정 메시지 없음)
+    if llm_completion:
+        for rel, data in llm_completion.items():
+            if rel in EXCLUDED_RELATIONS:
+                continue
+            bots = data.get("bot", [])
+            users = data.get("user", [])
+            for i in range(min(len(bots), len(users))):
+                if users[i].strip():
+                    result["핵심발화"].append({
+                        "role": rel,
+                        "question": bots[i],
+                        "answer": users[i]
+                    })
+
+    # chatHistory fallback — llmCompletion이 비어있을 때만
+    if not result["핵심발화"] and chat_history:
         relations = {}
         for m in chat_history:
             rel = m.get("relation", "unknown")
+            if rel in EXCLUDED_RELATIONS:
+                continue
             if rel not in relations:
                 relations[rel] = {"questions": [], "answers": []}
             if m.get("role") == "bot":
@@ -210,17 +229,28 @@ def preprocess_for_interpretation(session):
                         "question": data["questions"][i],
                         "answer": data["answers"][i]
                     })
-    elif llm_completion:
-        for rel, data in llm_completion.items():
-            bots = data.get("bot", [])
-            users = data.get("user", [])
-            for i in range(min(len(bots), len(users))):
-                if users[i].strip():
-                    result["핵심발화"].append({
-                        "role": rel,
-                        "question": bots[i],
-                        "answer": users[i]
-                    })
+
+    # Stage 3 가족원 동물 선택 이유도 별도 필드로 추가 (해석 참고용)
+    result["가족원_선택이유"] = []
+    for fig in figures.get("3", []):
+        rel = fig.get("relation", "")
+        if rel not in EXCLUDED_RELATIONS and fig.get("message"):
+            result["가족원_선택이유"].append({
+                "구성원": rel,
+                "동물": fig.get("figure", ""),
+                "이유": fig.get("message", "")
+            })
+
+    # Stage 6 가족이 보는 나 — 선택 이유도 추가
+    result["가족이보는나_이유"] = []
+    for fig in figures.get("6", []):
+        rel = fig.get("relation", "")
+        if fig.get("message"):
+            result["가족이보는나_이유"].append({
+                "구성원": rel,
+                "동물": fig.get("figure", ""),
+                "이유": fig.get("message", "")
+            })
 
     return result
 
@@ -335,6 +365,15 @@ async def generate_interpretation(session, model: str = "claude"):
 - **자기상→소망 변화**: 약함→강함=힘에 대한 갈망, 의존→독립=자율성 욕구, 같은 계열 유지=안정적 자기 인식
 - **맥락 중요**: 같은 동물도 자기상/가족/소망에 따라 의미가 달라짐 (예: 불곰 자기상=공격성, 불곰 소망=투쟁 환경에서 살아남기 위한 힘 필요)
 
+## 톤 및 서술 원칙 (매우 중요)
+- **이 보고서는 부모/보호자에게 전달될 수 있다.** 극단적이거나 단정적인 표현은 부모에게 상처를 줄 수 있으므로 절대 사용하지 말 것.
+- "극도의 취약성", "외상 경험자", "공격받는 상황에 노출", "심리적 고립" 같은 극단 표현 금지.
+- 대신 "~할 수 있다", "~의 가능성이 있다", "~로 보인다" 등 완화된 표현 사용.
+- **아이의 발화 맥락을 존중할 것**: 아이가 밝고 유쾌하게 대답했으면 그 긍정적 톤을 해석에 반영. "잘생겨서 ㅎㅎ", "멋져서!" 같은 답변을 무시하고 부정적으로만 해석하지 말 것.
+- **동물 선택 이유를 문자 그대로 먼저 해석**: "동생이 상어를 좋아해서" → 위협 인식이 아닌 단순 선호. 상징적 해석은 이유가 부정적일 때만 적용.
+- 강점과 긍정적 측면을 반드시 포함: 가족 관계의 좋은 점, 아이의 건강한 반응도 함께 서술.
+- **"조기 개입이 필요", "역기능 가족" 같은 라벨링 자제**: 대신 "~을 지원하면 더 좋은 관계를 만들 수 있다" 식의 건설적 제안.
+
 ## 해석 형식
 - 4~5문단
 - 1문단: 가족체계유형 판정 (9가지 중 가장 부합하는 유형 1~3개를 선정하고 각각의 근거를 제시. 주 유형 1개 + 보조 유형 1~2개. 예: "주 유형: 이산형, 보조 유형: 목적지향형")
@@ -369,6 +408,16 @@ async def generate_interpretation(session, model: str = "claude"):
     for f in processed["핵심발화"]:
         conversation_lines.append(f'[{f["role"]}] 질문: "{f["question"]}" → 답변: "{f["answer"]}"')
 
+    # 가족원 선택 이유 (Stage 3)
+    family_reason_lines = []
+    for f in processed.get("가족원_선택이유", []):
+        family_reason_lines.append(f'  {f["구성원"]}={f["동물"]}: "{f["이유"]}"')
+
+    # 가족이 보는 나 이유 (Stage 6)
+    family_view_lines = []
+    for f in processed.get("가족이보는나_이유", []):
+        family_view_lines.append(f'  {f["구성원"]}이 보는 나={f["동물"]}: "{f["이유"]}"')
+
     user_prompt = f"""다음 AI가족평가 데이터를 분석하여 임상 해석을 작성해주세요.
 
 ## 기본 정보
@@ -397,7 +446,13 @@ async def generate_interpretation(session, model: str = "claude"):
 가족소망 동물 (가족이 이렇게 되었으면 하는 바람): {', '.join([d['구성원'] + '=' + d['동물'] for d in processed['가족소망_동물']]) if processed['가족소망_동물'] else '없음'}
 자기상-소망 괴리: {processed['자기소망_갭']}
 
-## 상담 발화
+## 가족원 동물 선택 이유 (내가 가족을 이 동물로 본 이유)
+{chr(10).join(family_reason_lines) if family_reason_lines else '  데이터 없음'}
+
+## 가족이 보는 나 (가족이 나를 이 동물로 볼 것 같은 이유)
+{chr(10).join(family_view_lines) if family_view_lines else '  데이터 없음'}
+
+## GPT 상담 대화 (가족이 보는 나에 대한 감정 탐색)
 {chr(10).join(conversation_lines) if conversation_lines else '발화 데이터 없음'}
 
 위 데이터를 최광현·선우현(2020) 인형상징체계 해석 틀로 분석한 임상 해석을 작성해주세요."""

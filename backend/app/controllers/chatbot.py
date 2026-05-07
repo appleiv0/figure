@@ -53,7 +53,7 @@ kid_relation = ["형", "누나", "동생", "언니", "오빠"]
 
 async def request_chatgpt_1(prompt: dict):
     chat_completion = await client.chat.completions.create(
-        messages=prompt, model="gpt-4o-mini", max_tokens=200, temperature=0.2
+        messages=prompt, model="gpt-4o", max_tokens=200, temperature=0.2
     )
     completion = chat_completion.choices[0].message.content
     return completion
@@ -61,7 +61,7 @@ async def request_chatgpt_1(prompt: dict):
 
 async def request_chatgpt_2(prompt: dict):
     chat_completion = await client.chat.completions.create(
-        messages=prompt, model="gpt-4o-mini", max_tokens=200, temperature=0.2
+        messages=prompt, model="gpt-4o", max_tokens=200, temperature=0.2
     )
     completion = chat_completion.choices[0].message.content
     return completion
@@ -205,7 +205,7 @@ async def get_llm_completion(kidName: str, receiptNo: int, count: int, relation:
     elif count == 1:
         prompt, f_3 = prompt_engineering_2(data_json, relation)
         completion = await request_chatgpt_2(prompt)
-        completion = f"{completion}\n{relation}에게 어떤 말을 하고싶을까?"
+        # GPT 응답만 사용 (하드코딩 접미사 제거)
 
         data_json["llmCompletion"][relation]["bot"][count] = completion
         session_repository.update_llm_completion(receipt_no_str, relation, data_json["llmCompletion"][relation])

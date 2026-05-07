@@ -139,7 +139,11 @@ export const formatLLMConversation = (
     });
   }
 
+  // "나"와 "나(소망)"은 상담내용에서 제외 (이미 평가내용 표에 4개씩 표시됨)
+  const EXCLUDED_RELATIONS = ["나", "나(소망)"];
+
   return Object.entries(result)
+    .filter(([relation]) => !EXCLUDED_RELATIONS.includes(relation))
     .map(([relation, conversations]) => ({
       relation,
       conversations: conversations.filter(c => c.answer && c.answer.trim() !== ""),
