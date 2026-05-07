@@ -229,7 +229,7 @@ const PdfReport = forwardRef<HTMLDivElement, PdfReportProps>(({ data }, ref) => 
             <img
               src={data.canvasImage}
               alt="가족인형 세우기"
-              style={{ width: '100%', objectFit: 'contain' }}
+              style={{ width: '50%', objectFit: 'contain' }}
             />
           </div>
         )}

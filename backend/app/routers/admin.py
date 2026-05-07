@@ -135,7 +135,7 @@ def serialize_session(session: dict) -> dict:
 )
 def get_sessions(
     page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    limit: int = Query(20, ge=1, le=200, description="Items per page"),
     sort_by: str = Query("createdAt", description="Sort field"),
     sort_order: str = Query("desc", description="Sort order (asc/desc)")
 ):
@@ -167,7 +167,7 @@ def get_sessions(
 def get_my_sessions(
     email: str = Query(..., description="Counselor email to filter by"),
     page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    limit: int = Query(20, ge=1, le=200, description="Items per page"),
     sort_by: str = Query("createdAt", description="Sort field"),
     sort_order: str = Query("desc", description="Sort order (asc/desc)")
 ):

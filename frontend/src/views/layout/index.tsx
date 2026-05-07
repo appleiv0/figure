@@ -13,7 +13,11 @@ const Layout = () => {
       const userInfo = getItemLocalStorage(USER);
       const store = useStore.getState() as any;
 
-      // 인증 정보 없으면 hydrate 안 함 (로그인/마케팅 페이지 등)
+      // 비평가 페이지에서는 hydrate 안 함
+      const path = window.location.pathname;
+      if (path === "/" || path === "/login" || path === "/register" || path.startsWith("/admin") || path === "/my-sessions") return;
+
+      // 인증 정보 없으면 hydrate 안 함
       if (!userInfo?.receiptNo || !userInfo?.sessionToken) return;
 
       // 이미 같은 receiptNo로 hydrate된 상태면 skip (중복 호출 방지)

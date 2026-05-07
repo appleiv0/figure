@@ -6,6 +6,9 @@ import { HistoryRouter } from "./routes/HistoryRouter";
 import { history } from "./routes/history";
 import "./sass/main.scss";
 import { Router } from "./routes";
+import { initErrorReporter } from "./utils/errorReporter";
+
+initErrorReporter();
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 

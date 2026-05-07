@@ -8,6 +8,7 @@ const AdminSessions = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [searchName, setSearchName] = useState("");
   const [searchOrg, setSearchOrg] = useState("");
   const [searchSex, setSearchSex] = useState("");
@@ -33,6 +34,7 @@ const AdminSessions = () => {
 
       setSessions(data.sessions);
       setTotalPages(data.totalPages);
+      setTotalCount(data.total);
     } catch (err) {
       console.error(err);
     } finally {
@@ -264,8 +266,8 @@ const AdminSessions = () => {
         <div style={{ marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <span style={{ color: "#4b5563" }}>
-              총 {filteredSessions.length}개의 세션
-              {filteredSessions.length !== sessions.length ? ` (전체 ${sessions.length}개)` : ""}
+              총 {totalCount}개의 세션
+              {filteredSessions.length !== sessions.length ? ` (필터 ${filteredSessions.length}개)` : ""}
             </span>
             <select
               value={pageSize}
