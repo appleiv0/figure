@@ -104,6 +104,7 @@ export function initErrorReporter(): void {
     // 노이즈 필터: React 경고, 비치명적 API 에러 등
     if (msg.includes("Warning:") || msg.includes("React does not recognize")) return;
     if (msg.includes("fetchProgress error")) return;  // Layout hydrate 실패 (비치명적, 폴백 있음)
+    if (msg.includes("Failed to fetch progress")) return;  // Landing hydrate 실패 (비치명적, 폴백 있음)
     if (msg.includes("Method Not Allowed")) return;   // 잘못된 HTTP method (비치명적)
     const key = getErrorKey(msg);
     if (shouldSend(key)) {

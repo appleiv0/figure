@@ -84,11 +84,18 @@ const Landing = () => {
           loginCode: loginCode,
         }));
 
-        // 이미 사용된 코드이고 세션이 있으면 → 이어하기
+        // 이미 사용된 코드이고 세션이 있으면 → 완료 여부 확인
         if (result.used && result.sessionReceiptNo) {
           try {
             const sessionData = await adminApi.getMySession(String(result.sessionReceiptNo), result.counselorEmail || "") as any;
             const session = sessionData.session;
+
+            if (session && session.status === "completed") {
+              // 완료된 검사 → 재시작 차단
+              setCodeError("이미 완료된 검사입니다. 새 코드를 발급받아 주세요.");
+              setCodeValidating(false);
+              return;
+            }
 
             if (session) {
               // 받침 체크로 endWord 생성

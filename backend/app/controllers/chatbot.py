@@ -142,7 +142,7 @@ def prompt_engineering_1(data_json: dict, relation: str):
             f_6 = figure["figure"]
             m_6 = f"- {relation}({f_3}){get_josa(f_3)['이/가']} 생각하는 나({f_6}): {figure['message']}"
 
-    prompt_prefix = f"다음은 아이가 가족 구성원 '{relation}'{get_josa(relation)['을/를']} 동물로 표현한 내용과, {relation}{get_josa(relation)['이/가']} 나를 어떤 동물로 볼 것 같은지에 대한 내용이야. 이를 참고해서 간단한 피드백과 질문을 해줘.\n규칙:\n1. 동물 이름 대신 '{relation}'과 '너'를 사용해.\n2. '{relation}이 생각하는 나' 부분의 이유는 {relation}{get_josa(relation)['이/가']} 너를 그렇게 보는 이유야. 이 이유가 너의 행동이나 특성이라면 그에 대한 너의 감정을 물어봐."
+    prompt_prefix = f"다음은 아이가 가족 구성원 '{relation}'{get_josa(relation)['을/를']} 동물로 표현한 내용과, {relation}{get_josa(relation)['이/가']} 나를 어떤 동물로 볼 것 같은지에 대한 내용이야. 이를 참고해서 간단한 피드백과 질문을 해줘.\n규칙:\n1. 절대 동물 이름을 말하지 마. '{relation}'과 '너'만 사용해. 동물 이름(캥거루, 독수리, 상어 등)을 응답에 포함하면 안 됨.\n2. '{relation}이 생각하는 나' 부분의 이유를 맥락에 맞게 질문해. '{relation}{get_josa(relation)['이/가']} 왜 너를 그렇게 보는 거 같아?' 식으로 자연스럽게."
     prompt_scenario = "\n".join([m_3, m_6])
     prompt_suffix = ""
 

@@ -81,6 +81,7 @@ export type Kinship =
   | 'maternal_grandmother' | 'paternal_grandmother'
   | 'older_brother' | 'older_sister'
   | 'younger_brother' | 'younger_sister'
+  | 'husband' | 'wife'
   | 'paternal_uncle_older' | 'paternal_uncle_younger' | 'paternal_uncle'
   | 'maternal_uncle'
   | 'paternal_aunt_older' | 'paternal_aunt_younger' | 'paternal_aunt'
@@ -103,6 +104,10 @@ export const chooseFamily: FamilyMemberOption[] = [
   // 부모
   { index: 0,  name: "엄마",       josa: 0, kinship: "mother",                visibleFor: ["M","F"], group: "parents",      maxCount: 1 },
   { index: 1,  name: "아빠",       josa: 0, kinship: "father",                visibleFor: ["M","F"], group: "parents",      maxCount: 1 },
+
+  // 배우자 (성별 기반)
+  { index: 20, name: "아내",       josa: 0, kinship: "wife",                  visibleFor: ["M"],     group: "parents",      maxCount: 1 },
+  { index: 21, name: "남편",       josa: 0, kinship: "husband",               visibleFor: ["F"],     group: "parents",      maxCount: 1 },
 
   // 조부모 (외/친 분리)
   { index: 2,  name: "외할아버지", josa: 0, kinship: "maternal_grandfather",  visibleFor: ["M","F"], group: "grandparents", maxCount: 1 },
