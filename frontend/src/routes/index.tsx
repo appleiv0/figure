@@ -7,13 +7,13 @@ import Landing from "../views/pages/Landing";
 import MarketingLanding from "../views/pages/MarketingLanding";
 import Register from "../views/pages/Register";
 import Ending from "../views/pages/Stage/ending";
-import Stage0 from "../views/pages/Stage/stage0";
-import Stage1 from "../views/pages/Stage/stage1";
-import Stage2 from "../views/pages/Stage/stage2";
-import Stage3 from "../views/pages/Stage/stage3";
-import Stage4 from "../views/pages/Stage/stage4";
-import Stage5 from "../views/pages/Stage/stage5";
-import Stage6 from "../views/pages/Stage/stage6";
+import Stage0Intro from "../views/pages/Stage/stage0Intro";
+import Stage1Self from "../views/pages/Stage/stage1Self";
+import Stage2WishFamily from "../views/pages/Stage/stage2WishFamily";
+import Stage3FamilyAnimal from "../views/pages/Stage/stage3FamilyAnimal";
+import Stage4FamilyWish from "../views/pages/Stage/stage4FamilyWish";
+import Stage5FamilyView from "../views/pages/Stage/stage5FamilyView";
+import Stage6Placement from "../views/pages/Stage/stage6Placement";
 import Result from "../views/pages/Stage/result";
 import AdminDashboard from "../views/pages/Admin";
 import AdminSessions from "../views/pages/Admin/Sessions";
@@ -56,7 +56,7 @@ export const Router = () => {
           path: "/stage0",
           element:
             currentStep === 0 ? (
-              <Stage0 />
+              <Stage0Intro />
             ) : (
               <Navigate to={`/stage${currentStep}`} replace />
             ),
@@ -65,7 +65,7 @@ export const Router = () => {
           path: "/stage1",
           element:
             currentStep === 1 ? (
-              <Stage1 />
+              <Stage1Self />
             ) : (
               <Navigate to={`/stage${currentStep}`} replace />
             ),
@@ -74,7 +74,7 @@ export const Router = () => {
           path: "/stage2",
           element:
             currentStep === 2 ? (
-              <Stage2 />
+              <Stage2WishFamily />
             ) : (
               <Navigate to={`/stage${currentStep}`} replace />
             ),
@@ -83,7 +83,7 @@ export const Router = () => {
           path: "/stage3",
           element:
             currentStep === 3 ? (
-              <Stage3 />
+              <Stage3FamilyAnimal />
             ) : (
               <Navigate to={`/stage${currentStep}`} replace />
             ),
@@ -92,7 +92,7 @@ export const Router = () => {
           path: "/stage4",
           element:
             currentStep === 4 ? (
-              <Stage5 />
+              <Stage4FamilyWish />
             ) : (
               <Navigate to={`/stage${currentStep}`} replace />
             ),
@@ -101,7 +101,7 @@ export const Router = () => {
           path: "/stage5",
           element:
             currentStep === 5 ? (
-              <Stage6 />
+              <Stage5FamilyView />
             ) : (
               <Navigate to={`/stage${currentStep}`} replace />
             ),
@@ -110,7 +110,7 @@ export const Router = () => {
           path: "/stage6",
           element:
             currentStep === 6 ? (
-              <Stage4 />
+              <Stage6Placement />
             ) : (
               <Navigate to={`/stage${currentStep}`} replace />
             ),

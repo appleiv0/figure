@@ -14,7 +14,7 @@ import { getItemLocalStorage } from "../../../utils/helper";
 import { USER } from "../../../constants/common.constant";
 import { useState, useEffect } from "react";
 
-const Stage6 = () => {
+const Stage5FamilyView = () => {
   const location = useLocation();
   const [showContent, setShowContent] = useState(false);
   const selectedFamily = useStore((state: any) => state.selectedFamily);
@@ -124,4 +124,4 @@ const Stage6 = () => {
     </>
   );
 };
-export default Stage6;
+export default Stage5FamilyView;

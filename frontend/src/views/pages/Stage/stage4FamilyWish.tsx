@@ -10,31 +10,31 @@ import ChooseAnimal4Family from "../../../components/molecules/Widget/ChooseAnim
 import SelectedCard4Family from "../../../components/molecules/Widget/SelectedCard4Family";
 import Header from "../../../components/organisms/Header";
 import useStore from "../../../store";
-import { getItemLocalStorage } from "../../../utils/helper";
-import { USER } from "../../../constants/common.constant";
 
-const Stage3 = () => {
+const Stage4FamilyWish = () => {
   const location = useLocation();
   const [showContent, setShowContent] = useState(false);
   const selectedFamily = useStore((state: any) => state.selectedFamily);
+  const selectedCards = useStore((state: any) => state.selectedCards);
   const selectedFamilyJosa = useStore((state: any) => state.selectedFamilyJosa);
   const setFigure = useStore((state: any) => state.setFigure);
-  const userInfo = getItemLocalStorage(USER) || {};
 
-  // Filter out self ("나" or legacy kidname) from the family list for stage3
-  const familyForStage3 = selectedFamily.filter((name: string) => name !== '나' && name !== userInfo.kidname);
-  const familyJosaForStage3 = selectedFamilyJosa.filter((_: any, i: number) => selectedFamily[i] !== '나' && selectedFamily[i] !== userInfo.kidname);
-  const botName = familyForStage3[0];
+  // figure store에서 stage3 동물 정보 가져오기 (selectedCards가 비었을 때 fallback)
+  const figureStore = useStore((state: any) => state.figure) as any[];
+  const botName = selectedFamily?.[0] || "";
+  const prevFigure = selectedCards?.[0]?.figure
+    || figureStore?.find((f: any) => f.relation === selectedFamily?.[0])?.figure
+    || "";
 
   const setCurrentIndex = useStore((state: any) => state.setCurrentIndex);
-  const setSelectedCards = useStore((state: any) => state.setSelectedCards);
-  const selectedCards = useStore((state: any) => state.selectedCards);
+  const setSelectedCardsNew = useStore((state: any) => state.setSelectedCardsNew);
+  const selectedCardsNew = useStore((state: any) => state.selectedCardsNew);
   const currentMemberIndex = useStore((state: any) => state.currentMemberIndex);
 
   useEffect(() => {
-    if (selectedCards.length === 0) {
+    if (selectedCardsNew.length === 0) {
       setFigure([]);
-      setSelectedCards([]);
+      setSelectedCardsNew([]);
       // store.currentMemberIndex는 Layout의 자동 hydrate에서 백엔드 _infer_progress 결과로 설정됨
       setCurrentIndex(currentMemberIndex || 0);
     }
@@ -45,23 +45,26 @@ const Stage3 = () => {
     setShowContent(true);
   };
 
-  const selectedFamilyWidgets = familyForStage3.map(
+  const selectedFamilyWidgets = selectedFamily.map(
     (family: any, index: number) => ({
       widgetName: `SelectedCard4Family_${family}`,
       widgetFunc: (props: any) => {
-        const currentCards = (useStore.getState() as any).selectedCards;
-        return <SelectedCard4Family {...props} selected={currentCards[index]} />;
+        const currentCardsNew = (useStore.getState() as any).selectedCardsNew;
+        return <SelectedCard4Family {...props} selected={currentCardsNew[index]} />;
       },
     })
   );
 
-  const config3 = {
+  const config5 = {
     initialMessages: [
       createChatBotMessage(
-        // ` 먼저 ${botName}라고 어떤 동물이 되었으면 좋겠는지 골라보자.`,
-        ` 먼저 ${botName}${
-          familyJosaForStage3[0] === 1 ? "이라고" : "라고"
-        } 생각되는 동물을 선택해보자.`,
+        `먼저 ${botName}${
+          selectedFamilyJosa[0] === 1 ? "은" : "는"
+        } ${prevFigure}${
+          selectedCards?.[0]?.josa === 1 ? "이었" : "였"
+        }는데, 이번에는 ${botName}${
+          selectedFamilyJosa[0] === 1 ? "이" : "가"
+        } 어떤 동물이 되었으면 좋겠는지 골라보자.`,
         {
           widget: `ChooseAnimal4Family`,
         }
@@ -89,7 +92,7 @@ const Stage3 = () => {
             <>
               다음 화면에서 나오는 동물들 중에서
               <br />
-              <span className="text-greenDark">우리 가족 동물을</span> 골라보자.
+              <span className="text-greenDark">우리 가족이 어떤 동물이었으면 좋겠는지</span> 골라보자.
               <p> </p>
               <br />
               <br />
@@ -102,9 +105,9 @@ const Stage3 = () => {
       {showContent && (
         <>
           <div className="container mx-auto">
-            {location.pathname.endsWith("/stage3") && (
+            {location.pathname.endsWith("/stage4") && (
               <ChatbotWrapper
-                config={config3 as any}
+                config={config5 as any}
                 actionProvider={ActionProvider}
                 messageParser={MessageParser}
                 placeholderText="여기를 클릭해 입력하세요."
@@ -116,4 +119,4 @@ const Stage3 = () => {
     </>
   );
 };
-export default Stage3;
+export default Stage4FamilyWish;

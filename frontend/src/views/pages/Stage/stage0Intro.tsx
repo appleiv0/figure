@@ -8,7 +8,7 @@ import Header from "../../../components/organisms/Header";
 import { USER } from "../../../constants/common.constant";
 import { getItemLocalStorage } from "../../../utils/helper";
 
-const Stage0 = () => {
+const Stage0Intro = () => {
   const userInfo = getItemLocalStorage(USER);
 
   const config = {
@@ -45,4 +45,4 @@ const Stage0 = () => {
     </>
   );
 };
-export default Stage0;
+export default Stage0Intro;

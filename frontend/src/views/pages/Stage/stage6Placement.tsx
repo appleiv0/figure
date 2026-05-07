@@ -9,7 +9,7 @@ import { USER } from "../../../constants/common.constant";
 import { getItemLocalStorage } from "../../../utils/helper";
 import { DollInstanceData } from "../../../types/figure3d";
 
-const Stage4 = () => {
+const Stage6Placement = () => {
   // phase 0: Intro4, phase 1: 배치만 (가족추가 없음), phase 2: 가족추가 가능
   const [phase, setPhase] = useState<number>(0);
   const navigator = useNavigate();
@@ -130,4 +130,4 @@ const Stage4 = () => {
   );
 };
 
-export default Stage4;
+export default Stage6Placement;
