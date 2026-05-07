@@ -196,14 +196,15 @@ const AdminSessionDetail = () => {
       </tr>`);
     }
 
-    // 가족인형 세우기
-    const canvasContent = data.canvasImage
-      ? `<img src="${data.canvasImage}" alt="가족인형 세우기" style="max-width:100%;max-height:300px;object-fit:contain;" />`
-      : "가족인형 배치 이미지가 없습니다.";
-    evalRows.push(`<tr>
-      <td style="border:1px solid #ccc;padding:8px 10px;font-weight:500;">가족인형 세우기</td>
-      <td colspan="3" style="border:1px solid #ccc;padding:8px 10px;text-align:center;">${canvasContent}</td>
-    </tr>`);
+    // 가족인형 세우기 — 표 밖에서 별도 섹션으로 출력 (아래 canvasSection에서 처리)
+    const canvasSection = data.canvasImage
+      ? `<div style="margin:20px 0;text-align:center;">
+          <h3 style="font-size:14px;font-weight:bold;margin-bottom:10px;">가족인형 세우기</h3>
+          <div style="border:1px solid #ccc;padding:10px;border-radius:4px;display:inline-block;">
+            <img src="${data.canvasImage}" alt="가족인형 세우기" style="max-width:100%;max-height:500px;object-fit:contain;" />
+          </div>
+        </div>`
+      : "";
 
     // --- 상담내용 rows ---
     const counselRows = llmConversations.map(({ relation, conversations }) => {
@@ -292,6 +293,7 @@ const AdminSessionDetail = () => {
             ${evalRows.join("")}
           </tbody>
         </table>
+        ${canvasSection}
       </div>
     `;
 
