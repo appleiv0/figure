@@ -606,6 +606,10 @@ def complete_session(req: dict = Body(...)):
         {"$set": {"status": "completed", "completedAt": datetime.now(KST).isoformat()}}
     )
 
+    # 세션 완료 시 락 즉시 해제 (LRU에 의해 자동 정리도 되지만 명시적 회수)
+    from app.utils.session_lock import session_locks
+    session_locks.release(str(receipt_no))
+
     return {"success": result.modified_count > 0}
 
 
