@@ -334,15 +334,7 @@ const AdminSessionDetail = () => {
           </tr>
         </table>
 
-        ${aiInterpretation ? `
-        <!-- AI 임상 해석 -->
-        <div style="background:linear-gradient(135deg,#64b5f6,#42a5f5);border-radius:8px;padding:10px 20px;margin-bottom:12px;">
-          <span style="font-size:22px;font-weight:700;color:#fff;">AI 임상 해석</span>
-        </div>
-        <div style="padding:15px;background:#f0f7ff;border:1px solid #bdd7ee;border-radius:8px;margin-bottom:12px;">
-          <p style="font-size:11px;color:#666;font-style:italic;margin-bottom:12px;">※ AI 자동 생성 해석입니다. 치료사가 검토 후 활용하세요.</p>
-          <div style="font-size:13px;line-height:1.8;color:#333;white-space:pre-wrap;">${aiInterpretation}</div>
-        </div>
+        <!-- 치료사 의견 -->
         ${therapistInterpretation ? `
         <div style="padding:15px;background:#f0fff0;border:1px solid #b2dfb2;border-radius:8px;margin-bottom:24px;">
           <h4 style="font-size:14px;font-weight:bold;color:#2e7d32;margin-bottom:8px;">치료사 의견</h4>
@@ -354,7 +346,6 @@ const AdminSessionDetail = () => {
           <div style="min-height:80px;border:1px dashed #ccc;border-radius:4px;padding:8px;"></div>
         </div>
         `}
-        ` : ''}
 
         <!-- Footer -->
         <div style="background:linear-gradient(135deg,#d4a5a0,#c9918c,#b8807a);padding:18px 30px;display:flex;align-items:center;gap:16px;border-radius:4px;margin-top:32px;">
