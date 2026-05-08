@@ -81,7 +81,7 @@ export type Kinship =
   | 'maternal_grandmother' | 'paternal_grandmother'
   | 'older_brother' | 'older_sister'
   | 'younger_brother' | 'younger_sister'
-  | 'husband' | 'wife'
+  | 'husband' | 'wife' | 'son' | 'daughter'
   | 'paternal_uncle_older' | 'paternal_uncle_younger' | 'paternal_uncle'
   | 'maternal_uncle'
   | 'paternal_aunt_older' | 'paternal_aunt_younger' | 'paternal_aunt'
@@ -105,16 +105,6 @@ export const chooseFamily: FamilyMemberOption[] = [
   { index: 0,  name: "엄마",       josa: 0, kinship: "mother",                visibleFor: ["M","F"], group: "parents",      maxCount: 1 },
   { index: 1,  name: "아빠",       josa: 0, kinship: "father",                visibleFor: ["M","F"], group: "parents",      maxCount: 1 },
 
-  // 배우자 (성별 기반)
-  { index: 20, name: "아내",       josa: 0, kinship: "wife",                  visibleFor: ["M"],     group: "parents",      maxCount: 1 },
-  { index: 21, name: "남편",       josa: 0, kinship: "husband",               visibleFor: ["F"],     group: "parents",      maxCount: 1 },
-
-  // 조부모 (외/친 분리)
-  { index: 2,  name: "외할아버지", josa: 0, kinship: "maternal_grandfather",  visibleFor: ["M","F"], group: "grandparents", maxCount: 1 },
-  { index: 3,  name: "친할아버지", josa: 0, kinship: "paternal_grandfather",  visibleFor: ["M","F"], group: "grandparents", maxCount: 1 },
-  { index: 4,  name: "외할머니",   josa: 0, kinship: "maternal_grandmother",  visibleFor: ["M","F"], group: "grandparents", maxCount: 1 },
-  { index: 5,  name: "친할머니",   josa: 0, kinship: "paternal_grandmother",  visibleFor: ["M","F"], group: "grandparents", maxCount: 1 },
-
   // 형제자매 (성별 기반 표시)
   { index: 6,  name: "형",         josa: 1, kinship: "older_brother",         visibleFor: ["M"],     group: "siblings" },
   { index: 7,  name: "오빠",       josa: 0, kinship: "older_brother",         visibleFor: ["F"],     group: "siblings" },
@@ -122,6 +112,20 @@ export const chooseFamily: FamilyMemberOption[] = [
   { index: 9,  name: "언니",       josa: 0, kinship: "older_sister",          visibleFor: ["F"],     group: "siblings" },
   { index: 10, name: "남동생",     josa: 1, kinship: "younger_brother",       visibleFor: ["M","F"], group: "siblings" },
   { index: 11, name: "여동생",     josa: 1, kinship: "younger_sister",        visibleFor: ["M","F"], group: "siblings" },
+
+  // 조부모 (외/친 분리)
+  { index: 2,  name: "외할아버지", josa: 0, kinship: "maternal_grandfather",  visibleFor: ["M","F"], group: "grandparents", maxCount: 1 },
+  { index: 3,  name: "친할아버지", josa: 0, kinship: "paternal_grandfather",  visibleFor: ["M","F"], group: "grandparents", maxCount: 1 },
+  { index: 4,  name: "외할머니",   josa: 0, kinship: "maternal_grandmother",  visibleFor: ["M","F"], group: "grandparents", maxCount: 1 },
+  { index: 5,  name: "친할머니",   josa: 0, kinship: "paternal_grandmother",  visibleFor: ["M","F"], group: "grandparents", maxCount: 1 },
+
+  // 자녀
+  { index: 22, name: "아들",       josa: 1, kinship: "son",                   visibleFor: ["M","F"], group: "parents" },
+  { index: 23, name: "딸",         josa: 1, kinship: "daughter",              visibleFor: ["M","F"], group: "parents" },
+
+  // 배우자 (성별 기반)
+  { index: 20, name: "아내",       josa: 0, kinship: "wife",                  visibleFor: ["M"],     group: "parents",      maxCount: 1 },
+  { index: 21, name: "남편",       josa: 0, kinship: "husband",               visibleFor: ["F"],     group: "parents",      maxCount: 1 },
 
   // 친척 (B-2에서 펼침 메뉴로 표시 예정. 데이터는 미리 추가)
   { index: 12, name: "큰아빠",     josa: 0, kinship: "paternal_uncle_older",  visibleFor: ["M","F"], group: "relatives" },
