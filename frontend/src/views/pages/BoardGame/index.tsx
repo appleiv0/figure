@@ -9,7 +9,20 @@ const NAV_LINKS = [
   { label: "게임 소개", href: "#about" },
   { label: "놀이치료 효과", href: "#effect" },
   { label: "게임 방법", href: "#howto" },
+  { label: "활동집", href: "#workbook" },
   { label: "구매하기", href: "#purchase" },
+];
+
+
+const WORKBOOK_BADGES = ["초등 고학년 대상", "총 40차시 · 20회기", "학급당 20명 내외", "전체 42쪽"];
+
+const WORKBOOK_PAGES = [
+  { file: "p01.jpg", tag: "표지", title: "양떼를 지켜라! 문제해결 탐험대" },
+  { file: "p02.jpg", tag: "사용 안내", title: "이렇게 사용해요 · 문제해결 6단계" },
+  { file: "p05.jpg", tag: "활동 자료 3", title: "보드게임 하는 방법" },
+  { file: "p09.jpg", tag: "1~2차시", title: "친구야 만나서 반가워" },
+  { file: "p26.jpg", tag: "25~26차시", title: "우리가 보드게임을 만들었어요" },
+  { file: "p35.jpg", tag: "부록 1", title: "나를 나타내는 동물 카드" },
 ];
 
 const EVAL_SECTIONS = [
@@ -739,6 +752,63 @@ const BoardGame = () => {
         </div>
       </section>
 
+      {/* ─── 학생용 활동집 Section ─── */}
+      <section id="workbook" className="py-20 md:py-28" style={{ backgroundColor: "#f1f8f8" }}>
+        <div className="max-w-[1200px] mx-auto px-6">
+          <div className="text-center mb-10">
+            <span
+              className="text-xs font-bold tracking-widest uppercase mb-3 block"
+              style={{ color: "#00838F" }}
+            >
+              Workbook
+            </span>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-grey-900 mb-4">학생용 활동집</h2>
+            <p className="text-grey-600 max-w-2xl mx-auto leading-relaxed">
+              보드게임을 수업으로 잇는 문제해결 증진 방과후 프로그램 활동집입니다.
+              문제 인식 · 감정 확인 · 대안 찾기 · 결과 예측 · 선택 · 실행의{" "}
+              <span className="font-bold" style={{ color: "#00838F" }}>문제해결 6단계</span>를
+              매 회기 같은 말과 같은 순서로 반복해, 학생이 스스로 쓰는 언어가 되도록 구성했습니다.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-2 mb-12">
+            {WORKBOOK_BADGES.map((badge) => (
+              <span
+                key={badge}
+                className="px-4 py-2 rounded-full text-xs font-bold bg-white border"
+                style={{ borderColor: "#d5e9e9", color: "#00695C" }}
+              >
+                {badge}
+              </span>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+            {WORKBOOK_PAGES.map((page) => (
+              <div key={page.file} className="block">
+                <div
+                  className="relative overflow-hidden rounded-xl border bg-white shadow-sm"
+                  style={{ borderColor: "#e2eded" }}
+                >
+                  <img
+                    src={`${BASE}assets/images/boardgame/workbook/${page.file}`}
+                    alt={`학생용 활동집 - ${page.title}`}
+                    className="w-full block"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="mt-3 text-center">
+                  <span className="block text-[11px] font-bold tracking-wide" style={{ color: "#00838F" }}>
+                    {page.tag}
+                  </span>
+                  <span className="block text-sm font-semibold text-grey-900 mt-0.5">{page.title}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ─── 구매하기 Section ─── */}
       <section id="purchase" className="py-20 md:py-28" style={{ backgroundColor: "#f9fafb" }}>
         <div className="max-w-[1200px] mx-auto px-6">
@@ -752,41 +822,13 @@ const BoardGame = () => {
             <h2 className="text-3xl md:text-4xl font-extrabold text-grey-900 mb-4">구매하기</h2>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center gap-12 max-w-4xl mx-auto">
-            {/* Left: Promo image */}
-            <div className="flex-1 flex justify-center">
-              <img
-                src={`${BASE}assets/images/boardgame/promo.jpg`}
-                alt="양떼를 지켜라 프로모션"
-                className="w-full max-w-[400px] rounded-2xl shadow-lg"
-                style={{ objectFit: "cover" }}
-              />
-            </div>
-
-            {/* Right: Price info */}
-            <div className="flex-1">
+          <div className="max-w-lg mx-auto">
+            {/* Purchase info */}
+            <div>
               <div
                 className="rounded-2xl border p-8 bg-white shadow-sm"
                 style={{ borderColor: "#f0f0f0" }}
               >
-                {/* Price badge */}
-                <div
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold mb-6"
-                  style={{ backgroundColor: "#FFF3E0", color: "#E65100" }}
-                >
-                  4월 말까지 20% 할인
-                </div>
-
-                <div className="mb-6">
-                  <div className="flex items-baseline gap-3 mb-2">
-                    <span className="text-3xl font-extrabold" style={{ color: "#E8734A" }}>
-                      44,000원
-                    </span>
-                    <span className="text-lg text-grey-400 line-through">55,000원</span>
-                  </div>
-                  <p className="text-sm text-grey-600">배송비 포함 (제주도는 별도 배송비)</p>
-                </div>
-
                 <div className="space-y-3 mb-8">
                   {[
                     "배송비 포함 가격",
